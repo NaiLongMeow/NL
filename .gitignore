@@ -1,0 +1,14 @@
+# Keep user- and machine-specific agent records out of shared history.
+# A `.local` segment in a name marks a record local: MEMORY.local.md,
+# TODO.local.md, memory/<name>.local.md, plan/<name>.local.md.
+# Match the segment exactly. A looser `*.local*` also hides shared files whose
+# names merely contain "local" after a dot, such as i18n.locale.md.
+/.agents/**/*.local.*
+# Extensionless files and directories marked `.local` are local as well.
+/.agents/**/*.local
+
+# Worktrees have their own Git state and must not enter the main checkout's history.
+# Agents create them under .worktrees/ unless a client's worktree tool has its own
+# default location; Claude Code's tool uses .claude/worktrees/.
+/.worktrees/
+/.claude/worktrees/
