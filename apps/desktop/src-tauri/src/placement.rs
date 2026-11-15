@@ -25,9 +25,36 @@ pub fn bottom_right(
     )
 }
 
+/// Physical pixel size of a window configured as `logical_size` on a monitor
+/// with the given scale factor, rounded to whole pixels.
+///
+/// The pet's size is taken from its configuration rather than asked from the
+/// window: on Linux a hidden GTK window is not realized yet and reports a size
+/// of 0x0, which would place the pet almost entirely off screen.
+pub fn physical_size(logical_size: (f64, f64), scale_factor: f64) -> (u32, u32) {
+    // `as u32` saturates, so negative or NaN inputs become 0 instead of wrapping.
+    (
+        (logical_size.0 * scale_factor).round() as u32,
+        (logical_size.1 * scale_factor).round() as u32,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn logical_size_is_scaled_to_physical_pixels() {
+        assert_eq!(physical_size((240.0, 320.0), 1.0), (240, 320));
+        assert_eq!(physical_size((240.0, 320.0), 1.5), (360, 480));
+        // 125% scaling yields fractional pixels, which round to the nearest one.
+        assert_eq!(physical_size((241.0, 321.0), 1.25), (301, 401));
+    }
+
+    #[test]
+    fn nonsensical_inputs_saturate_to_zero() {
+        assert_eq!(physical_size((-10.0, f64::NAN), 1.0), (0, 0));
+    }
 
     #[test]
     fn sits_in_the_bottom_right_corner_of_the_primary_monitor() {

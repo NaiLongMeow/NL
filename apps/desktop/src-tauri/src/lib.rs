@@ -26,13 +26,21 @@ pub fn run() {
         .setup(|app| {
             if let Some(pet) = app.get_webview_window("pet") {
                 // The pet window starts hidden so it never flashes at the
-                // default position before being moved to the corner.
-                if let Some(monitor) = pet.current_monitor()? {
-                    let size = pet.outer_size()?;
+                // default position before being moved to the corner. Its size
+                // comes from tauri.conf.json because a hidden window cannot
+                // report it reliably on every platform (see placement.rs).
+                let configured = app
+                    .config()
+                    .app
+                    .windows
+                    .iter()
+                    .find(|window| window.label == "pet")
+                    .map(|window| (window.width, window.height));
+                if let (Some(monitor), Some(logical_size)) = (pet.current_monitor()?, configured) {
                     let (x, y) = placement::bottom_right(
                         (monitor.position().x, monitor.position().y),
                         (monitor.size().width, monitor.size().height),
-                        (size.width, size.height),
+                        placement::physical_size(logical_size, monitor.scale_factor()),
                         SCREEN_MARGIN,
                     );
                     pet.set_position(PhysicalPosition::new(x, y))?;
