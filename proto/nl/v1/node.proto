@@ -1,0 +1,38 @@
+// Wire protocol shared by every NL end: microcontrollers, mobile, desktop, cloud
+// nodes, and the gateway. Field numbers are permanent once released; add new
+// fields instead of renumbering, and let `buf breaking` in CI catch mistakes.
+syntax = "proto3";
+
+package nl.v1;
+
+// What a node can do for the rest of the network. Nodes advertise these in
+// Hello so that work can be routed by capability instead of by device type.
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  // Can capture and play audio (microphone, speaker).
+  CAPABILITY_AUDIO_IO = 1;
+  // Can run language-model inference or proxy it.
+  CAPABILITY_LLM = 2;
+  // Can store files on behalf of nodes with little or no storage of their own.
+  CAPABILITY_STORAGE = 3;
+  // Can render the character avatar.
+  CAPABILITY_AVATAR = 4;
+}
+
+// First message on every new session, sent by both sides.
+message Hello {
+  // Stable identifier of the sending node.
+  string node_id = 1;
+  // Protocol revision the sender speaks; peers refuse incompatible revisions.
+  uint32 protocol_version = 2;
+  repeated Capability capabilities = 3;
+}
+
+// Outer frame for every message exchanged between nodes.
+message Envelope {
+  // Unique per sender, used to correlate replies and drop duplicates.
+  string message_id = 1;
+  oneof body {
+    Hello hello = 2;
+  }
+}

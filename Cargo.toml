@@ -1,0 +1,55 @@
+# Rust workspace for every host-side component of NL.
+#
+# The ESP32 firmware under firmware/esp32 is deliberately NOT a member: it builds
+# with Espressif's own `esp` toolchain, a different target, and `build-std`, so it
+# keeps its own Cargo.lock and profiles. It still depends on crates in this
+# workspace (for example nl-proto) through path dependencies.
+[workspace]
+resolver = "3"
+# Built separately with Espressif's toolchain; see firmware/esp32/Cargo.toml.
+exclude = ["firmware/esp32"]
+members = [
+    "crates/nl-proto",
+    "crates/nl-transport",
+    "crates/nl-assets",
+    "crates/nl-node",
+    "crates/nl-gateway",
+    "apps/pet",
+]
+
+# One version for the whole project. The release workflow refuses to publish a
+# tag that does not match this value (see tooling/check-version.sh).
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/NaiLongMeow/NL"
+
+# Shared dependency versions, so every crate upgrades together.
+[workspace.dependencies]
+axum = "0.8.9"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+http-body-util = "0.1.5"
+prost = { version = "0.14.6", default-features = false, features = ["derive"] }
+prost-build = "0.14.6"
+protox = "0.10.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+tao = "0.37.2"
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+tower = { version = "0.5.3", features = ["util"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+wry = "0.57.2"
+
+# Release builds are what users run, so trade compile time for speed and size:
+# whole-program LTO and a single codegen unit let LLVM optimize across crates,
+# and stripping symbols shrinks the shipped binaries. Panics stay `unwind`
+# because tokio relies on unwinding to contain a panicking task instead of
+# taking down the whole node or gateway.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

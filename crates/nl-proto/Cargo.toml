@@ -1,0 +1,18 @@
+[package]
+name = "nl-proto"
+description = "NL wire protocol types generated from proto/, usable on no_std targets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# default-features = false keeps prost (and therefore this crate) no_std + alloc,
+# so microcontroller firmware can link the exact same message types.
+prost.workspace = true
+
+[build-dependencies]
+prost-build.workspace = true
+# protox is a pure-Rust protobuf compiler. Using it instead of `protoc` means
+# building this crate needs nothing beyond cargo, on any machine or CI runner.
+protox.workspace = true

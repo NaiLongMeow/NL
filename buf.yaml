@@ -1,0 +1,12 @@
+# buf configuration for the protocol definitions under proto/.
+# CI runs `buf lint` and, on pull requests, `buf breaking` against main so that a
+# released wire format cannot change incompatibly by accident.
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

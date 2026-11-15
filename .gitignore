@@ -15,3 +15,11 @@
 
 # Third-party projects cloned locally for reference only; never part of NL's history.
 /.ref/
+
+# Build outputs.
+/target/
+/firmware/esp32/target/
+/firmware/esp32/.embuild/
+/dist/
+node_modules/
+/web/stage/dist/

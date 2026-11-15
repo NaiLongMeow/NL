@@ -1,0 +1,5 @@
+# Docker images only need the prebuilt binaries under dist/; excluding
+# everything else keeps the build context tiny.
+*
+!dist/linux-*/nl-node
+!dist/linux-*/nl-gateway
