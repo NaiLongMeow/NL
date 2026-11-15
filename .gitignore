@@ -12,3 +12,6 @@
 # default location; Claude Code's tool uses .claude/worktrees/.
 /.worktrees/
 /.claude/worktrees/
+
+# Third-party projects cloned locally for reference only; never part of NL's history.
+/.ref/
