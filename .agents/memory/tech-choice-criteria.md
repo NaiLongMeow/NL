@@ -10,7 +10,7 @@ metadata:
 
 Do not treat human maintenance cost (number of codebases, duplicated UI, extra languages) as a core factor when choosing a stack. Weigh instead how reliably an agent can set up, build, test, and debug the toolchain from the command line, and what platform capabilities the option exposes.
 
-**Why:** NL is a vibe-coding project in which agents write most of the code, so duplicated code is cheap while a toolchain that stalls agents is expensive. The user reported that many agents get stuck for a long time configuring React Native environments, which is why React Native was rejected for mobile despite letting mobile share TypeScript with desktop.
+**Why:** NL is a vibe-coding project in which agents write most of the code, so duplicated code is cheap while a toolchain that stalls agents is expensive. The user reported that many agents get stuck for a long time configuring React Native environments, which is why React Native was rejected for mobile despite letting mobile share TypeScript with desktop (see [[client-stack-decision]]).
 
 **How to apply:** Prefer stacks with fewer build layers, project configuration kept as plain text, and builds and tests that run headless from a CLI. Do not reject an option only because it adds a codebase or a language.
 
