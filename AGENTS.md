@@ -1,5 +1,5 @@
-- Project name: [Replace with the project name]
-- Core purpose: [Replace with the project's core purpose in one sentence]
+- Project name: NL (NaiLongMeow)
+- Core purpose: An open-source distributed agent harness for IoT devices that is programmable but optimized for companionship and entertainment, with lightweight parts running on microcontrollers such as the ESP32, heavyweight parts on powerful cloud servers, and every end able to coordinate with and borrow storage or compute from the others.
 
 # doing_tasks
 
@@ -75,6 +75,10 @@ Codex reads only the first 32 KiB of the AGENTS.md chain from the project root t
 
 This is an open-source team project whose code is read by contributors' agents as often as by people. Code you write or modify carries detailed comments that both humans and LLMs can readily understand -- this deliberately OVERRIDES the no-comments paragraph in doing_tasks, WHAT-versus-WHY test included; only its bans on mentioning the current task, fix, or callers and on deleting accurate comments still hold. Comment density here is a feature, not noise. Match the comment style and density of the file being edited.
 
+Write everything meant for agents in English: code comments, identifiers, commit messages, and every record under ./.agents/. Contributors speak different languages, and one shared language keeps these records searchable and unambiguous for every contributor's agent. This governs the written record, not conversation; talk with each user in that user's language.
+
+Untested code does not land. Every change to behavior ships with automated tests that exercise it and pass before the change is proposed, because many contributors build on main at once and one untested change can break the project for all of them. Hardware-bound code is no exception: test its logic on the host or in an emulator, and state plainly what still needs a real device.
+
 Tag versions as vMAJOR.MINOR.PATCH, such as v1.0.0, appending -alpha.N, -beta.N, or -rc.N for pre-releases.
 
 Project documentation lives in the README and ./docs/ and serves the people who use and develop the project. Not every project needs it; write it for those readers, never as a record of agent work, and keep it true when a change alters what it describes.
@@ -82,6 +86,8 @@ Project documentation lives in the README and ./docs/ and serves the people who 
 # git_workflow
 
 Use git continuously. Commit each completed increment of work; work-in-progress that never gets committed is work that can be lost. Stage intended files explicitly and review the staged diff before committing. Prefer Conventional Commits for messages, such as `fix: ...` or `docs: ...`; the format keeps history legible to people and tools alike. Where a repository has settled on another style, follow it.
+
+Many contributors work on this project in parallel, so main changes only through pull requests; never commit or push to main directly. Do each piece of work on its own branch cut from an up-to-date main, keep each pull request to one coherent change so it can be reviewed and reverted on its own, and bring the branch up to date with main and resolve conflicts before asking for review. A pull request is ready only when its tests pass.
 
 Put worktrees in predictable places rather than wherever is convenient: a client's worktree tool at its default location, or, without one, the main checkout's `.worktrees/`. Existing worktrees may hold another contributor's unfinished work; leave them, and their uncommitted changes, where they are.
 
