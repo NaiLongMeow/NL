@@ -23,3 +23,6 @@
 /dist/
 node_modules/
 /web/stage/dist/
+
+# Desktop app frontend build output.
+/apps/desktop/dist/

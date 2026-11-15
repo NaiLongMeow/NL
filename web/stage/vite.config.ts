@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
-// The stage is loaded from local files by webviews (wry on desktop,
-// webview_flutter on mobile), never from a web server, so asset URLs must be
+// The standalone stage page is loaded from local files by the mobile app's
+// webview (webview_flutter), never from a web server, so asset URLs must be
 // relative and the bundle must target the oldest webview engines we support.
 export default defineConfig({
   base: "./",

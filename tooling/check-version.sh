@@ -17,6 +17,8 @@ declare -A versions=(
   [Cargo.toml]="$(cargo_version Cargo.toml)"
   [firmware/esp32/Cargo.toml]="$(cargo_version firmware/esp32/Cargo.toml)"
   [web/stage/package.json]="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' web/stage/package.json)"
+  # tauri.conf.json reads its version from this file, so it needs no entry.
+  [apps/desktop/package.json]="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' apps/desktop/package.json)"
   # Flutter versions carry a build number after "+", which is not part of the
   # project version.
   [apps/client/pubspec.yaml]="$(sed -n 's/^version: \([^+]*\).*$/\1/p' apps/client/pubspec.yaml)"

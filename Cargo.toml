@@ -14,7 +14,7 @@ members = [
     "crates/nl-assets",
     "crates/nl-node",
     "crates/nl-gateway",
-    "apps/pet",
+    "apps/desktop/src-tauri",
 ]
 
 # One version for the whole project. The release workflow refuses to publish a
@@ -36,12 +36,12 @@ protox = "0.10.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.1"
-tao = "0.37.2"
+tauri = "2.12.5"
+tauri-build = "2.7.4"
 tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net", "signal"] }
 tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-wry = "0.57.2"
 
 # Release builds are what users run, so trade compile time for speed and size:
 # whole-program LTO and a single codegen unit let LLVM optimize across crates,
