@@ -1,0 +1,1 @@
+- [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost
