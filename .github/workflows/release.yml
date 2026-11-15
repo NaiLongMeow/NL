@@ -50,6 +50,8 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
 
+  # Server-side binaries: the node (also embedded in the desktop app later) and
+  # the gateway, for self-hosting without containers.
   binaries:
     name: Binaries (${{ matrix.target }})
     needs: prepare
@@ -67,16 +69,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install Linux system libraries (GTK and WebKitGTK for the pet)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev
       - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           target: ${{ matrix.target }}
       - name: Build
-        run: cargo build --release --locked --target ${{ matrix.target }} -p nl-node -p nl-gateway -p nl-pet
+        run: cargo build --release --locked --target ${{ matrix.target }} -p nl-node -p nl-gateway
       - name: Package
         shell: bash
         env:
@@ -87,7 +84,7 @@ jobs:
           name="nl-$VERSION-$TARGET"
           ext=""; [[ "$TARGET" == *windows* ]] && ext=".exe"
           mkdir -p "staging/$name" dist
-          for bin in nl-node nl-gateway nl-pet; do
+          for bin in nl-node nl-gateway; do
             cp "target/$TARGET/release/$bin$ext" "staging/$name/"
           done
           cp LICENSE "staging/$name/"
@@ -151,20 +148,11 @@ jobs:
           if-no-files-found: error
 
   client:
-    name: Flutter client (${{ matrix.target }})
+    name: Mobile app (Android)
     needs: prepare
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { target: android, os: ubuntu-latest }
-          - { target: linux, os: ubuntu-latest }
-          - { target: windows, os: windows-latest }
-          - { target: macos, os: macos-latest }
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash
         working-directory: apps/client
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -173,13 +161,7 @@ jobs:
       FLAGS: --release --obfuscate --split-debug-info=build/symbols
     steps:
       - uses: actions/checkout@v7
-      - name: Install Linux build dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang cmake ninja-build pkg-config libgtk-3-dev
       - uses: actions/setup-java@v6
-        if: matrix.target == 'android'
         with:
           distribution: temurin
           java-version: "17"
@@ -192,37 +174,71 @@ jobs:
         run: |
           out="$GITHUB_WORKSPACE/dist"
           mkdir -p "$out"
-          case "${{ matrix.target }}" in
-            android)
-              # One APK per CPU architecture keeps downloads small; the bundle
-              # (.aab) is what app stores take.
-              flutter build apk $FLAGS --split-per-abi
-              flutter build appbundle $FLAGS
-              for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
-                abi="$(basename "$apk" | sed 's/^app-\(.*\)-release\.apk$/\1/')"
-                cp "$apk" "$out/nl-client-$VERSION-android-$abi.apk"
-              done
-              cp build/app/outputs/bundle/release/app-release.aab "$out/nl-client-$VERSION-android.aab"
-              ;;
-            linux)
-              flutter build linux $FLAGS
-              tar -C build/linux/x64/release/bundle -czf "$out/nl-client-$VERSION-linux-x64.tar.gz" .
-              ;;
-            windows)
-              flutter build windows $FLAGS
-              (cd build/windows/x64/runner/Release && 7z a -tzip "$out/nl-client-$VERSION-windows-x64.zip" .)
-              ;;
-            macos)
-              flutter build macos $FLAGS
-              # ditto keeps the bundle's symlinks and metadata intact.
-              ditto -c -k --keepParent build/macos/Build/Products/Release/*.app "$out/nl-client-$VERSION-macos.zip"
-              ;;
-          esac
-          # tar exists on every runner OS (bsdtar on Windows); 7z and zip do not.
-          tar -C build/symbols -czf "$out/nl-client-$VERSION-${{ matrix.target }}-symbols.tar.gz" .
+          # One APK per CPU architecture keeps downloads small; the bundle
+          # (.aab) is what app stores take.
+          flutter build apk $FLAGS --split-per-abi
+          flutter build appbundle $FLAGS
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi="$(basename "$apk" .apk)"
+            abi="${abi#app-}"
+            abi="${abi%-release}"
+            cp "$apk" "$out/nl-mobile-$VERSION-android-$abi.apk"
+          done
+          cp build/app/outputs/bundle/release/app-release.aab "$out/nl-mobile-$VERSION-android.aab"
+          tar -C build/symbols -czf "$out/nl-mobile-$VERSION-android-symbols.tar.gz" .
       - uses: actions/upload-artifact@v7
         with:
-          name: release-client-${{ matrix.target }}
+          name: release-mobile-android
+          path: dist/*
+          if-no-files-found: error
+
+  desktop:
+    name: Desktop app (${{ matrix.target }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, bundles: "msi,nsis" }
+          - { target: aarch64-apple-darwin, os: macos-latest, bundles: dmg }
+          - { target: x86_64-apple-darwin, os: macos-latest, bundles: dmg }
+          # Ubuntu 22.04 keeps the glibc requirement low for older distributions.
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, bundles: "deb,rpm,appimage" }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, bundles: "deb,rpm" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux system libraries (WebKitGTK and friends for Tauri)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev file
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          target: ${{ matrix.target }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build installers
+        working-directory: apps/desktop
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Collect installers
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          # Tauri names installers <product>_<version>_<arch>.<ext>, so files
+          # from different targets do not collide once merged.
+          mkdir -p dist
+          bundle="target/$TARGET/release/bundle"
+          find "$bundle" -maxdepth 2 -type f             \( -name '*.msi' -o -name '*-setup.exe' -o -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \)             -exec cp {} dist/ \;
+          ls -l dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-desktop-${{ matrix.target }}
           path: dist/*
           if-no-files-found: error
 
@@ -271,7 +287,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    needs: [prepare, binaries, firmware, client, images]
+    needs: [prepare, binaries, firmware, client, desktop, images]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
