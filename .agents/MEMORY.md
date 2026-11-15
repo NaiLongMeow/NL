@@ -1,3 +1,4 @@
 - [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost
 - [Client stack decision](memory/client-stack-decision.md) -- why mobile is Flutter and desktop is a daemon + Flutter app + tao/wry pet, and what was rejected
 - [Live2D asset packs](memory/live2d-asset-packs.md) -- Live2D stays out of the repo as digest-pinned runtime packs and data-only character packs
+- [Flutter pub lockfile](memory/flutter-pub-lockfile.md) -- keep pubspec.lock on pub.dev URLs; pub mirrors rewrite it and break --enforce-lockfile in CI
