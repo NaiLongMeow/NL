@@ -8,6 +8,6 @@ Open items from the architecture design in [docs/architecture.md](../docs/archit
 - [ ] Settle the Live2D Expandable Application license terms before shipping Live2D support.
 - [ ] Enable branch protection on main in GitHub: require pull requests and the `CI OK` check from .github/workflows/ci.yml. AGENTS.md states the rule but nothing enforces it yet.
 - [ ] Configure an Android release keystore (release builds are signed with the debug key) and decide how iOS builds are signed and published (CI only checks that iOS compiles).
-- [ ] Verify the desktop pet window's transparency, dragging, and double-click close on macOS and Linux (only Windows 10 was checked by hand), and implement per-pixel click-through.
+- [ ] Verify the desktop pet window's transparency, dragging, and double-click close on macOS and Linux. Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked (Ubuntu 24.04 under Xvfb, no compositor, so transparency could not be judged). Then implement per-pixel click-through.
 - [ ] Embed nl-node in the Tauri backend of apps/desktop and add tray and autostart (official Tauri plugins).
 - [ ] Code-sign the Windows and macOS desktop installers and set up the Tauri updater (needs a signing key pair).
