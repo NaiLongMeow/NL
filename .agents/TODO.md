@@ -4,6 +4,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Waiting for the user
 
+- [ ] Settle the distributed design with the agent: the five open questions in [plan/distributed-design.md](plan/distributed-design.md). It is the core feature, and rules S1 and S4 and roadmap Stages 5 to 8 wait for it.
 - [ ] Rule on the five decisions listed in the roadmap under "Decisions waiting for the user". The defaults apply meanwhile.
 - [ ] Merge NaiLongMeow/NL#1, then NaiLongMeow/NL#2 (rebase the second onto main if the first is squash-merged), then the branch that carries the direction records.
 - [ ] Supply a Code of Conduct reporting email to replace `[reporting address to be announced]` in CODE_OF_CONDUCT.md and `[举报邮箱待公布]` in CODE_OF_CONDUCT.zh-CN.md. The user chose to supply it later (2026-11-16).

@@ -4,6 +4,8 @@ The long-term order of work for NL. Written 2026-11-16, when the repository held
 
 **Main line, current stage: 0 (Ground). Voice and device track: not started.**
 
+**How sessions and memory stay in step across nodes is under discussion in [distributed-design.md](distributed-design.md).** The user calls it the core feature. Stages 5 to 8 below, and rules S1 and S4, will be revised when it settles.
+
 Read [product-direction](../memory/product-direction.md) and [architecture-invariants](../memory/architecture-invariants.md) first. Rule ids such as S1 and T3 refer to the invariants; "product rule 3" refers to the product direction. Outstanding tasks are in [TODO.md](../TODO.md).
 
 ## The order, and who set it
@@ -84,7 +86,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Build:**
 - The sign-in and enrollment design, approved before any of it is coded (reserved decision 1; spike "trust design", part one).
 - Accounts and sign-in for people; enrollment of nodes (desktop, phone, server, and devices by pairing code); the node registry with presence (T2).
-- The vault and the model proxy (T3). Keys are encrypted at rest. The proxy adds the key and enforces limits (E7); provider-specific logic stays in the node's adapters (E5), so the gateway does not grow a second provider layer.
+- The vault and the model proxy (T3), borrowing from mature API gateways such as sub2api where their design fits ([reference-designs](../memory/reference-designs.md)). Keys are encrypted at rest. The proxy adds the key and enforces limits (E7); provider-specific logic stays in the node's adapters (E5), so the gateway does not grow a second provider layer.
 - The gateway's HTTP API specified in the repository, with tests (P1). PostgreSQL and Redis (E4), with a compose file for development and disposable service containers in CI.
 - The sign-in, account, nodes, keys, and usage screens from Stage 1 wired to the real gateway.
 - A container image, configuration, and a self-hosting guide.
@@ -105,8 +107,8 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Build:**
 - Protocol basics: attaching a body to a host, and the turn (user text in; streamed text, cues, tool activity, end, and errors out; cancel).
 - The turn engine in the host: event-driven and interruptible (E1, P7), able to call tools from the start, with only built-in tools for now.
-- The language-model interface with two adapters (OpenAI-compatible and Anthropic) that reach providers through the gateway's proxy, and a scripted fake (E2, E5).
-- The event log on SQLite with replay and a tested migration path (S2, S5, S6), and a rolling summary that bounds the context.
+- The language-model interface with its DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5).
+- Sessions as JSONL files with replay and a tested format-upgrade path (S2, S5, S6), and a rolling summary that bounds the context.
 - Same-machine attachment: an authenticated channel carrying protocol frames (P2, T5), `nl-node` running headless, and a command-line client used by end-to-end tests.
 - The node embedded in the Tauri backend; the chat, character, and pet screens wired through the protocol.
 
@@ -114,7 +116,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 
 **Exit:**
 - [ ] A fresh install on Windows, macOS, and Linux reaches a streamed reply after sign-in (manual checklist recorded with the release).
-- [ ] It works with one provider reachable from mainland China and one outside it (manual, recorded).
+- [ ] It works against the real DeepSeek API through the gateway (manual, recorded).
 - [ ] After a restart the history is intact (automated, scripted model).
 - [ ] The command-line client holds a conversation with a headless `nl-node` signed in to a test gateway (automated, end to end).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
@@ -233,14 +235,14 @@ This track depends on hardware. It runs beside the main line whenever hardware a
 
 **Build:**
 - The spike "voice latency" first.
-- Streaming speech-recognition and speech-synthesis interfaces, each with two adapters reached through the gateway's proxy, and a fake fed by audio fixtures (E2, E5).
+- Streaming speech-recognition and speech-synthesis interfaces, each with its DeepSeek adapter reached through the gateway's proxy, and a fake fed by audio fixtures (E2, E5).
 - The audio turn, streaming end to end: capture, end-of-speech detection, recognition, the turn engine, synthesis, playback. Barge-in cancels speech in progress (P7).
 - Audio streams in the protocol (Opus voice audio in a compact framing, P6). The desktop microphone and speaker are the first audio body and use these streams as any other body would (P2).
 - Push-to-talk and a hotkey first; a desktop wake word is optional.
 - Cues for listening and speaking, including a mouth-movement level derived from the audio.
 
 **Exit:**
-- [ ] The voice round-trip and interrupt budgets are measured and met on the reference setup, with one provider set reachable from mainland China and one outside it.
+- [ ] The voice round-trip and interrupt budgets are measured and met on the reference setup.
 - [ ] All host-side audio logic is tested in CI with fixtures.
 
 ### V2: Embody (an ESP32 as a body). Needs V1 and Stage 6.
@@ -281,7 +283,7 @@ This track depends on hardware. It runs beside the main line whenever hardware a
 | Trust design, part two | A design, not code: how two nodes key and authenticate an end-to-end encrypted session, over the relay and over direct routes, including for a constrained node (T2) | Stage 6 | As above | Stage 6 does not start without it |
 | Mobile toolchain | Can agents set up and build the Flutter iOS and Android toolchains with the Rust core without stalling ([client-stack-decision](../memory/client-stack-decision.md))? | Stage 7 | A minimal app with the Rust core builds for both platforms from the command line in CI | Revisit the mobile stack with the user |
 | Transport | Which library carries direct sessions between full nodes with NAT traversal: iroh first, WebRTC (str0m or webrtc-rs) second | Stage 8 | Discovery and fallback need no third-party infrastructure (E6); it builds and connects on Android and iOS; it works on a mainland China network; the binary size is acceptable | WebRTC data channels with a self-hosted TURN server; as a last resort, phones stay on the relay |
-| Voice latency | Does a streaming chain of recognition, model, and synthesis on the host meet the round-trip budget with two provider sets? | Start of V1 | The budget is met with both sets | Fix end-of-speech detection and provider choice first; then consider a speech-to-speech backend for that provider set |
+| Voice latency | Does a streaming chain of recognition, model, and synthesis on the host meet the round-trip budget with DeepSeek's APIs? | Start of V1 | The budget is met | Fix end-of-speech detection first; then consider another speech provider or a speech-to-speech backend |
 | Device audio | Can Rust on ESP-IDF run wake word and echo cancellation (ESP-SR), Opus, Wi-Fi, and an encrypted session together on the chosen board, inside the device budgets? | Start of V2 | Thirty minutes of two-way audio with a host program without a reset; the wake word triggers reliably; the memory budget holds | Keep ESP-SR and the codec in a small C component behind a handful of functions called from Rust. If Rust itself is the obstacle, write the firmware shell in C or C++ against the same protocol, which P1 makes legitimate |
 
 ## Initial budgets

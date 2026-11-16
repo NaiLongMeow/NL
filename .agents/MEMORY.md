@@ -1,5 +1,7 @@
 - [Product direction](memory/product-direction.md) -- read before proposing or prioritizing any feature: what NL is for, what wins in a conflict, non-goals, vocabulary, product rules
 - [Architecture invariants](memory/architecture-invariants.md) -- read before designing or reviewing any change: the P/S/T/E rules that hold in every stage, and the decisions reserved for the user
+- [DeepSeek reference provider](memory/deepseek-reference-provider.md) -- NL is built for the DeepSeek API first (main model, search, fetch, speech); unverified, read its docs before coding
+- [Reference designs](memory/reference-designs.md) -- learn the gateway from sub2api and the harness from other harnesses, but write everything in Rust
 - [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost
 - [Client stack decision](memory/client-stack-decision.md) -- why mobile is Flutter and desktop is one Tauri app (main + pet windows), and what was rejected
 - [Live2D asset packs](memory/live2d-asset-packs.md) -- Live2D stays out of the repo as digest-pinned runtime packs and data-only character packs
