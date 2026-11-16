@@ -117,6 +117,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: esp-rs/xtensa-toolchain@v1.7.0
+        # espup queries the GitHub API for the latest Xtensa toolchain; without
+        # a token, shared runner IPs hit the anonymous rate limit.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           default: true
           buildtargets: esp32s3
@@ -156,9 +160,6 @@ jobs:
         working-directory: apps/client
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
-      # Obfuscation renames Dart symbols in the shipped app; the symbol maps
-      # needed to read crash stacks are published separately.
-      FLAGS: --release --obfuscate --split-debug-info=build/symbols
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -174,10 +175,14 @@ jobs:
         run: |
           out="$GITHUB_WORKSPACE/dist"
           mkdir -p "$out"
+          # Obfuscation renames Dart symbols in the shipped app; the symbol
+          # maps needed to read crash stacks are published separately. A bash
+          # array keeps each flag one word without unquoted expansion.
+          flags=(--release --obfuscate --split-debug-info=build/symbols)
           # One APK per CPU architecture keeps downloads small; the bundle
           # (.aab) is what app stores take.
-          flutter build apk $FLAGS --split-per-abi
-          flutter build appbundle $FLAGS
+          flutter build apk "${flags[@]}" --split-per-abi
+          flutter build appbundle "${flags[@]}"
           for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
             abi="$(basename "$apk" .apk)"
             abi="${abi#app-}"
