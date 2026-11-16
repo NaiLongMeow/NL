@@ -1,0 +1,20 @@
+[package]
+name = "nl-gateway"
+description = "NL gateway: login, API key vault, push, and relay between nodes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+axum.workspace = true
+clap.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+serde_json.workspace = true
+tower.workspace = true

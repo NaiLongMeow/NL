@@ -1,0 +1,20 @@
+[package]
+name = "nl-desktop"
+description = "NL desktop app: main window, desktop pet window, and (later) the embedded node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Tauri builds the app from this library; the binary in main.rs only calls run().
+[lib]
+name = "nl_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+# macos-private-api lets macOS windows be transparent, which the desktop pet
+# needs. The cost: apps using private APIs are not accepted by the Mac App Store.
+tauri = { workspace = true, features = ["macos-private-api"] }

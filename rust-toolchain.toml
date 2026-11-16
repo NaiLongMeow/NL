@@ -1,0 +1,6 @@
+# Pin the exact toolchain so every contributor, agent, and CI runner compiles with
+# the same rustc, rustfmt, and clippy. Bump it deliberately in its own pull request.
+# firmware/esp32 overrides this with Espressif's `esp` toolchain.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]

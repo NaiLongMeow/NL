@@ -1,0 +1,45 @@
+# ESP32-S3 firmware for NL's lightweight IoT end.
+#
+# Built with Espressif's `esp` Rust toolchain on top of ESP-IDF (through
+# esp-idf-svc), so that later work can call ESP-SR (wake word) and ESP-ADF
+# (audio) over FFI. It is its own workspace, separate from the host workspace at
+# the repository root, because it needs a different toolchain, target, and
+# `build-std`. Install the toolchain with `espup install --targets esp32s3`.
+[package]
+name = "nl-firmware-esp32"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+
+# An empty workspace table makes this crate its own workspace root instead of
+# being picked up by the host workspace one directory level above.
+[workspace]
+
+[[bin]]
+name = "nl-firmware-esp32"
+# The standard test harness cannot run on the device; firmware logic belongs in
+# shared crates such as nl-proto, which are tested on the host.
+harness = false
+test = false
+bench = false
+
+[dependencies]
+log = "0.4"
+esp-idf-svc = { version = "0.53", features = ["critical-section"] }
+# The same message types the full nodes use; see crates/nl-proto.
+nl-proto = { path = "../../crates/nl-proto" }
+
+[build-dependencies]
+embuild = "0.33.7"
+
+# Flash and RAM are scarce: optimize release images for size ("s" keeps speed
+# reasonable, unlike "z"), and let LTO drop code no caller reaches.
+[profile.release]
+opt-level = "s"
+lto = "fat"
+codegen-units = 1
+
+# Debug symbols are not flashed, so keeping them costs nothing on the device.
+[profile.dev]
+debug = true
+opt-level = "z"

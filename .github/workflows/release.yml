@@ -1,0 +1,335 @@
+# Release pipeline. Pushing a tag vMAJOR.MINOR.PATCH (optionally -alpha.N,
+# -beta.N, or -rc.N) builds every deliverable, publishes container images to
+# GHCR, and creates a GitHub Release with checksums, provenance attestations,
+# and notes generated from Conventional Commits.
+#
+# Pull requests that touch release configuration run the same builds as a dry
+# run: everything is built and packaged, nothing is published.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .dockerignore
+      - cliff.toml
+      - docker/**
+      - tooling/**
+
+permissions:
+  contents: read
+
+# Never cancel a release half-way; a newer dry run may replace an older one.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+      # On a tag, the tag must equal the version declared by every component.
+      - id: version
+        env:
+          TAG: ${{ env.IS_RELEASE == 'true' && github.ref_name || '' }}
+        run: |
+          version="$(bash tooling/check-version.sh ${TAG:+"$TAG"})"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
+
+  # Server-side binaries: the node (also embedded in the desktop app later) and
+  # the gateway, for self-hosting without containers.
+  binaries:
+    name: Binaries (${{ matrix.target }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux builds run on Ubuntu 22.04 so the binaries need only glibc 2.35
+          # and run on most current distributions.
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, docker: amd64 }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, docker: arm64 }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+          - { target: aarch64-apple-darwin, os: macos-latest }
+          - { target: x86_64-apple-darwin, os: macos-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          target: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} -p nl-node -p nl-gateway
+      - name: Package
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          DOCKER_ARCH: ${{ matrix.docker }}
+        run: |
+          name="nl-$VERSION-$TARGET"
+          ext=""; [[ "$TARGET" == *windows* ]] && ext=".exe"
+          mkdir -p "staging/$name" dist
+          for bin in nl-node nl-gateway; do
+            cp "target/$TARGET/release/$bin$ext" "staging/$name/"
+          done
+          cp LICENSE "staging/$name/"
+          if [[ "$TARGET" == *windows* ]]; then
+            (cd staging && 7z a -tzip "../dist/$name.zip" "$name")
+          else
+            tar -C staging -czf "dist/$name.tar.gz" "$name"
+          fi
+          # Raw Linux service binaries feed the container images.
+          if [[ -n "$DOCKER_ARCH" ]]; then
+            mkdir -p "docker-bin/linux-$DOCKER_ARCH"
+            cp "target/$TARGET/release/nl-node" "target/$TARGET/release/nl-gateway" "docker-bin/linux-$DOCKER_ARCH/"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-binaries-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: matrix.docker
+        with:
+          name: docker-bin-${{ matrix.docker }}
+          path: docker-bin/*
+          if-no-files-found: error
+
+  firmware:
+    name: Firmware (ESP32-S3)
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: esp-rs/xtensa-toolchain@v1.7.0
+        # espup queries the GitHub API for the latest Xtensa toolchain; without
+        # a token, shared runner IPs hit the anonymous rate limit.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          default: true
+          buildtargets: esp32s3
+          ldproxy: true
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: espflash
+      - uses: actions/cache@v6
+        with:
+          path: firmware/esp32/.embuild
+          key: embuild-${{ hashFiles('firmware/esp32/.cargo/config.toml', 'firmware/esp32/Cargo.lock') }}
+          restore-keys: embuild-
+      - name: Build and export a flashable image
+        working-directory: firmware/esp32
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          cargo build --release --locked
+          mkdir -p ../../dist
+          # --merge produces one image (bootloader, partition table, app) that
+          # flashes at offset 0 with any ESP flashing tool.
+          espflash save-image --chip esp32s3 --merge \
+            target/xtensa-esp32s3-espidf/release/nl-firmware-esp32 \
+            "../../dist/nl-firmware-$VERSION-esp32s3.bin"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-firmware
+          path: dist/*
+          if-no-files-found: error
+
+  client:
+    name: Mobile app (Android)
+    needs: prepare
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/client
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: apps/client/pubspec.yaml
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Build and package
+        run: |
+          out="$GITHUB_WORKSPACE/dist"
+          mkdir -p "$out"
+          # Obfuscation renames Dart symbols in the shipped app; the symbol
+          # maps needed to read crash stacks are published separately. A bash
+          # array keeps each flag one word without unquoted expansion.
+          flags=(--release --obfuscate --split-debug-info=build/symbols)
+          # One APK per CPU architecture keeps downloads small; the bundle
+          # (.aab) is what app stores take.
+          flutter build apk "${flags[@]}" --split-per-abi
+          flutter build appbundle "${flags[@]}"
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi="$(basename "$apk" .apk)"
+            abi="${abi#app-}"
+            abi="${abi%-release}"
+            cp "$apk" "$out/nl-mobile-$VERSION-android-$abi.apk"
+          done
+          cp build/app/outputs/bundle/release/app-release.aab "$out/nl-mobile-$VERSION-android.aab"
+          tar -C build/symbols -czf "$out/nl-mobile-$VERSION-android-symbols.tar.gz" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-mobile-android
+          path: dist/*
+          if-no-files-found: error
+
+  desktop:
+    name: Desktop app (${{ matrix.target }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, bundles: "msi,nsis" }
+          - { target: aarch64-apple-darwin, os: macos-latest, bundles: dmg }
+          - { target: x86_64-apple-darwin, os: macos-latest, bundles: dmg }
+          # Ubuntu 22.04 keeps the glibc requirement low for older distributions.
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, bundles: "deb,rpm,appimage" }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, bundles: "deb,rpm" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux system libraries (WebKitGTK and friends for Tauri)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev file
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          target: ${{ matrix.target }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build installers
+        working-directory: apps/desktop
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Collect installers
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          # Tauri names installers <product>_<version>_<arch>.<ext>, so files
+          # from different targets do not collide once merged.
+          mkdir -p dist
+          bundle="target/$TARGET/release/bundle"
+          find "$bundle" -maxdepth 2 -type f             \( -name '*.msi' -o -name '*-setup.exe' -o -name '*.dmg' -o -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \)             -exec cp {} dist/ \;
+          ls -l dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-desktop-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  images:
+    name: Container images
+    needs: [prepare, binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: docker-bin-*
+          path: dist
+          merge-multiple: true
+      # No QEMU needed: the Dockerfiles only COPY prebuilt binaries, no RUN steps.
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        if: env.IS_RELEASE == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          # Image names must be lowercase; GitHub owners may not be.
+          registry="ghcr.io/${OWNER,,}"
+          push="--output=type=image,push=false"
+          [[ "$IS_RELEASE" == "true" ]] && push="--push"
+          for svc in node gateway; do
+            tags=(-t "$registry/nl-$svc:$VERSION")
+            # Only stable releases move the "latest" tag.
+            [[ "$PRERELEASE" == "false" ]] && tags+=(-t "$registry/nl-$svc:latest")
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -f "docker/nl-$svc.Dockerfile" "${tags[@]}" \
+              --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+              --label "org.opencontainers.image.version=$VERSION" \
+              $push .
+          done
+
+  publish:
+    name: Publish GitHub Release
+    needs: [prepare, binaries, firmware, client, desktop, images]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # git-cliff needs the full history and tags to find the previous release.
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Write checksums
+        working-directory: dist
+        run: sha256sum -- * > SHA256SUMS
+      # Signed SLSA provenance: anyone can verify a download came from this
+      # workflow with `gh attestation verify <file> -R NaiLongMeow/NL`.
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/*
+      - uses: orhun/git-cliff-action@v4
+        id: notes
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: release-notes.md
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          flags=(--verify-tag --title "$TAG" --notes-file release-notes.md)
+          [[ "$PRERELEASE" == "true" ]] && flags+=(--prerelease)
+          gh release create "$TAG" "${flags[@]}" dist/*

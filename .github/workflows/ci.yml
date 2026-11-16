@@ -1,0 +1,341 @@
+# Continuous integration: every pull request and every push to main must pass
+# these checks. Jobs only run when files they cover change (see `changes`), and
+# the final `ci-ok` job gives branch protection one stable check to require.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+# A new push to a pull request supersedes the previous run; runs on main are
+# never cancelled so every commit there gets a full result.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      firmware: ${{ steps.filter.outputs.firmware }}
+      client: ${{ steps.filter.outputs.client }}
+      web: ${{ steps.filter.outputs.web }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+      proto: ${{ steps.filter.outputs.proto }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # Every filter includes this workflow so that editing CI re-runs the
+          # jobs it affects.
+          filters: |
+            rust:
+              - .github/workflows/ci.yml
+              - Cargo.toml
+              - Cargo.lock
+              - rust-toolchain.toml
+              - proto/**
+              - crates/**
+              - apps/desktop/src-tauri/**
+              - firmware/esp32/src/**
+            firmware:
+              - .github/workflows/ci.yml
+              - Cargo.toml
+              - proto/**
+              - crates/nl-proto/**
+              - firmware/**
+            client:
+              - .github/workflows/ci.yml
+              - apps/client/**
+            web:
+              - .github/workflows/ci.yml
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - web/**
+              - apps/desktop/**
+            desktop:
+              - .github/workflows/ci.yml
+              - Cargo.toml
+              - Cargo.lock
+              - rust-toolchain.toml
+              - pnpm-lock.yaml
+              - crates/**
+              - web/**
+              - apps/desktop/**
+            proto:
+              - .github/workflows/ci.yml
+              - buf.yaml
+              - proto/**
+            docker:
+              - .github/workflows/ci.yml
+              - .dockerignore
+              - Cargo.toml
+              - Cargo.lock
+              - crates/**
+              - docker/**
+
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: raven-actions/actionlint@v2
+
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash tooling/check-version.test.sh
+      - run: bash tooling/check-version.sh
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux system libraries (WebKitGTK and friends for Tauri)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+      # Reads rust-toolchain.toml, caches cargo, and turns warnings into errors.
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: |
+          cargo fmt --all --check
+          # The firmware is outside the workspace; rustfmt needs no ESP toolchain.
+          rustfmt --check --edition 2024 firmware/esp32/build.rs firmware/esp32/src/main.rs
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  firmware:
+    name: Firmware (ESP32-S3)
+    needs: changes
+    if: needs.changes.outputs.firmware == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firmware/esp32
+    steps:
+      - uses: actions/checkout@v7
+      - uses: esp-rs/xtensa-toolchain@v1.7.0
+        # espup queries the GitHub API for the latest Xtensa toolchain; without
+        # a token, shared runner IPs hit the anonymous rate limit.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          default: true
+          buildtargets: esp32s3
+          ldproxy: true
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: firmware/esp32
+      # ESP-IDF and its tools (about 1 GB) are downloaded into .embuild on the
+      # first build; caching them saves most of the job's time.
+      - uses: actions/cache@v6
+        with:
+          path: firmware/esp32/.embuild
+          key: embuild-${{ hashFiles('firmware/esp32/.cargo/config.toml', 'firmware/esp32/Cargo.lock') }}
+          restore-keys: embuild-
+      - run: cargo build --release --locked
+
+  client:
+    name: Flutter client (analyze and test)
+    needs: changes
+    if: needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/client
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: apps/client/pubspec.yaml
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze --fatal-infos
+      - run: flutter test
+
+  client-build:
+    name: Flutter client (release build, ${{ matrix.target }})
+    needs: [changes, client]
+    if: needs.changes.outputs.client == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: apk, os: ubuntu-latest }
+          - { target: ios, os: macos-latest, args: --no-codesign }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: apps/client
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        if: matrix.target == 'apk'
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: apps/client/pubspec.yaml
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      # Same flags as the release workflow, so a green CI means the release
+      # build works too.
+      - run: flutter build ${{ matrix.target }} --release --obfuscate --split-debug-info=build/symbols ${{ matrix.args }}
+
+  web:
+    name: Web frontends (stage renderer, desktop UI)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Installs the pnpm version pinned by "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run typecheck
+      - run: pnpm -r run test
+      - run: pnpm -r run build
+
+  desktop:
+    name: Desktop app bundle (${{ matrix.os }})
+    needs: [changes, web]
+    if: needs.changes.outputs.desktop == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux system libraries (WebKitGTK and friends for Tauri)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The same command the release workflow runs, so a green CI means the
+      # installers can be built.
+      - name: Build installers
+        working-directory: apps/desktop
+        run: pnpm tauri build
+
+  proto:
+    name: Protocol
+    needs: changes
+    if: needs.changes.outputs.proto == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      # Lint and format always; on pull requests also reject wire-incompatible
+      # changes against the base branch (`buf breaking`). That check fails
+      # when the base has no .proto files yet and blocks intentional breaks;
+      # in either case add the PR label `buf skip breaking`, which the action
+      # honors by default. Nothing is pushed to the Buf Schema Registry.
+      - uses: bufbuild/buf-action@v1
+        with:
+          lint: true
+          format: true
+          push: false
+          archive: false
+
+  docker:
+    name: Container images
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    # Same runner as the release builds: binaries linked against Ubuntu 22.04's
+    # glibc 2.35 run on the image's Debian 12 (glibc 2.36); newer runners would
+    # link against a glibc the image does not have.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+      - name: Build service binaries
+        run: |
+          cargo build --release --locked -p nl-node -p nl-gateway
+          mkdir -p dist/linux-amd64
+          cp target/release/nl-node target/release/nl-gateway dist/linux-amd64/
+      - uses: docker/setup-buildx-action@v4
+      - name: Build images
+        run: |
+          for svc in node gateway; do
+            docker buildx build --load --platform linux/amd64 \
+              -f "docker/nl-$svc.Dockerfile" -t "nl-$svc:ci" .
+          done
+      - name: Smoke-test images
+        run: |
+          for pair in node:7870 gateway:7880; do
+            svc="${pair%%:*}" port="${pair##*:}"
+            docker run -d --name "nl-$svc" -p "$port:$port" "nl-$svc:ci"
+            # Poll until the service answers or ten seconds pass.
+            for _ in $(seq 20); do
+              curl -fsS "http://127.0.0.1:$port/healthz" && break
+              sleep 0.5
+            done
+            curl -fsS "http://127.0.0.1:$port/healthz" | grep -q '"status":"ok"'
+            docker rm -f "nl-$svc"
+          done
+
+  # Single required check for the main branch ruleset: fails if any job above
+  # failed or was cancelled, passes when jobs were skipped because nothing
+  # changed. `changes` must be listed too: when it fails, every job gated on
+  # its outputs is skipped rather than failed, and only its own result shows
+  # that nothing was checked.
+  ci-ok:
+    name: CI OK
+    if: always()
+    needs: [changes, workflows, version, rust, firmware, client, client-build, web, desktop, proto, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              exit 1
+            fi
+          done

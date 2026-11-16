@@ -1,6 +1,6 @@
 ---
 name: client-stack-decision
-description: Recall before changing or questioning the mobile or desktop client stack (Flutter, Tauri, React Native, native, desktop pet process).
+description: Recall before changing or questioning the mobile or desktop client stack (Flutter, Tauri, React Native, native, Flutter desktop, desktop pet).
 metadata:
   type: project
   scope: Mobile and desktop clients, including the desktop pet
@@ -8,17 +8,18 @@ metadata:
   last_verified: 2026-11-15
 ---
 
-Mobile is Flutter with the Rust core bridged by flutter_rust_bridge v2. Desktop is three processes: an `nl-node` daemon, a Flutter main app that shares UI code with mobile, and a separate Rust desktop pet process built on tao + wry with a transparent webview. The layout itself is described in [docs/architecture.md](../../docs/architecture.md); this entry keeps what was rejected and why.
+Mobile is Flutter (apps/client, Android and iOS only) with the Rust core bridged by flutter_rust_bridge v2. Desktop is one Tauri 2 app (apps/desktop): a main window and a transparent desktop pet window, with nl-node to be embedded in the Tauri backend. Both render the character through web/stage. The layout is described in [docs/architecture.md](../../docs/architecture.md); this entry keeps what was rejected and why.
 
 **Why:**
 - React Native was rejected because the user observed agents stalling for a long time on its environment setup (see [[tech-choice-criteria]]).
 - Tauri mobile was rejected because push (FCM/APNs) had no plugin, and BLE and background services had only community plugins, the background one not surviving app close on iOS.
-- Pure native Kotlin + Swift was considered and lost to Flutter on custom, brand-styled UI rendered identically on both platforms and on golden tests that run headless on Linux. Native wins only on system styling such as iOS 26 Liquid Glass, which a companion app does not need.
-- A Flutter-only desktop was rejected: its multi-window API was experimental and main-channel only (Flutter 3.44 to the 3.50 beta), it had no native per-pixel click-through, and on Windows and Linux an embedded webview floats above Flutter widgets, which breaks a webview-rendered avatar.
-- A pure winit + wgpu pet was rejected for now: wgpu's default DX12 HWND swapchain is opaque, so transparency needs a DirectComposition path plus redirection-bitmap workarounds, and no mature Rust avatar renderer exists (inox2d-wgpu is a prototype).
+- Pure native Kotlin + Swift lost to Flutter on custom, brand-styled UI rendered identically on both platforms and on golden tests that run headless on Linux.
+- Flutter desktop was rejected for the main app: its multi-window API was experimental and main-channel only (Flutter 3.44 to the 3.50 beta), it had no native click-through, and on Windows and Linux an embedded webview floats above Flutter widgets, which breaks showing the webview-rendered character inside the main window. Tauri also keeps the Rust core in-process and has official tray, autostart, global-shortcut, and updater plugins.
+- An intermediate design (Flutter main app + nl-node daemon + separate tao/wry pet process) was briefly scaffolded and replaced on 2026-11-15 when the user asked which framework is best for the whole desktop. The user's earlier "split the pet out" meant only isolating the pet from Flutter's limits, not choosing Flutter for the desktop main app.
+- Two UI codebases (Flutter mobile, web desktop) were accepted because human maintenance cost is not a core factor here ([[tech-choice-criteria]]).
 
-**How to apply:** Keep the pet renderer behind an interface so a native wgpu renderer can replace the webview later. Do not move the pet into the Flutter app or add Flutter desktop windows for it.
+**How to apply:** Keep desktop UI in apps/desktop (TypeScript) and mobile UI in apps/client (Flutter); share visuals through web/stage and a common design-token source rather than by merging the apps. Do not re-add Flutter desktop platforms to apps/client. The pet can become a separate process later if its memory footprint matters, but start from a Tauri window.
 
-**Evidence:** User decisions in conversation, 2026-11-15; web research the same day on Flutter 3.44 release notes, flutter/flutter#170310, tauri-plugin-blec, tauri-background-service, wgpu#3486, and inox2d-wgpu on crates.io.
+**Evidence:** User decisions in conversation, 2026-11-15; web research the same day (Flutter 3.44 release notes, flutter/flutter#170310, tauri-plugin-blec, tauri-background-service); Tauri 2.12.5 pet window verified by hand on Windows 10 the same day (transparent background, drag, double-click close).
 
-**Recheck when:** Flutter ships stable multi-window and click-through; a Rust Live2D or VRM renderer matures; webview memory in the pet becomes a user complaint; or agents stall on Flutter's iOS toolchain (an open check in [TODO.md](../TODO.md)).
+**Recheck when:** Flutter ships stable multi-window and fixes webview layering on desktop; Tauri 3 leaves alpha; or agents stall on Flutter's iOS toolchain (an open check in [TODO.md](../TODO.md)).

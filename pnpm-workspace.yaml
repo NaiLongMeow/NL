@@ -1,0 +1,5 @@
+# JavaScript/TypeScript packages of NL: the avatar stage renderer and the
+# desktop app frontend.
+packages:
+  - "web/*"
+  - "apps/desktop"

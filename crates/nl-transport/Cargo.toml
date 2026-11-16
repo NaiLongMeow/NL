@@ -1,0 +1,12 @@
+[package]
+name = "nl-transport"
+description = "Connection establishment for NL nodes: try direct routes first, relay last"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+tokio.workspace = true

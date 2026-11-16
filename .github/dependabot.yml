@@ -1,0 +1,29 @@
+# Weekly dependency updates, grouped per ecosystem so each week brings at most a
+# few pull requests. Each one must pass CI like any other change.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      cargo: { patterns: ["*"] }
+  - package-ecosystem: cargo
+    directory: /firmware/esp32
+    schedule: { interval: weekly }
+    groups:
+      firmware: { patterns: ["*"] }
+  - package-ecosystem: pub
+    directory: /apps/client
+    schedule: { interval: weekly }
+    groups:
+      pub: { patterns: ["*"] }
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      npm: { patterns: ["*"] }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }

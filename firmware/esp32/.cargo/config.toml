@@ -1,0 +1,21 @@
+[build]
+target = "xtensa-esp32s3-espidf"
+
+[target.'cfg(target_os = "espidf")']
+# ldproxy forwards linking to the ESP-IDF linker that embuild discovers.
+linker = "ldproxy"
+# `cargo run` flashes the board over USB and opens the serial monitor.
+runner = "espflash flash --monitor"
+rustflags = ["--cfg", "espidf_time64"]
+
+[unstable]
+# The ESP-IDF targets have no prebuilt std, so it is compiled from source.
+build-std = ["std", "panic_abort"]
+
+[env]
+MCU = "esp32s3"
+# ESP-IDF release that embuild downloads and builds against.
+ESP_IDF_VERSION = "v5.5.5"
+# Keep ESP-IDF inside this directory (.embuild/, gitignored) so builds do not
+# depend on or disturb a system-wide installation.
+ESP_IDF_TOOLS_INSTALL_DIR = "workspace"
