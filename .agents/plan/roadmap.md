@@ -65,7 +65,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
   - Gateway pages: sign-in, and the account, nodes, keys, and usage screens, wherever the note places them (in the apps, in a web console, or both).
   - Device faces: how the cue set looks on a small screen and on LEDs.
 - One design language from a single token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from ([client-stack-decision](../memory/client-stack-decision.md)).
-- The cue vocabulary (P8) and an original placeholder character with its low-fidelity rendition (product rule 9).
+- The cue vocabulary (P8) and a placeholder rendition of the default character: 大肥鱼 once its art is licensed for the project, a neutral placeholder until then (product rule 9).
 - Every screen implemented as a shell. A screen reads from and acts on an interface with a fake behind it (E2), so that a later stage replaces the fake with the real harness or gateway call without rewriting the screen. Screens are localizable from the start (product rule 10) and have tests that run headless.
 - The needs list: what the screens require from the harness and the gateway. It feeds the design notes of the following stages.
 
@@ -170,9 +170,10 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** The character has an identity the user can change: persona, voice, and look.
 
 **Build:**
-- Character packs: persona, voice settings, and the mandatory low-fidelity rendition, imported through the validation in `nl-assets` and fetched by every node of the account (T8).
+- The avatar formats, chosen with the user when this stage starts (P8).
+- Character packs: persona, voice settings, and avatar renditions in those formats, imported through the validation in `nl-assets` and fetched by every node of the account (T8).
 - Packs shape personality, not safety (product rule 7): the base instructions stay ahead of the persona in the prompt.
-- Richer renditions behind the cue interface (P8): an open 3D format first, then Live2D through runtime packs.
+- Renditions sit behind the cue interface (P8). Live2D, if chosen, comes only through runtime packs ([live2d-asset-packs](../memory/live2d-asset-packs.md)).
 - The character and packs screens wired.
 
 **Exit:**
@@ -188,7 +189,7 @@ This stage depends only on Stage 3. It can run beside Stages 4 and 5.
 
 **Build:**
 - The harness core inside the Flutter app (P2). The phone screens from Stage 1 wired: sign-in and enrollment, chat, the avatar through `web/stage`, memory, settings.
-- The gateway's push role. A push is a wake-up and its payload carries no conversation text, because it passes through Apple's or Google's servers. One delivery path must work without Google services (E6).
+- The gateway's push role. A push is a wake-up and its payload carries no conversation text, because it passes through Apple's or Google's servers. Push providers are pluggable, and the operator chooses which a deployment uses (E6).
 - Living with a platform that kills background work: long work is handed to a remote node as a task (S8), and a session cut off by the system is compacted by the gateway (S5).
 
 **Gate:** the spike "mobile toolchain" passes, and the user has the developer accounts the platforms require.
@@ -277,7 +278,7 @@ The device gains shared memory when Stage 4 is done and remote capabilities when
 | Trust design | A design, not code: how people sign in; how a desktop, a phone, a server, and a device enroll and are revoked; what each credential allows; how keys are stored in the vault; how accounts are sealed (T1 to T4, S6) | Stage 2 | The user approves the note. The strongest model available writes it; get an outside review if one can be had | Stage 2 does not start without it |
 | Provider cache | How DeepSeek's prefix cache behaves through the proxy: minimum length, lifetime, scope per key, and whether a fork (the parent's prompt plus one message) hits it | Stage 3 | Measured cache hits for a growing session and for a fork, and a rule for which upstream key a session uses | Revise M2 and M4 with the user before building on them |
 | Mobile toolchain | Can agents set up and build the Flutter iOS and Android toolchains with the Rust core without stalling ([client-stack-decision](../memory/client-stack-decision.md))? | Stage 7 | A minimal app with the harness core builds for both platforms from the command line in CI | Revisit the mobile stack with the user |
-| Transport | Which library carries direct connections between nodes with NAT traversal: iroh first, WebRTC (str0m or webrtc-rs) second | Stage 8 | It needs no third-party infrastructure (E6); it builds and connects on Android and iOS; it works on a mainland China network; the binary size is acceptable | Remote calls stay on the gateway |
+| Transport | Which library carries direct connections between nodes with NAT traversal: iroh first, WebRTC (str0m or webrtc-rs) second | Stage 8 | It needs no third-party infrastructure (E6); it builds and connects on Android and iOS; the binary size is acceptable | Remote calls stay on the gateway |
 | Voice latency | Does a streaming chain of recognition, model, and synthesis meet the round-trip budget with DeepSeek's APIs? | Start of V1 | The budget is met | Fix end-of-speech detection first; then consider another speech provider or a speech-to-speech backend |
 | Device harness | Can the harness core, an encrypted connection to the gateway, streaming JSON, and audio (wake word and echo cancellation through ESP-SR, a codec) run together on the chosen board inside the device budgets? | Start of V2 | Thirty minutes of voice conversation without a reset; the wake word triggers reliably; the memory budget holds | Keep ESP-SR and the codec in a small C component behind a handful of functions called from Rust; hand more work to remote nodes as tasks (S8). If Rust itself is the obstacle, write the device shell in C or C++ around the same contracts, which P1 makes legitimate |
 
@@ -311,21 +312,24 @@ These numbers are starting targets set without measurement. Replace each with a 
 | The review queue outgrows one maintainer | Large or mixed pull requests | Small slices, strong CI, pattern-following, design notes up front |
 | A key library is abandoned (the Rust-Flutter bridge, Tauri, the transport, the esp-idf crates) | No releases for a year, or it breaks with a new toolchain | E1 and P1 keep the logic independent; replace the shell around it |
 | Phones resist: background limits, push without Google services, store rules, signing costs | The spike "mobile toolchain" stalls | The desktop does not depend on the phone |
-| A dependency or service is unreachable from mainland China | A feature works with only one region's service | E6: make the endpoint configurable or choose another |
+| A deployment cannot use a service NL hard-wired | A feature works with only one provider or one region's service | E6: make the endpoint configurable |
 | The harness does not fit on the device, or voice feels slow | A voice-track spike misses its pass criteria | Take that spike's fallback; the main line is unaffected |
-| Legal exposure | Plans for a public gateway; assets that resemble an existing character | Product rules 4 to 6 and 9; check the law before operating anything public |
+| Legal exposure | A gateway opened to the public; assets shipped without a license | Product rules 4 to 6 and 9; the operator checks the law before opening a gateway to the public |
 
-## Decisions waiting for the user
+## Decisions
 
-The default applies until the user says otherwise.
+Settled by the user on 2026-11-16:
 
-1. **Who runs gateways.** The gateway is required, so every user needs one to sign in to: their own, or one somebody runs for them. Default: the project ships the software and runs no public gateway. A public companion service in China falls under CAC Order No. 21 (see product-direction, "Legal context").
-2. **Avatar baseline (P8).** Default: every pack carries a low-fidelity sprite rendition; an open 3D format and Live2D are optional extras. docs/architecture.md names VRM as the candidate default; VRM describes humanoid 3D models, which suits neither a mascot-shaped character nor a small device screen.
-3. **Mainland China reachability as a hard requirement (E6).** Inferred from the maintainer's environment, not stated by the user.
-4. **The default character.** Who creates the original art and voice, and whether the project name's allusion to 奶龙 should stay (product rule 9).
-5. **Language of docs/.** Default: design notes in English only; docs/architecture.md gets an English version as the canonical one with a zh-CN translation, like the other human docs ([docs-languages](../memory/docs-languages.md)).
+- **Who runs gateways:** whoever deploys one runs it and carries its duties. The project ships the software.
+- **Networks and services:** the operator decides. NL keeps every endpoint configurable (E6).
+- **Name and default character:** the project is named NL, and the default character is 大肥鱼, the mascot of the ds community (product rule 9).
+- **Language of docs/:** no requirement. New files under docs/ are written in English because agents read them ([docs-languages](../memory/docs-languages.md)).
 
-The open points listed in [distributed-design](../memory/distributed-design.md) are the agent's assumptions about the distributed core; the design notes of Stages 3 and 4 settle them with the user.
+Still open:
+
+1. **Avatar formats.** Decided with the user when Stage 6 starts (P8).
+2. **The license for 大肥鱼.** Who owns its art and voice, and under what license NL may ship them (product rule 9). Stage 1 uses a neutral placeholder until this is answered.
+3. **The open points in [distributed-design](../memory/distributed-design.md).** They are the agent's assumptions about the distributed core, and the design notes of Stages 3 and 4 settle them with the user.
 
 ## Parked ideas
 

@@ -25,7 +25,7 @@ Earlier wins.
 
 1. The companion experience: continuity, memory, quick reactions, a consistent personality.
 2. The user's ownership of their data: sealed accounts, export, deletion, self-hosting.
-3. Working on modest hardware and ordinary networks: an ESP32-S3, a small rented server, home NAT, networks inside and outside mainland China.
+3. Working on modest hardware and ordinary networks: an ESP32-S3, a small rented server, home NAT.
 4. Replaceable parts over shortcuts between parts.
 5. Toolchains an agent can drive from a command line ([[tech-choice-criteria]]).
 
@@ -42,7 +42,7 @@ Do not build these, even when a task seems to invite it. Lifting one is a decisi
 - Synchronizing transcripts or merging divergent histories. A session's JSONL stays on its node; continuity comes from memory and compacts.
 - Hiding data from the gateway. The gateway is trusted; end-to-end encryption against it is not a requirement.
 - A whole interactive session hosted on a remote node. Remote tool calls and tasks are enough.
-- Operator features for a public service: billing, content-moderation tooling, growth mechanics. One gateway serves many accounts, and every user needs a gateway to sign in to, their own or one somebody runs for them. Whether the project itself runs a public gateway is the user's decision and brings legal duties (see "Legal context").
+- Operator features for a public service: billing, content-moderation tooling, growth mechanics. One gateway serves many accounts, and every user needs a gateway to sign in to. Whoever deploys a gateway runs it and carries its duties (see "Legal context"); the project ships the software.
 - A marketplace or registry for characters, skills, or plugins, until a security model for third-party content exists.
 - Mesh routing, in which one node forwards traffic for another.
 - Supporting every board, provider, or avatar format. One reference path that works beats five that half work.
@@ -84,7 +84,7 @@ These describe how the character treats the user, whatever the implementation. T
 6. **Care in a crisis.** When the user signals self-harm or acute distress, the character responds with care and points to real help. This belongs to the harness's base instructions.
 7. **Packs shape personality, not safety.** A character pack cannot override rules 4 to 6 or any policy check in [[architecture-invariants]]. Pack text is content, not authority.
 8. **An honest microphone.** Audio leaves a device only after a local wake word, a button press, or an explicitly opened session, and the device shows that it is listening.
-9. **Original, licensed content only.** The default character, its art, and its voice are original work under an open license and suitable for all ages. No third-party characters, voices, or proprietary runtimes enter the repository ([[live2d-asset-packs]]). The project's name alludes to an existing commercial cartoon character (奶龙) whose rights holder enforces its copyright; nothing NL ships may imitate that character's look, name, or voice.
+9. **Licensed content only.** The project is named NL, and its default character is 大肥鱼, the mascot of the ds community (user decision, 2026-11-16). Art and voice for it enter the repository or a pack only under a license from their owner that allows redistribution, recorded beside the asset, and what the project ships is suitable for all ages. No other third-party characters, voices, or proprietary runtimes enter the repository ([[live2d-asset-packs]]). Nothing NL ships imitates 奶龙, a commercial cartoon character whose rights holder enforces its copyright.
 10. **Two languages from the first screen.** User-facing text is localizable, and English and Simplified Chinese are maintained together. Prompts are a separate matter: they are always English (M1).
 
 ## Legal context
@@ -97,6 +97,6 @@ NL is software, not such a service. Product rules 4 to 6 keep the product on the
 
 **How to apply:** Before proposing or building a feature, check which differentiator it serves and whether it touches a non-goal; if it touches one, stop and ask the user. When two designs both work, choose by the priority order. A feature that breaks a product rule is not done.
 
-**Evidence:** The core purpose in AGENTS.md and the principles in docs/architecture.md (user decisions, 2026-11-15). On 2026-11-16 the user said that nothing has been built yet, that they want long-term constraints and direction rather than a detailed technical design, and that cheaper models will do the implementation; the priorities and most product rules were set by the agent in that session under that delegation, and the user may overrule any of them. The same day the user decided, in discussion, the points the vocabulary and non-goals reflect: one account is one user and one character, the gateway is the trusted login system, every node runs the harness, sessions are separate while memory is shared, and continuity comes from memory and compacts. Legal text: https://www.cac.gov.cn/2026-04/10/c_1777558395078289.htm, read 2026-11-16. Copyright enforcement over 奶龙: court cases reported at http://js.news.cn/20240516/c9f8fb6b11174d4ea8197921dde754f0/c.html and https://www.thepaper.cn/newsDetail_forward_27181619, read 2026-11-16.
+**Evidence:** The core purpose in AGENTS.md and the principles in docs/architecture.md (user decisions, 2026-11-15). On 2026-11-16 the user said that nothing has been built yet, that they want long-term constraints and direction rather than a detailed technical design, and that cheaper models will do the implementation; the priorities and most product rules were set by the agent in that session under that delegation, and the user may overrule any of them. The same day the user decided, in discussion, the points the vocabulary and non-goals reflect: one account is one user and one character, the gateway is the trusted login system, every node runs the harness, sessions are separate while memory is shared, and continuity comes from memory and compacts. The user also decided that whoever deploys a gateway runs it, that the project's name is NL, and that the default character is 大肥鱼. Legal text: https://www.cac.gov.cn/2026-04/10/c_1777558395078289.htm, read 2026-11-16. Copyright enforcement over 奶龙: court cases reported at http://js.news.cn/20240516/c9f8fb6b11174d4ea8197921dde754f0/c.html and https://www.thepaper.cn/newsDetail_forward_27181619, read 2026-11-16.
 
-**Recheck when:** The user changes the project's purpose or lifts a non-goal, the project decides to operate a public gateway, or the legal rules for companion AI change.
+**Recheck when:** The user changes the project's purpose or lifts a non-goal, the license for the default character is settled, or the legal rules for companion AI change.
