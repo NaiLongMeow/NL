@@ -1,5 +1,6 @@
 - [Product direction](memory/product-direction.md) -- read before proposing or prioritizing any feature: what NL is for, what wins in a conflict, non-goals, vocabulary, product rules
-- [Architecture invariants](memory/architecture-invariants.md) -- read before designing or reviewing any change: the P/S/T/E rules that hold in every stage, and the decisions reserved for the user
+- [Architecture invariants](memory/architecture-invariants.md) -- read before designing or reviewing any change: the P/S/M/T/E rules that hold in every stage, and the decisions reserved for the user
+- [Distributed design](memory/distributed-design.md) -- the core feature: sessions are local, memory and compacts are shared files behind the gateway, forks hit the cache, weak nodes borrow from remote ones; also what was rejected
 - [DeepSeek reference provider](memory/deepseek-reference-provider.md) -- NL is built for the DeepSeek API first (main model, search, fetch, speech); unverified, read its docs before coding
 - [Reference designs](memory/reference-designs.md) -- learn the gateway from sub2api and the harness from other harnesses, but write everything in Rust
 - [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost

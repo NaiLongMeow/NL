@@ -1,6 +1,6 @@
 - Project name: NL (NaiLongMeow)
 - Core purpose: An open-source distributed agent harness for IoT devices that is programmable but optimized for companionship and entertainment, with lightweight parts running on microcontrollers such as the ESP32, heavyweight parts on powerful cloud servers, and every end able to coordinate with and borrow storage or compute from the others.
-- Direction: Before designing or building a feature, read .agents/memory/product-direction.md (what NL is for and what it does not do), .agents/memory/architecture-invariants.md (the rules that hold in every stage and the decisions reserved for the user), and the current stage in .agents/plan/roadmap.md. Work outside the current stage needs the user's agreement.
+- Direction: Before designing or building a feature, read .agents/memory/product-direction.md (what NL is for and what it does not do), .agents/memory/architecture-invariants.md (the rules that hold in every stage and the decisions reserved for the user), .agents/memory/distributed-design.md (how sessions, memory, and compacts work across nodes), and the current stage in .agents/plan/roadmap.md. Work outside the current stage needs the user's agreement.
 
 # doing_tasks
 
