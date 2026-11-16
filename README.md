@@ -2,13 +2,34 @@
 
 English | [简体中文](README.zh-CN.md)
 
-NL is an open-source distributed agent harness for IoT and companionship: one character can live on your desktop, your phone, and devices such as the ESP32 at the same time, sharing memory, storage, and compute across them. Lightweight parts run on microcontrollers; heavyweight parts run on cloud servers.
+> *But if the while I think on thee, dear friend,*\
+> *All losses are restored and sorrows end.*
+>
+> — William Shakespeare, Sonnet 30
 
-> Status: early development. So far there are only project skeletons for each part, CI, and the release pipeline; nothing is usable yet.
+NL (NaiLongMeow) is an open-source, distributed agent harness built for companionship. One character lives across your desk, your phone, and the small devices around your home, an ESP32 on the bookshelf for instance, and remembers you on every one of them. It is programmable, but company and play come first.
 
-Design and technology choices are described in [docs/architecture.md](docs/architecture.md) (in Chinese).
+**Status:** early days. Great oaks from little acorns grow, and this one is still an acorn: the repository holds project skeletons for every part, CI, and a release pipeline, but nothing is usable yet.
+
+## Design at a glance
+
+> *To strive, to seek, to find, and not to yield.*
+>
+> — Alfred, Lord Tennyson, "Ulysses"
+
+These decisions are settled, though most are not implemented yet. [docs/architecture.md](docs/architecture.md) (in Chinese) gives the full reasoning.
+
+- **One character, many bodies.** Desktop, mobile, and microcontroller speak the same protocol and declare what they can do, so any part can be replaced or rewritten on its own.
+- **Light where it must be, heavy where it can be.** Small is beautiful: an ESP32 only senses, acts, and handles audio, while LLM inference, speech recognition and synthesis, long-term memory, and sub-agents run on stronger nodes. Desktop and cloud run the same `nl-node` and divide the work by declared capability, not by device type.
+- **Direct first, relay last.** Two nodes try the local network, then a public address, port mapping, and hole punching, and fall back to the gateway's relay only when every direct route has failed. Microcontrollers try just the local network and the relay.
+- **Private by default.** Traffic between nodes is end-to-end encrypted, so even a relaying gateway cannot read the conversation. API keys stay in the gateway and never reach a device.
+- **Characters as asset packs.** Character models ship as separate, verified asset packs. Live2D, whose runtime is proprietary, never enters this repository.
 
 ## Repository layout
+
+> *A place for everything, and everything in its place.*
+>
+> — English proverb
 
 | Directory | Contents | Technology |
 |---|---|---|
@@ -27,6 +48,10 @@ Design and technology choices are described in [docs/architecture.md](docs/archi
 
 ## Development setup
 
+> *Dimidium facti qui coepit habet.* He who has begun is half done.
+>
+> — Horace, *Epistles* I.2
+
 | Part | Requirements | Common commands (in that directory) |
 |---|---|---|
 | Rust workspace | rustup (the version in `rust-toolchain.toml` installs automatically); on Linux also `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `libxdo-dev`, `libssl-dev` | `cargo test --workspace`, `cargo clippy --workspace --all-targets` |
@@ -44,9 +69,19 @@ Notes on building the firmware:
 
 ## Contributing
 
-Contributions are welcome. Please read the [contributing guide](CONTRIBUTING.md) before sending a change, and follow the [Code of Conduct](CODE_OF_CONDUCT.md) in the community. Report security vulnerabilities privately as described in the [security policy](SECURITY.md), not in public issues.
+> *No man is an island, entire of itself; every man is a piece of the continent, a part of the main.*
+>
+> — John Donne, *Devotions upon Emergent Occasions*, Meditation XVII
+
+Every change reaches `main` through a pull request and becomes, in Donne's words, a part of the main. Please read the [contributing guide](CONTRIBUTING.md) before sending one, and follow the [Code of Conduct](CODE_OF_CONDUCT.md) wherever the community meets. Report security vulnerabilities privately as described in the [security policy](SECURITY.md), never in public issues.
 
 ## Releasing
+
+> *Ripeness is all.*
+>
+> — William Shakespeare, *King Lear*
+
+A release goes out when it is ripe: the versions agree and CI is green. The rest is automated.
 
 1. In one pull request, change the version in all of these files to the same new version (`tooling/check-version.sh` checks that they match):
    - `Cargo.toml` (`[workspace.package]`)
@@ -69,4 +104,8 @@ Signing is not set up yet: Android release builds are signed with the debug key,
 
 ## License
 
-[Apache-2.0](LICENSE). Unless you state otherwise, your contributions are licensed under Apache-2.0 as well; see the [contributing guide](CONTRIBUTING.md#license).
+> *He who receives an idea from me, receives instruction himself without lessening mine; as he who lights his taper at mine, receives light without darkening me.*
+>
+> — Thomas Jefferson, letter to Isaac McPherson, 1813
+
+NL is released under the [Apache License 2.0](LICENSE). Unless you state otherwise, your contributions are licensed under Apache-2.0 as well; see the [contributing guide](CONTRIBUTING.md#license).
