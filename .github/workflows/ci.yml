@@ -318,12 +318,15 @@ jobs:
             docker rm -f "nl-$svc"
           done
 
-  # Single required check for branch protection: fails if any job above failed
-  # or was cancelled, passes when jobs were skipped because nothing changed.
+  # Single required check for the main branch ruleset: fails if any job above
+  # failed or was cancelled, passes when jobs were skipped because nothing
+  # changed. `changes` must be listed too: when it fails, every job gated on
+  # its outputs is skipped rather than failed, and only its own result shows
+  # that nothing was checked.
   ci-ok:
     name: CI OK
     if: always()
-    needs: [workflows, version, rust, firmware, client, client-build, web, desktop, proto, docker]
+    needs: [changes, workflows, version, rust, firmware, client, client-build, web, desktop, proto, docker]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
