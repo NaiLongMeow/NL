@@ -6,7 +6,7 @@ Open items from the architecture design in [docs/architecture.md](../docs/archit
 - [ ] Evaluate iroh against WebRTC (str0m or webrtc-rs with coturn) for node-to-node transport.
 - [ ] Build a minimal Flutter demo to check that agents can set up and build the iOS toolchain without stalling ([client-stack-decision](memory/client-stack-decision.md) depends on it).
 - [ ] Settle the Live2D Expandable Application license terms before shipping Live2D support.
-- [ ] Enable branch protection on main in GitHub: require pull requests and the `CI OK` check from .github/workflows/ci.yml. AGENTS.md states the rule but nothing enforces it yet.
+- [ ] Decide with the maintainers whether to add the `CI OK` check from .github/workflows/ci.yml as a required status check on main. Main is already guarded by two repository rulesets (not classic branch protection, so `branches/main/protection` returns 404): `protect-main` blocks deletion and force pushes with no bypass, and `require-pr-for-contributors` requires a pull request with one approval, bypassed only by the repository admin role. Neither requires CI to pass.
 - [ ] Configure an Android release keystore (release builds are signed with the debug key) and decide how iOS builds are signed and published (CI only checks that iOS compiles).
 - [ ] Verify the desktop pet window's transparency, dragging, and double-click close on macOS and Linux. Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked (Ubuntu 24.04 under Xvfb, no compositor, so transparency could not be judged). Then implement per-pixel click-through.
 - [ ] Embed nl-node in the Tauri backend of apps/desktop and add tray and autostart (official Tauri plugins).
