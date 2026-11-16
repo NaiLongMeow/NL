@@ -1,0 +1,85 @@
+---
+name: architecture-invariants
+description: Recall before designing, implementing, or reviewing any change to the protocol, node, gateway, firmware, clients, storage, or security. Lists the rules that hold in every roadmap stage and the decisions an implementer must not take alone.
+metadata:
+  type: project
+  scope: All code and design in the repository, in every roadmap stage
+  status: active
+  last_verified: 2026-11-16
+---
+
+These rules hold in every stage of [the roadmap](../plan/roadmap.md). A change that breaks one is wrong even if it works and its tests pass. If a task cannot be done without breaking one, stop and ask the user. Cite rules by id ("S1", "T3") in design notes, pull requests, and reviews. Host, body, cue, and the other terms are defined in [[product-direction]].
+
+## Protocol
+
+- **P1 Protocol first.** Ends meet only through the messages under `proto/` and the capabilities they declare. A feature that involves two ends starts with the protocol change and its tests. The shared Rust crates are a convenience for our own ends, not the contract. *Why:* any end must stay replaceable, including by other people's firmware in another language.
+- **P2 No side channels.** A body does everything through the session protocol. This includes the desktop windows talking to the node embedded in the same process: Tauri IPC or an in-memory pipe may carry protocol frames, but must not expose private commands into node internals. Shell concerns that are not node functions (windows, tray, autostart, file dialogs) are exempt. *Why:* whatever the desktop gets through a shortcut, the phone and the ESP32 will lack.
+- **P3 Capabilities, not device types.** Work is routed by declared capability. Code never asks whether a peer is an ESP32, a phone, or a desktop. A weaker body is handled the same way: a device without echo cancellation declares that, and the host adapts the turn-taking. *Why:* new kinds of bodies must fit without touching routing.
+- **P4 Additive evolution.** Never change or reuse a field number, and never change a field's type or meaning. Add fields, mark removed ones `reserved`, and make receivers ignore unknown fields and unknown enum values. Until the roadmap declares the protocol frozen, a breaking change is allowed only as a deliberate decision in its own pull request with the `buf skip breaking` label, never as a side effect of other work.
+- **P5 The lifeline never breaks.** From the first release that ships firmware, everything an old device needs to fetch an update (connect, authenticate, say hello, receive firmware) stays backward compatible for good. Outside the lifeline, a node may refuse an incompatible peer, cleanly and with a clear error. *Why:* a device left in a drawer for a year must still be updatable.
+- **P6 Sized for the smallest end.** Every message a constrained node must handle has explicit bounds on length, count, and rate. Large content moves in chunks with flow control, and media frames use a compact framing rather than rich messages. A microcontroller implements a defined subset, the constrained profile, and no node may require more of it.
+- **P7 Streamable and cancellable.** Replies stream. Every long operation can be cancelled. The user interrupting (starting to talk, pressing stop) is a normal protocol event, not an error path.
+- **P8 Cues are semantic.** The host sends what the character expresses (an emotion, listening, thinking, speaking, a gesture), never renderer commands such as a motion file name or a servo angle. Each body maps cues to what it has: sprites, a 3D model, LEDs, a servo. Every character pack includes a low-fidelity rendition (a still image and a few expression frames) that the smallest screen can show. Richer renditions (a 3D model, Live2D through runtime packs) are optional.
+
+## State
+
+- **S1 One host per character.** Exactly one node owns a character's state (event log, memory, relationship state) and runs its loop. Other nodes are bodies, capability providers, or stores of encrypted copies. Moving a character to another host is an explicit handover that raises a host epoch, and bodies refuse a host with an older epoch. *Why:* a companion whose memory forks is worse than one that is briefly unavailable.
+- **S2 The log is the truth; indexes are derived.** The canonical record is an append-only event log plus human-readable memory items that point back to the events they came from. Search indexes, embeddings, and retrieval summaries can always be rebuilt from it. *Why:* models and embedding schemes will change many times, and the user's history must outlive them.
+- **S3 Copies off the host are ciphertext.** When character state is copied to another node or the gateway (backup, borrowed storage), it is encrypted with keys held by the home, so that destroying the key destroys the copy. Public asset packs are not secret and are exempt.
+- **S4 Bodies are disposable.** A body keeps caches and its own credentials, and nothing else that matters. Losing, resetting, or replacing a body loses no memory. A phone is a body and never a host.
+- **S5 Room to grow in every record.** Stored records and protocol messages carry home, character, and person identifiers from the start, even while NL supports one of each. *Why:* adding identity to existing data is the most expensive migration there is.
+- **S6 Data formats are promises.** Once a release has written user data (event log, memory, packs, configuration), every later release reads it or migrates it automatically, and the migration has a test. Never ask the user to start over, and never drop data silently. The user can always export and delete their data, and deletion removes it from every index and copy.
+- **S7 Every end is useful with what is there.** The desktop app works alone. A desktop or home server plus an ESP32 on one LAN works without a gateway. The gateway adds remote reach, relay, accounts, a shared vault, and push. A missing optional part degrades a feature with a clear message; it never breaks the product.
+
+## Trust and security
+
+- **T1 Trust tiers are fixed.** Docs and UI never claim more privacy than these tiers give.
+  - *Host:* sees everything, because it runs the character. It is a node the user chose to trust.
+  - *Body:* sees what it needs to present the character and holds least-privilege credentials. An ESP32's credential can open audio, cue, sensor, and update sessions with its home, and nothing else.
+  - *Relay* (a gateway role): sees ciphertext and routing metadata only.
+  - *Vault and model proxy* (a gateway role): holds API keys and, when it calls a model on a host's behalf, sees that request in transit. It never stores or logs the content.
+  - *External providers* (language model, speech recognition, speech synthesis): see what is sent to them. The user chooses them, and a local provider must remain possible.
+- **T2 The home's root of trust lives on the user's nodes.** Each node generates its own key pair, and the private key never leaves it. A node joins a home by pairing with a step a person can verify (a QR code, a short code, physical proximity), and the home can revoke it. The gateway can introduce nodes and carry their traffic, but cannot admit a node to a home or read a session. Sessions between nodes are mutually authenticated and end-to-end encrypted on every network route, LAN included. A same-machine attachment (the desktop windows, a command-line client) needs authentication under T5 but not encryption.
+- **T3 Keys stay in a vault.** API keys live only in a vault: the gateway's, or the local vault of a host the user runs (the operating system's credential store). A key can be submitted to a vault and used by it, and can never be read back through any interface. Keys never appear in the repository, logs, protocol messages to bodies, client storage, or crash reports.
+- **T4 No home-made cryptography.** Use established protocols and audited libraries (TLS, QUIC, Noise, standard PAKEs). The design of pairing, key storage, and the handshake is a reserved decision.
+- **T5 Nothing listens unauthenticated.** The default bind address is loopback. Every listening socket requires authentication, loopback included, because other local programs and web pages can reach loopback. A health probe that reveals only liveness and version is the one exception.
+- **T6 All input is hostile until validated.** This covers network frames, packs, files, tool results, sensor values, and model output. Parsers enforce size limits and have fuzz or property tests. Text from tools, files, the web, or other people reaches the model marked as untrusted data and is never merged into system instructions. Model output is data and is never executed.
+- **T7 The model proposes, policy decides.** Actions that touch the physical world, spend money, contact other people, or delete data pass a policy check outside the model (allow-lists, limits, confirmation). A device enforces its own safe ranges locally and returns to a safe state when its session drops.
+- **T8 Imported content carries no code.** Character packs are data only. Code reaches a renderer or node only from a signed release, a digest-pinned runtime pack, or a tool the user installed and approved. Firmware accepts only signed images and can roll back a bad one.
+- **T9 Content stays out of logs.** By default, logs, traces, metrics, and crash reports hold no conversation text, audio, memory text, or secrets. Nothing is reported off the user's machines unless they opt in.
+- **T10 Memory has provenance.** Each memory item records where it came from: the user said it, the character inferred it, or a tool returned it. Content from tools or the web never becomes a memory without that label.
+
+## Engineering
+
+- **E1 Logic without I/O.** Protocol handling, the turn engine, connection policy, audio session logic, and pack validation are state machines or pure functions driven by events. Sockets, audio hardware, HTTP calls to providers, clocks, and storage sit behind interfaces at the edges. Firmware and UI code are thin shells over crates that are tested on the host. *Why:* this is what lets agents test without hardware or paid services, and what lets a library or a whole end be replaced.
+- **E2 Every external thing has a fake.** Language models, speech services, the network, the clock, devices, and the gateway each have a deterministic fake for tests. CI needs no secrets, no hardware, and no access to providers. A virtual body, a host program that speaks the constrained profile, stands in for an ESP32 and is the reference for other people's firmware.
+- **E3 Sessions can be replayed.** A session's protocol frames and model exchanges can be recorded (opt-in, with redaction) and replayed in a test. A bug report should become a replay test before it becomes a fix.
+- **E4 One binary, few moving parts.** The node and the gateway each run as a single binary with embedded storage (SQLite) and one configuration file, on a 1 vCPU / 1 GB server. An external database, cache, broker, or object store is an option added when a real deployment needs it, never a requirement.
+- **E5 Provider neutrality.** Language models, speech recognition, speech synthesis, and embeddings sit behind interfaces. Each interface ships with at least two real adapters and a fake, at least one adapter works from mainland China, and nothing rules out a local, offline adapter. No feature depends on one vendor's proprietary API. Model roles (fast conversational, strong reasoning, utility) are configuration, not code.
+- **E6 Reachable everywhere.** NL works fully inside mainland China and outside it. Nothing on the critical path depends on a service reachable from only one side. Every infrastructure endpoint (relay, STUN, push, update source, model and speech endpoints) is configurable and can be self-hosted.
+- **E7 Budgets are acceptance criteria.** The roadmap lists budgets for latency, memory, flash, idle CPU, and network use; a change that breaks one is a regression. Every autonomous loop (proactive contact, retries, consolidation, sub-agents) has a spending limit and a stop condition, and the user can see what was spent.
+- **E8 Dependencies are deliberate.** Prefer mature, permissively licensed crates. No GPL, AGPL, or proprietary code is linked into what NL ships. Name and justify each new dependency in the pull request. Before calling a library, read the documentation of the pinned version; do not write calls from memory.
+- **E9 Small, complete slices.** One pull request does one thing, with its tests and doc changes, and leaves main releasable. Work that belongs to a later stage gets a seam (an interface and a fake) and a TODO entry, not a half-built feature and not a stub that pretends to work. Tests, lints, and CI gates are never weakened to get a change through.
+
+## Reserved decisions
+
+An implementer does not take these alone. Write a short design note under `docs/design/` and get the user's approval first.
+
+1. Anything in T1 to T4: trust tiers, pairing, key storage, the handshake, what the gateway can see.
+2. A breaking protocol change, a new top-level protocol concept, or a change to the constrained profile or the lifeline.
+3. The on-disk format of user data after its first release, and any migration of it.
+4. A new deployable component, programming language, required external service, or UI framework.
+5. Anything with licensing weight: bundled assets, a non-permissive dependency, a proprietary SDK.
+6. Enabling by default anything that acts on the physical world, spends money, or contacts other people.
+7. Repository settings, rulesets, release signing, and store publishing.
+8. Relaxing or removing a rule in this file, or a non-goal or product rule in [[product-direction]].
+
+For everything else, choose the smallest design that meets the current stage's exit criteria, say what you chose in the pull request, and record it in memory only if a later session would decide differently without it.
+
+**Why:** These are the properties that are cheap to keep from the first commit and close to impossible to add later: wire compatibility with devices already in people's homes, where the trust roots live, who owns the data, and whether the code can be tested without hardware or paid services. The project is built mostly by agents that each see one task, so a rule that is not written here will be broken by a change that looks reasonable locally.
+
+**How to apply:** Check a design against the four groups before writing code and again in review. When docs/architecture.md or a README and this file disagree, this file is newer: follow it. Correcting those docs is its own item in TODO.md (Stage 0), because some differences still wait for the user's confirmation; do not rewrite them inside an unrelated change. Known differences today: the doc names PostgreSQL and Redis for the gateway (E4 says embedded storage first), says keys live only in the gateway (T3 adds the local vault of a host the user runs), offers MQTT beside WebSocket for the ESP32 (E4 rules out a required broker), and names VRM as the candidate default avatar format (P8 makes a low-fidelity rendition the baseline). The READMEs say that API keys stay in the gateway and that a relaying gateway cannot read the conversation, without mentioning that the model proxy sees model requests in transit (T1, T3).
+
+**Evidence:** Principles the user had already decided are in docs/architecture.md (protocol first, the light and heavy split, capability-based nodes, privacy by default, agent-operable toolchains) and in [[live2d-asset-packs]], [[client-stack-decision]], and [[tech-choice-criteria]]. The other rules were set in the planning session of 2026-11-16 under the user's delegation (see [[product-direction]]). Three of them change something written earlier (T3, E4, P8) and one rests on an inference about the user base (E6); these wait for the user's confirmation and are listed with their defaults under "Decisions waiting for the user" in the roadmap.
+
+**Recheck when:** The user rules on a waiting decision; a stage's design note shows that a rule cannot hold; the protocol is frozen (P4 then allows additive changes only); or NL gains several characters or several people in one home (S1, S5).
