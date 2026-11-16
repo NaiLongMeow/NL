@@ -10,6 +10,8 @@ metadata:
 
 NL lets one AI character live across a person's devices (a desktop pet, a phone, small ESP32 gadgets) as one continuous companion that remembers them everywhere, stays private by default, and can be programmed. Small devices do the light work, stronger nodes do the heavy work, and every end can borrow compute or storage from the others. The rules that keep the system sound are in [[architecture-invariants]]; the order of work is in [the roadmap](../plan/roadmap.md).
 
+> **Partly overridden since 2026-11-16.** The user has settled the main lines of the distributed design. Until this file is rewritten, the section "Settled by the user" in [the distributed design](../plan/distributed-design.md) wins over the vocabulary rows for home, host, body, and session, over differentiator 3, and over product rules 1 and 2: the gateway is trusted, every node runs the harness, one account is one user and one character, sessions are separate while memory is shared.
+
 ## What makes NL different
 
 Work that strengthens these comes first. Work that serves none of them needs a reason.

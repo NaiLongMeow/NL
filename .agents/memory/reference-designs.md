@@ -8,7 +8,7 @@ metadata:
   last_verified: 2026-11-16
 ---
 
-The user named the projects to learn from. For the gateway: sub2api and other well-made API gateways. For the harness: the good parts of other agent harnesses; Claude Code, Codex, and pi are cloned for reading under the gitignored `.ref/`. Everything in NL is nevertheless written in Rust: take designs, not code.
+The user named the projects to learn from. For the gateway: sub2api and other well-made API gateways. For the harness: the good parts of other agent harnesses; Claude Code, Codex, and pi are cloned for reading under the gitignored `.ref/`. Prompt design learns from Claude's, Claude Code's prompts in particular: prompts are written in English, and the system prompt states the language to reply in. Everything in NL is nevertheless written in Rust: take designs, not code.
 
 **Evidence:** User statement in conversation, 2026-11-16. The user said not to read the reference code yet, so the agent has not examined sub2api or decided what to borrow.
 

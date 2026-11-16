@@ -4,7 +4,7 @@ The long-term order of work for NL. Written 2026-11-16, when the repository held
 
 **Main line, current stage: 0 (Ground). Voice and device track: not started.**
 
-**How sessions and memory stay in step across nodes is under discussion in [distributed-design.md](distributed-design.md).** The user calls it the core feature. Stages 5 to 8 below, and rules S1 and S4, will be revised when it settles.
+**How sessions and memory stay in step across nodes is under discussion in [distributed-design.md](distributed-design.md).** The user calls it the core feature and has settled its main lines there. Until this roadmap is rewritten, expect these changes: the gateway also stores and orders sessions and memory (Stage 2); sessions synchronize and can be carried on from a second node from Stage 3 on; memory synchronization moves up; Stages 6 and 8 shrink, because nodes talk mostly to the gateway and little to each other; and on the voice and device track the ESP32 runs the harness itself.
 
 Read [product-direction](../memory/product-direction.md) and [architecture-invariants](../memory/architecture-invariants.md) first. Rule ids such as S1 and T3 refer to the invariants; "product rule 3" refers to the product direction. Outstanding tasks are in [TODO.md](../TODO.md).
 
