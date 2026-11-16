@@ -1,3 +1,5 @@
+<!-- Please read CONTRIBUTING.md first. Title: Conventional Commits style, in English. -->
+
 ## What and why
 
 <!-- What does this change do, and why is it needed? Link related issues. -->
@@ -11,4 +13,4 @@ ESP32 or on a specific OS). Untested code does not land. -->
 
 - [ ] One coherent change; unrelated work goes in its own pull request
 - [ ] Tests cover the change and pass locally
-- [ ] Docs (README, docs/) and agent records (.agents/) updated if this changes what they describe
+- [ ] Docs (README, docs/, and their `*.zh-CN.md` translations) and agent records (.agents/) updated if this changes what they describe

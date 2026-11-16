@@ -3,3 +3,4 @@
 - [Live2D asset packs](memory/live2d-asset-packs.md) -- Live2D stays out of the repo as digest-pinned runtime packs and data-only character packs
 - [Flutter pub lockfile](memory/flutter-pub-lockfile.md) -- keep pubspec.lock on pub.dev URLs; pub mirrors rewrite it and break --enforce-lockfile in CI
 - [Main branch rulesets](memory/main-branch-rulesets.md) -- main is protected by rulesets (PR + `CI OK` required, admin bypass); renaming the `CI OK` job blocks PRs
+- [Docs languages](memory/docs-languages.md) -- human docs are English-first with `*.zh-CN.md` translations kept in sync; CoC texts are official Contributor Covenant 3.0
