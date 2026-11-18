@@ -4,8 +4,9 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Waiting for the user
 
-- [ ] Say who owns the art and voice of 大肥鱼 and under what license NL may ship them (product rule 9). Stage 1 uses a neutral placeholder until then.
-- [ ] Merge NaiLongMeow/NL#1, then NaiLongMeow/NL#2 (rebase the second onto main if the first is squash-merged), then the branch that carries the direction records.
+- [ ] Get a license for the 大肥鱼 art and voice NL will ship (product rule 9). The character is fan-made, grown from 溟月 by the Bilibili creator 上善无形, so the license must come from whoever made the particular art, not from DeepSeek. Stage 1 uses a neutral placeholder until then.
+- [ ] Merge NaiLongMeow/NL#5 (the UI design note and the rules M5 to M7) before Stage 1 work branches from main. NaiLongMeow/NL#1 to #3 are merged.
+- [ ] Decide on Dependabot alert 1: the Rust crate glib, which Cargo.lock pulls in through the desktop app, has a moderate unsoundness fixed in glib 0.20.
 - [ ] Supply a Code of Conduct reporting email to replace `[reporting address to be announced]` in CODE_OF_CONDUCT.md and `[举报邮箱待公布]` in CODE_OF_CONDUCT.zh-CN.md. The user chose to supply it later (2026-11-16).
 
 ## Stage 0: Ground
@@ -21,19 +22,18 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Stage 1: Design
 
-- [ ] `[pattern]` Write the UI design note under `docs/design/`: who uses what, the flows and screens of every end (desktop main window, desktop pet, phone, gateway pages, device faces), and the needs list for the harness and the gateway.
 - [ ] `[pattern]` One design-token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from.
 - [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then).
 - [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.
 - [ ] The pet window: cue states and menu; tray and autostart with the official Tauri plugins; per-pixel click-through. Verify transparency, dragging, and double-click close on macOS and Linux (Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked, on Ubuntu 24.04 under Xvfb without a compositor, so transparency could not be judged).
 - [ ] `[pattern]` The first phone screen as a shell with widget and golden tests. Then the remaining phone screens, following it.
-- [ ] The gateway pages as shells, wherever the design note places them.
+- [ ] The gateway's user site and admin site as shells on two ports, built from the shared components (UI design note, section 8).
 - [ ] Device faces: the cue set on a small screen and on LEDs, shown in `web/stage`.
 
 ## Spikes
 
 - [ ] Trust design (sign-in, enrollment, credentials, the vault, sealed accounts), before Stage 2.
-- [ ] Provider cache (how DeepSeek's prefix cache behaves through the proxy and for forks), before Stage 3.
+- [ ] Provider cache (how DeepSeek's prefix cache behaves through the proxy, for forks, and across sessions; whether tool-call arguments stream; whether one response can carry several tool calls), before Stage 3.
 - [ ] Mobile toolchain (agents building the Flutter iOS and Android toolchains with the Rust core; [client-stack-decision](memory/client-stack-decision.md) depends on it), before Stage 7.
 - [ ] Transport (iroh against WebRTC with str0m or webrtc-rs), before Stage 8.
 - [ ] Voice latency, at the start of V1.

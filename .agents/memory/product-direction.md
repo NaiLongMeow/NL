@@ -5,7 +5,7 @@ metadata:
   type: project
   scope: Whole project; product goals, priorities, non-goals, vocabulary, and product rules
   status: active
-  last_verified: 2026-11-16
+  last_verified: 2026-11-18
 ---
 
 NL gives one user one AI character that lives on all of their devices (a desktop pet, a phone, small ESP32 gadgets) as one companion with one memory. The same harness runs on every device, light or heavy, and a device that is short of something borrows it from another. The rules that keep the system sound are in [[architecture-invariants]], the way sessions and memory work across devices is in [[distributed-design]], and the order of work is in [the roadmap](../plan/roadmap.md).
@@ -59,13 +59,17 @@ Use these words with these meanings in contracts, code, and docs. Do not coin sy
 | Harness | The agent runtime on every node: the turn loop, tools, forks, compaction | harness |
 | Gateway | The central, trusted service every node signs in to: login, the vault and model proxy, the shared file system, notices, the capability registry, relaying | 网关 |
 | Session | One conversation of the character on one node, recorded there as JSONL. Several can run at once | 会话 |
-| Turn | One exchange: user input, then the character's streamed reply, tool actions, and cues | 轮次 |
+| Turn | One exchange: user input, then the character's working text, tool calls, messages, and cues | 轮次 |
+| Message | What the character sends the user with the message tool: the only output shown as a bubble, spoken aloud, shown by the pet, or pushed as a notification (M5) | 消息 |
+| Working text | What the model writes outside tool calls. It stays in the history and is shown only in a conversation's full view | 过程正文 |
 | Shared file system | The account's files that every node sees: memory, and a read-only folder of compacts | 共享文件系统 |
 | Memory | What the character knows durably, kept as files in the shared file system | 记忆 |
 | Notice | A message the harness appends to a running session: urgent memory from elsewhere, a digest, a fork's result. It is not typed by the user and not shown as a notification | 提示消息 |
 | Fork | A side run that reuses a session's whole prompt and adds one instruction | 分叉（fork） |
 | Compact | A summary that stands in for a conversation: made at the context limit and at close, and the thing another node carries on from | 压缩（compact） |
 | Capability | Something a node declares it can do for others | 能力 |
+| Toolset | A named group of related tools in NL's toolset format; an MCP server used directly counts as one. The model finds tools with tool_search and calls them through use_tool (M6) | 工具集 |
+| Preset agent | A built-in kind of sub-agent with its own instructions, such as the tool finder | 预设 agent |
 | Remote tool call | Using a tool that lives on another node; short, answered at once | 远程工具调用 |
 | Task | A remote sub-agent: work a remote node runs in a session of its own | 任务（远程子代理） |
 | Cue | A renderer-independent expression signal: an emotion, listening, thinking, speaking, a gesture | 表现提示 |
@@ -84,7 +88,7 @@ These describe how the character treats the user, whatever the implementation. T
 6. **Care in a crisis.** When the user signals self-harm or acute distress, the character responds with care and points to real help. This belongs to the harness's base instructions.
 7. **Packs shape personality, not safety.** A character pack cannot override rules 4 to 6 or any policy check in [[architecture-invariants]]. Pack text is content, not authority.
 8. **An honest microphone.** Audio leaves a device only after a local wake word, a button press, or an explicitly opened session, and the device shows that it is listening.
-9. **Licensed content only.** The project is named NL, and its default character is 大肥鱼, the mascot of the ds community (user decision, 2026-11-16). Art and voice for it enter the repository or a pack only under a license from their owner that allows redistribution, recorded beside the asset, and what the project ships is suitable for all ages. No other third-party characters, voices, or proprietary runtimes enter the repository ([[live2d-asset-packs]]). Nothing NL ships imitates 奶龙, a commercial cartoon character whose rights holder enforces its copyright.
+9. **Licensed content only.** The project is named NL, and its default character is 大肥鱼 (user decision, 2026-11-16): the DeepSeek community's blue-haired whale girl, with whale fins and a large tail. It is fan-made, not DeepSeek's: it grew from 溟月, an original character that the Bilibili creator 上善无形 made with AI image generation, which other fans then reworked with DeepSeek elements, a maid outfit, and a chibi version. Art and voice for it enter the repository or a pack only under a license that allows redistribution from whoever made that particular art, recorded beside the asset, and what the project ships is suitable for all ages. No other third-party characters, voices, or proprietary runtimes enter the repository ([[live2d-asset-packs]]). Nothing NL ships imitates 奶龙, a commercial cartoon character whose rights holder enforces its copyright.
 10. **Two languages from the first screen.** User-facing text is localizable, and English and Simplified Chinese are maintained together. Prompts are a separate matter: they are always English (M1).
 
 ## Legal context
@@ -97,6 +101,6 @@ NL is software, not such a service. Product rules 4 to 6 keep the product on the
 
 **How to apply:** Before proposing or building a feature, check which differentiator it serves and whether it touches a non-goal; if it touches one, stop and ask the user. When two designs both work, choose by the priority order. A feature that breaks a product rule is not done.
 
-**Evidence:** The core purpose in AGENTS.md and the principles in docs/architecture.md (user decisions, 2026-11-15). On 2026-11-16 the user said that nothing has been built yet, that they want long-term constraints and direction rather than a detailed technical design, and that cheaper models will do the implementation; the priorities and most product rules were set by the agent in that session under that delegation, and the user may overrule any of them. The same day the user decided, in discussion, the points the vocabulary and non-goals reflect: one account is one user and one character, the gateway is the trusted login system, every node runs the harness, sessions are separate while memory is shared, and continuity comes from memory and compacts. The user also decided that whoever deploys a gateway runs it, that the project's name is NL, and that the default character is 大肥鱼. Legal text: https://www.cac.gov.cn/2026-04/10/c_1777558395078289.htm, read 2026-11-16. Copyright enforcement over 奶龙: court cases reported at http://js.news.cn/20240516/c9f8fb6b11174d4ea8197921dde754f0/c.html and https://www.thepaper.cn/newsDetail_forward_27181619, read 2026-11-16.
+**Evidence:** The core purpose in AGENTS.md and the principles in docs/architecture.md (user decisions, 2026-11-15). On 2026-11-16 the user said that nothing has been built yet, that they want long-term constraints and direction rather than a detailed technical design, and that cheaper models will do the implementation; the priorities and most product rules were set by the agent in that session under that delegation, and the user may overrule any of them. The same day the user decided, in discussion, the points the vocabulary and non-goals reflect: one account is one user and one character, the gateway is the trusted login system, every node runs the harness, sessions are separate while memory is shared, and continuity comes from memory and compacts. The user also decided that whoever deploys a gateway runs it, that the project's name is NL, and that the default character is 大肥鱼. On 2026-11-18 the user decided that the character reaches the user only through a message tool, which the terms Message and Working text describe, and that tools beyond a fixed core are grouped in toolsets found with tool search, with preset agents such as the tool finder. Where 大肥鱼 came from, and that DeepSeek has not taken part in creating it: https://m.huxiu.com/article/4901833.html, read 2026-11-18. Legal text: https://www.cac.gov.cn/2026-04/10/c_1777558395078289.htm, read 2026-11-16. Copyright enforcement over 奶龙: court cases reported at http://js.news.cn/20240516/c9f8fb6b11174d4ea8197921dde754f0/c.html and https://www.thepaper.cn/newsDetail_forward_27181619, read 2026-11-16.
 
 **Recheck when:** The user changes the project's purpose or lifts a non-goal, the license for the default character is settled, or the legal rules for companion AI change.

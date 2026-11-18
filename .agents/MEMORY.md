@@ -1,10 +1,11 @@
 - [Product direction](memory/product-direction.md) -- read before proposing or prioritizing any feature: what NL is for, what wins in a conflict, non-goals, vocabulary, product rules
 - [Architecture invariants](memory/architecture-invariants.md) -- read before designing or reviewing any change: the P/S/M/T/E rules that hold in every stage, and the decisions reserved for the user
 - [Distributed design](memory/distributed-design.md) -- the core feature: sessions are local, memory and compacts are shared files behind the gateway, forks hit the cache, weak nodes borrow from remote ones; also what was rejected
-- [DeepSeek reference provider](memory/deepseek-reference-provider.md) -- NL is built for the DeepSeek API first (main model, search, fetch, speech); unverified, read its docs before coding
+- [Tool system](memory/tool-system.md) -- the fixed core tools (message, finish, files, web), toolsets found with tool_search and called through use_tool on every provider, MCP used directly, display names like Remote(desktop3).Docs.Read
+- [DeepSeek reference provider](memory/deepseek-reference-provider.md) -- NL is built for the DeepSeek API first (main model, search, fetch, speech); what its docs say about models and tools (no native tool search), read 2026-11-18
 - [Reference designs](memory/reference-designs.md) -- learn the gateway from sub2api and the harness from other harnesses, but write everything in Rust
 - [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost
-- [Client stack decision](memory/client-stack-decision.md) -- why mobile is Flutter and desktop is one Tauri app (main + pet windows), and what was rejected
+- [Client stack decision](memory/client-stack-decision.md) -- why mobile is Flutter and desktop is one Tauri app (main + pet windows), React for the desktop and gateway sites, and what was rejected
 - [Live2D asset packs](memory/live2d-asset-packs.md) -- Live2D stays out of the repo as digest-pinned runtime packs and data-only character packs
 - [Flutter pub lockfile](memory/flutter-pub-lockfile.md) -- keep pubspec.lock on pub.dev URLs; pub mirrors rewrite it and break --enforce-lockfile in CI
 - [Main branch rulesets](memory/main-branch-rulesets.md) -- main is protected by rulesets (PR + `CI OK` required, admin bypass); renaming the `CI OK` job blocks PRs

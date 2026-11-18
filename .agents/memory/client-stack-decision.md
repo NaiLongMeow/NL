@@ -5,7 +5,7 @@ metadata:
   type: project
   scope: Mobile and desktop clients, including the desktop pet
   status: active
-  last_verified: 2026-11-15
+  last_verified: 2026-11-18
 ---
 
 Mobile is Flutter (apps/client, Android and iOS only) with the Rust core bridged by flutter_rust_bridge v2. Desktop is one Tauri 2 app (apps/desktop): a main window and a transparent desktop pet window, with nl-node to be embedded in the Tauri backend. Both render the character through web/stage. The layout is described in [docs/architecture.md](../../docs/architecture.md); this entry keeps what was rejected and why.
@@ -18,8 +18,8 @@ Mobile is Flutter (apps/client, Android and iOS only) with the Rust core bridged
 - An intermediate design (Flutter main app + nl-node daemon + separate tao/wry pet process) was briefly scaffolded and replaced on 2026-11-15 when the user asked which framework is best for the whole desktop. The user's earlier "split the pet out" meant only isolating the pet from Flutter's limits, not choosing Flutter for the desktop main app.
 - Two UI codebases (Flutter mobile, web desktop) were accepted because human maintenance cost is not a core factor here ([[tech-choice-criteria]]).
 
-**How to apply:** Keep desktop UI in apps/desktop (TypeScript) and mobile UI in apps/client (Flutter); share visuals through web/stage and a common design-token source rather than by merging the apps. Do not re-add Flutter desktop platforms to apps/client. The pet can become a separate process later if its memory footprint matters, but start from a Tauri window.
+**How to apply:** Keep desktop UI in apps/desktop and mobile UI in apps/client (Flutter). The desktop windows and the gateway's two web sites use React with TypeScript, which the user approved on 2026-11-18 as the UI framework (reserved decision 5); share visuals through web/stage and a common design-token source rather than by merging the apps. Do not re-add Flutter desktop platforms to apps/client. The pet can become a separate process later if its memory footprint matters, but start from a Tauri window.
 
-**Evidence:** User decisions in conversation, 2026-11-15; web research the same day (Flutter 3.44 release notes, flutter/flutter#170310, tauri-plugin-blec, tauri-background-service); Tauri 2.12.5 pet window verified by hand on Windows 10 the same day (transparent background, drag, double-click close).
+**Evidence:** User decisions in conversation, 2026-11-15, and the approval of React with TypeScript on 2026-11-18; web research the same day (Flutter 3.44 release notes, flutter/flutter#170310, tauri-plugin-blec, tauri-background-service); Tauri 2.12.5 pet window verified by hand on Windows 10 the same day (transparent background, drag, double-click close).
 
 **Recheck when:** Flutter ships stable multi-window and fixes webview layering on desktop; Tauri 3 leaves alpha; or agents stall on Flutter's iOS toolchain (an open check in [TODO.md](../TODO.md)).

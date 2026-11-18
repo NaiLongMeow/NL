@@ -58,11 +58,11 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** Every screen NL will have exists and can be clicked through on fake data, in English and Simplified Chinese, under one design language. From here on, each stage fills in real behaviour behind screens that already exist.
 
 **Build:**
-- A UI design note, approved by the user: who uses what, and the flows and screens of every end.
+- A UI design note ([docs/design/ui.md](../../docs/design/ui.md)), approved by the user: who uses what, and the flows and screens of every end.
   - Desktop main window: sign-in and first run, chat, the character view, the list of conversations (local sessions and compacts to carry on from), memory, character packs, tools, nodes, usage and limits, settings.
   - Desktop pet: its cue states, menu, and interactions (dragging, click-through, tray, autostart).
   - Phone: sign-in, chat, call screen, notifications, device setup, settings.
-  - Gateway pages: sign-in, and the account, nodes, keys, and usage screens, wherever the note places them (in the apps, in a web console, or both).
+  - Gateway sites: a user site (sign-in, account, devices, usage) and an admin site (keys, accounts, limits) on two ports, sharing design and components with the desktop windows.
   - Device faces: how the cue set looks on a small screen and on LEDs.
 - One design language from a single token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from ([client-stack-decision](../memory/client-stack-decision.md)).
 - The cue vocabulary (P8) and a placeholder rendition of the default character: 大肥鱼 once its art is licensed for the project, a neutral placeholder until then (product rule 9).
@@ -72,7 +72,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Not yet:** real sign-in, real model calls, any backend behaviour; visual polish beyond the design language. Voice and device screens are designed and built as shells here, but their behaviour belongs to the voice and device track.
 
 **Exit:**
-- [ ] The user has approved the UI design note.
+- [x] The user has approved the UI design note ([docs/design/ui.md](../../docs/design/ui.md), 2026-11-18).
 - [ ] Every screen in the note exists as a shell on fake data, in both languages.
 - [ ] The design tokens come from one source, and both UI code bases build from it.
 - [ ] UI tests run headless in CI; the pet window's transparency, dragging, and click-through are checked by hand on Windows, macOS, and Linux, and recorded.
@@ -108,7 +108,9 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - The harness core as one crate that depends on no particular runtime or operating system (E1, P2, P6): the turn loop, event-driven and interruptible (P7), able to call tools from the start, with only built-in tools for now.
 - The prompt layout (M1 to M3) and the session record as local JSONL with its history flag (S2, S9); replay from the record (E3).
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
-- Compaction at the context limit, as a fork (M4, S5).
+- Compaction at the compaction threshold, as a fork (M4, S5), and the output threshold below it (M7).
+- The message and finish tools (M5): messages stream into bubbles from the tool's arguments, working text goes only to the full view, and a turn ends only through finish.
+- The fixed tool surface (M6, [tool-system](../memory/tool-system.md)): the core tools, and tool_search and use_tool over the built-in toolsets.
 - Two shells over the same core: a command-line one, used by end-to-end tests, and the desktop one, with the core embedded in the Tauri backend and the chat, character, and pet screens wired.
 
 **Not yet:** shared memory, notices, uploading compacts (Stage 4); MCP (Stage 5); the phone; voice.
@@ -119,8 +121,13 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] After a restart a session resumes from its JSONL (automated, scripted model).
 - [ ] The command-line shell holds a conversation through a test gateway and a fake provider (automated, end to end).
 - [ ] The prefix holds: each request of a session equals the previous one plus what was appended, and a fork's request equals its parent's plus one message (automated).
-- [ ] A session that passes the context limit compacts and goes on (automated).
+- [ ] A session that passes the compaction threshold compacts and goes on (automated).
+- [ ] A tool output that would pass the output threshold is cut and marked, the model can read the rest from the session's output file, and the session can still take several steps before it compacts; the JSONL holds only what the model saw (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
+- [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
+- [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).
+- [ ] Every request of every session sends the same tool list (automated).
+- [ ] A message sent during a turn is inserted at the turn's next step by default, and waits for the turn to end when the user chose queueing (automated).
 - [ ] No conversation text appears in the default logs of the node or the gateway (automated).
 - [ ] The desktop idle budgets are measured and met.
 
@@ -152,7 +159,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** The character can use tools the user adds, act on a schedule, and use what the user's other nodes can do.
 
 **Build:**
-- Tools through MCP, under a permission policy (T7), with tool output marked untrusted (T6, T10). Tools are announced in a way that leaves the prefix intact (M2). The tools screen wired.
+- Toolsets in NL's format and MCP servers used directly, found with tool_search and called through use_tool (M6, [tool-system](../memory/tool-system.md)), under a permission policy (T7), with tool output marked untrusted (T6, T10). The skill that turns an MCP server into an NL toolset, and the tool finder preset agent. The tools screen wired.
 - Whether and how local tool processes are confined, settled in this stage's design note. The permission policy is required either way. The candidates are what agent harnesses already use: operating-system sandboxing on a desktop and containers on a server (T8).
 - Routines as data: an event or a schedule leads to a prompt. Proactive contact with quiet hours, a frequency limit, and a spending limit (product rule 4, E7). A routine runs once per account even when several nodes are running.
 - Remote capabilities (S8, P3): the capability registry at the gateway, remote tool calls, and tasks as remote sub-agents, all routed through the gateway. The nodes screen wired.
@@ -161,8 +168,10 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 
 **Exit:**
 - [ ] A third-party MCP server works end to end, with the policy enforced in tests.
+- [ ] With hundreds of toolsets spread over several nodes, what the model sees per turn stays within its budget, and a scripted model finds and calls the right tool (automated).
 - [ ] An injection test suite (hostile tool output, pack text, web content) cannot trigger a protected action or plant an unlabeled memory.
 - [ ] With two nodes running, a routine fires once and stops at its limit (automated, fake clock).
+- [ ] A node that allows reading its files but not editing them offers other nodes no edit tool, and a node's tools leave the catalog when it goes offline and return when it comes back (automated).
 - [ ] A session on one node calls a tool that exists only on another node, and a task delegated to another node returns its result even though the caller was restarted meanwhile (automated).
 
 ### Stage 6: Character (packs and avatars)
@@ -276,7 +285,7 @@ The device gains shared memory when Stage 4 is done and remote capabilities when
 | Spike | Question | Finish before | Pass when | If it fails |
 |---|---|---|---|---|
 | Trust design | A design, not code: how people sign in; how a desktop, a phone, a server, and a device enroll and are revoked; what each credential allows; how keys are stored in the vault; how accounts are sealed (T1 to T4, S6) | Stage 2 | The user approves the note. The strongest model available writes it; get an outside review if one can be had | Stage 2 does not start without it |
-| Provider cache | How DeepSeek's prefix cache behaves through the proxy: minimum length, lifetime, scope per key, and whether a fork (the parent's prompt plus one message) hits it | Stage 3 | Measured cache hits for a growing session and for a fork, and a rule for which upstream key a session uses | Revise M2 and M4 with the user before building on them |
+| Provider cache | How DeepSeek's prefix cache behaves through the proxy: minimum length, lifetime, scope per key, whether a fork (the parent's prompt plus one message) hits it, and whether two sessions share the prefix of system prompt and core tools; also whether tool-call arguments stream (for message bubbles) and whether one response can carry several tool calls (a message and finish together) | Stage 3 | Measured cache hits for a growing session, a fork, and a second session, the answers on streaming and several calls, and a rule for which upstream key a session uses | Revise M2 and M4 with the user before building on them |
 | Mobile toolchain | Can agents set up and build the Flutter iOS and Android toolchains with the Rust core without stalling ([client-stack-decision](../memory/client-stack-decision.md))? | Stage 7 | A minimal app with the harness core builds for both platforms from the command line in CI | Revisit the mobile stack with the user |
 | Transport | Which library carries direct connections between nodes with NAT traversal: iroh first, WebRTC (str0m or webrtc-rs) second | Stage 8 | It needs no third-party infrastructure (E6); it builds and connects on Android and iOS; the binary size is acceptable | Remote calls stay on the gateway |
 | Voice latency | Does a streaming chain of recognition, model, and synthesis meet the round-trip budget with DeepSeek's APIs? | Start of V1 | The budget is met | Fix end-of-speech detection first; then consider another speech provider or a speech-to-speech backend |
@@ -322,13 +331,19 @@ Settled by the user on 2026-11-16:
 
 - **Who runs gateways:** whoever deploys one runs it and carries its duties. The project ships the software.
 - **Networks and services:** the operator decides. NL keeps every endpoint configurable (E6).
-- **Name and default character:** the project is named NL, and the default character is 大肥鱼, the mascot of the ds community (product rule 9).
+- **Name and default character:** the project is named NL, and the default character is 大肥鱼, the DeepSeek community's fan-made whale girl (product rule 9).
 - **Language of docs/:** no requirement. New files under docs/ are written in English because agents read them ([docs-languages](../memory/docs-languages.md)).
+
+Settled by the user on 2026-11-18:
+
+- **UI framework:** React with TypeScript for the desktop windows and the gateway's two sites (reserved decision 5; [client-stack-decision](../memory/client-stack-decision.md)).
+- **Conversation and tools:** the message and finish tools (M5) and the tool system (M6, [tool-system](../memory/tool-system.md)).
+- **Gateway sites:** a user site and an admin site on two ports ([UI design](../../docs/design/ui.md), section 8).
 
 Still open:
 
 1. **Avatar formats.** Decided with the user when Stage 6 starts (P8).
-2. **The license for 大肥鱼.** Who owns its art and voice, and under what license NL may ship them (product rule 9). Stage 1 uses a neutral placeholder until this is answered.
+2. **The license for 大肥鱼.** The character is fan-made (it grew from 溟月 by the Bilibili creator 上善无形), so a license that allows redistribution must come from whoever made the art and voice NL ships (product rule 9). Stage 1 uses a neutral placeholder until then.
 3. **The open points in [distributed-design](../memory/distributed-design.md).** They are the agent's assumptions about the distributed core, and the design notes of Stages 3 and 4 settle them with the user.
 
 ## Parked ideas
