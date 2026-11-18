@@ -1,3 +1,10 @@
+/*
+ * The default ball (Avatar.tsx). Its motion is the character's own, not the
+ * interface's, so it does not use the motion tokens, which never bounce: the
+ * ball squashes and stretches like soft jelly. Every transform scales from
+ * the bottom of the ball, where it rests.
+ */
+
 .avatar {
   position: relative;
   display: inline-flex;
@@ -10,100 +17,127 @@
   overflow: visible;
 }
 
-.bodyTop {
-  stop-color: var(--nl-character-body);
+.shade {
+  fill: var(--nl-character-body-shade);
 }
 
-.bodyBottom {
-  stop-color: var(--nl-character-body-shade);
-}
-
-/* A thin edge in the lower body's color keeps the light body readable on light surfaces. */
 .body {
-  stroke: var(--nl-character-body-shade);
-  stroke-width: 1.2;
-}
-
-.spout {
-  fill: var(--nl-character-spout);
-  stroke: var(--nl-character-body-shade);
-  stroke-width: 0.9;
-}
-
-.shine {
-  fill: var(--nl-character-eye-light);
-  opacity: 0.55;
-}
-
-.blush {
-  fill: var(--nl-character-blush);
+  fill: var(--nl-character-body);
 }
 
 .eye {
   fill: var(--nl-character-eye);
 }
 
-.eyeLight {
-  fill: var(--nl-character-eye-light);
-}
-
-.mouth {
-  fill: none;
-  stroke: var(--nl-character-eye);
-  stroke-width: 1.8;
-  stroke-linecap: round;
+.ball {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
 }
 
 .eyes {
   transform-box: fill-box;
   transform-origin: center;
-  animation: blink 5.2s infinite;
+  animation: blink 5.6s linear infinite;
+  animation-delay: var(--blink-delay, 0s);
+}
+
+.avatar[data-cue="idle"] .ball {
+  animation: wobble 6.4s ease-in-out infinite;
+}
+
+.avatar[data-cue="working"] .ball {
+  animation: hop 1.1s infinite;
 }
 
 /* The ring sits just outside the avatar so it never covers the face. */
-.avatar[data-cue="working"]::after,
 .avatar[data-cue="listening"]::after {
   content: "";
   position: absolute;
   inset: -3px;
   border-radius: var(--nl-radius-full);
-  border: 2px solid var(--nl-color-accent-fill);
+  border: 2px solid var(--nl-character-mic);
 }
 
-.avatar[data-cue="working"]::after {
-  animation: pulse 1.6s var(--nl-motion-easing-in-out) infinite;
-}
-
-.avatar[data-cue="listening"]::after {
-  border-color: var(--nl-character-mic);
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* A short blink now and then; the character is never fully still. */
+/* One blink, and later a double blink, so that the rhythm does not feel mechanical. */
 @keyframes blink {
   0%,
-  94%,
+  36%,
+  40.5%,
+  86%,
+  88.5%,
+  91%,
+  93.5%,
   100% {
     transform: scaleY(1);
   }
-  96% {
+  38%,
+  87.2%,
+  92.2% {
     transform: scaleY(0.12);
   }
 }
 
-/* With reduced motion the interface stops, and the character only blinks. */
+/* Now and then the ball settles like jelly: squash, stretch, and back. */
+@keyframes wobble {
+  0%,
+  76%,
+  100% {
+    transform: scale(1, 1);
+  }
+  80% {
+    transform: scale(1.08, 0.92);
+  }
+  85% {
+    transform: scale(0.95, 1.05);
+  }
+  90% {
+    transform: scale(1.03, 0.97);
+  }
+  95% {
+    transform: scale(0.99, 1.01);
+  }
+}
+
+/*
+ * A hop: squashed on landing, stretched as it pushes off, round at the top.
+ * It rises easing out and falls easing in, as a thrown ball does. Lengths
+ * are in the ball's own units (the 64-unit view box), so the hop scales with
+ * the avatar.
+ */
+@keyframes hop {
+  0% {
+    transform: translateY(0) scale(1.1, 0.9);
+    animation-timing-function: ease-out;
+  }
+  14% {
+    transform: translateY(-1px) scale(0.94, 1.07);
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: translateY(-10px) scale(1, 1);
+    animation-timing-function: ease-in;
+  }
+  86% {
+    transform: translateY(0) scale(0.97, 1.04);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translateY(0) scale(1.1, 0.9);
+  }
+}
+
+/* With reduced motion the ball keeps still and only blinks; a still ring shows that it works. */
 @media (prefers-reduced-motion: reduce) {
-  .avatar[data-cue="working"]::after {
+  .avatar[data-cue] .ball {
     animation: none;
+  }
+
+  .avatar[data-cue="working"]::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: var(--nl-radius-full);
+    border: 2px solid var(--nl-color-accent-fill);
     opacity: 0.6;
   }
 }

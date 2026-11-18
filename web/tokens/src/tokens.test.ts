@@ -101,14 +101,14 @@ describe.each(THEME_MODES)("the %s theme in %s", (theme, mode) => {
   });
 });
 
-describe("the placeholder character", () => {
+describe("the default avatar", () => {
   const color = (name: string) => {
     const token = design.global.find((candidate) => candidate.path.join(".") === `character.${name}`);
     if (!token || token.type !== "color") throw new Error(`no color character.${name}`);
     return resolveToken(design.set, token as Token & { type: "color" });
   };
 
-  it("keeps its face readable: eyes on either end of the body at 3:1, glyphs in their bubble at 4.5:1", () => {
+  it("keeps its face readable: eyes on the ball and on its shade at 3:1, glyphs in their bubble at 4.5:1", () => {
     for (const body of ["body", "body-shade"]) {
       expect(contrastRatio(rgb(color("eye")), rgb(color(body))), `eye on ${body}`).toBeGreaterThanOrEqual(3);
     }
@@ -117,7 +117,7 @@ describe("the placeholder character", () => {
 
   it("keeps every hue but the listening ring at least 30 degrees from the microphone hue", () => {
     const micHue = rgbToOklch(rgb(color("mic"))).h;
-    for (const name of ["body", "body-shade", "spout", "eye", "eye-light", "blush", "bubble", "glyph"]) {
+    for (const name of ["body", "body-shade", "eye", "bubble", "glyph"]) {
       const oklch = rgbToOklch(rgb(color(name)));
       if (oklch.c < 0.03) continue;
       expect(hueDistance(oklch.h, micHue), `character.${name}`).toBeGreaterThanOrEqual(30);

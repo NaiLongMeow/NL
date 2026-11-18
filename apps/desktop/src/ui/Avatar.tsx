@@ -1,60 +1,61 @@
 /**
- * The character's avatar: for now the placeholder character (UI design note,
- * section 10), a soft round body in light sea blue with a small water spout,
- * dark eyes with a highlight, and pink cheeks, drawn in the `character`
- * tokens, which are the same in every theme. A character pack replaces it
- * with its own art in Stage 6.
+ * The character's avatar: for now the default ball (UI design note, section
+ * 10), a small flat ball in light sea blue with two upright bars for eyes,
+ * drawn in the `character` tokens, which are the same in every theme. It
+ * blinks now and then and moves like soft jelly. An avatar the user chooses,
+ * or a character pack, replaces it later.
  *
- * `cue` shows the character's state around the avatar: a soft pulse of the
- * theme's accent while it thinks or works, and a steady ring in the reserved
- * "microphone on" hue while it listens (product rule 8).
+ * `cue` is the state of the live character:
+ *
+ * - none: the avatar only blinks, as beside past messages;
+ * - "idle": a soft jelly wobble now and then;
+ * - "working": it hops while the character thinks or works;
+ * - "listening": a steady ring in the reserved "microphone on" hue
+ *   (product rule 8).
+ *
+ * With reduced motion the ball keeps still and only blinks, and a still ring
+ * in the theme's accent stands in for the hops (Avatar.module.css).
  */
 
-import { useId } from "react";
+import { useId, type CSSProperties } from "react";
 import styles from "./Avatar.module.css";
 
 export type AvatarCue = "idle" | "working" | "listening";
 
-export function Avatar({ size, cue = "idle", label }: { size: number; cue?: AvatarCue; label?: string }) {
-  // Each avatar on the page needs its own gradient id; React's ids hold
+/** How far apart, in seconds, avatars on one page may blink, so that a column of them never blinks at once. */
+const BLINK_SPREAD = 5;
+
+export function Avatar({ size, cue, label }: { size: number; cue?: AvatarCue; label?: string }) {
+  const id = useId();
+  // Each avatar on the page needs its own clip id; React's ids hold
   // characters that a `url(#…)` reference does not take everywhere.
-  const gradient = `nl-avatar-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const clip = `nl-avatar-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const phase = [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % (BLINK_SPREAD * 10);
+  const style = { width: size, height: size, "--blink-delay": `${-phase / 10}s` } as CSSProperties;
   return (
     <span
       className={styles.avatar}
       data-cue={cue}
-      style={{ width: size, height: size }}
+      style={style}
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
       <svg viewBox="0 0 64 64" width={size} height={size}>
         <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0.15" className={styles.bodyTop} />
-            <stop offset="1" className={styles.bodyBottom} />
-          </linearGradient>
+          <clipPath id={clip}>
+            <circle cx="32" cy="34" r="27" />
+          </clipPath>
         </defs>
-        {/* The water spout: a droplet between two curls. */}
-        <path className={styles.spout} d="M32 17c0-4.2-2.1-7.6-6.4-8.6 2 1.9 2.9 4.5 3 8.6z" />
-        <path className={styles.spout} d="M32 17c0-4.2 2.1-7.6 6.4-8.6-2 1.9-2.9 4.5-3 8.6z" />
-        <circle className={styles.spout} cx="32" cy="9.2" r="2.6" />
-        {/* The body: round, a little wider than tall, flat underneath. */}
-        <path
-          className={styles.body}
-          fill={`url(#${gradient})`}
-          d="M32 15.5c14.6 0 26 10.2 26 23.4 0 11.6-10.2 18.6-26 18.6S6 50.5 6 38.9C6 25.7 17.4 15.5 32 15.5z"
-        />
-        <ellipse className={styles.shine} cx="21.5" cy="25.5" rx="7.5" ry="4" transform="rotate(-24 21.5 25.5)" />
-        <ellipse className={styles.blush} cx="16.5" cy="43" rx="5" ry="3" />
-        <ellipse className={styles.blush} cx="47.5" cy="43" rx="5" ry="3" />
-        <g className={styles.eyes}>
-          <ellipse className={styles.eye} cx="23" cy="37" rx="3.7" ry="4.7" />
-          <ellipse className={styles.eye} cx="41" cy="37" rx="3.7" ry="4.7" />
-          <circle className={styles.eyeLight} cx="24.4" cy="35.1" r="1.35" />
-          <circle className={styles.eyeLight} cx="42.4" cy="35.1" r="1.35" />
+        <g className={styles.ball}>
+          <circle className={styles.shade} cx="32" cy="34" r="27" />
+          {/* Flat shading: the lit body, set up and to the left inside the ball, leaves a crescent of shade. */}
+          <circle className={styles.body} cx="29.5" cy="31" r="27" clipPath={`url(#${clip})`} />
+          <g className={styles.eyes}>
+            <rect className={styles.eye} x="22.5" y="31.5" width="5" height="11" rx="2.5" />
+            <rect className={styles.eye} x="36.5" y="31.5" width="5" height="11" rx="2.5" />
+          </g>
         </g>
-        <path className={styles.mouth} d="M29.4 43.6q2.6 2.4 5.2 0" />
       </svg>
     </span>
   );
