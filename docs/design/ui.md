@@ -36,7 +36,7 @@ Reference points: the reading layout of Claude's desktop app and of the DeepSeek
 - **Color.** Warm neutral surfaces and ink-colored text, in a light and a dark theme. One accent per character pack, applied at run time; the placeholder uses a deep-sea blue, which suits the default character's blue hair without copying DeepSeek's brand color. Red marks destructive actions and failures and nothing else. Warnings use yellow with an icon. Success stays quiet. One hue is reserved for "microphone on" (orange, as on iOS and macOS) and is used for nothing else on any end, LEDs included. A pack accent that is too close to the reserved hue, or lacks contrast, is replaced by a fallback. No red unread badges.
 - **Type.** System font stacks: the platform's UI font for Latin, and PingFang SC, Microsoft YaHei, or Noto Sans CJK SC for Chinese. The system monospace font for tool input, output, and code. No bundled Chinese font, because of its size. Line height generous enough for Chinese body text; tabular numerals in usage figures.
 - **Shape and depth.** Rounded rectangles from a small set of radii. Flat surfaces; shadows only on floating layers: menus, popovers, sheets, and the pet's bubbles.
-- **Icons.** One permissively licensed outline icon set that the web code and Flutter can both use, or that both generate from the same SVG files, chosen with the token work. Each tool category has its own icon: search, web page, file, memory, device, remote device, MCP server, task, message.
+- **Icons.** One permissively licensed outline icon set that the web code and Flutter can both use, or that both generate from the same SVG files, chosen with the token work. Each of the fixed tool categories has its own icon, and so do remote devices, raw MCP servers, and tasks.
 - **Motion.** Interface motion is short (about 150 to 250 ms), eases out, and never bounces. Character motion is springy and never fully still (breathing, blinking) and belongs to the renderer. With reduced motion on, the interface stops animating and the character only blinks.
 - **Copy.** Short, plain sentences; sentence case in English; no exclamation marks in interface text. Section 14 lists the words the interface uses.
 
@@ -62,7 +62,7 @@ Each device remembers the choice. Proposed defaults: full view in the desktop ma
 | Working text | Full-width text, slightly muted | Hidden |
 | Thinking | One collapsed line, "Thought for 12 s" | Hidden |
 | Tool call | One-line row (4.4) | Hidden; feeds the working indicator |
-| Several tool calls in a row | One collapsed row, "Used 4 tools · weather, web page…" | Hidden |
+| Several tool calls in a row | One collapsed row, "Used 4 tools · Web.Search, Web.Fetch…" | Hidden |
 | Approval request | Card in the conversation (4.5) | Same |
 | Task | Card (4.6) | Hidden; feeds the working indicator |
 | Memory written | Thin marker "Remembered: …" with View and Undo | Gray tip, on by default (a setting) |
@@ -89,9 +89,9 @@ Other tools may declare a dedicated rendering too, for example an image result s
 
 ### 4.4 Tool rows
 
-A row reads: status icon, tool icon, summary, device (when it is not this one), duration, expand control.
+A row reads: status icon, tool icon, the tool's display name with its key argument, a short result, duration, expand control.
 
-- **Summary:** a short verb phrase in the user's language, such as "Searched the web for "Shanghai weather" · 5 results" or "Read museum.sh.cn". Built-in tools have localized templates; MCP tools use the title and main argument from the server's metadata. A row shows raw JSON only with developer details on.
+- **Display name** *(user, 2026-11-18)*: `Toolset.Tool` in PascalCase with the key argument, such as `Web.Search("Shanghai weather") · 5 results` or `Docs.Read(hello.md)`. A tool that runs on another device names it in front, as in `Remote(desktop3).Docs.Read(hello.md)`, and a raw MCP tool keeps its own name behind its server, as in `MCP(github).create_issue`. Display names stay English in both languages; the expanded row adds the tool's localized description. How names are formed is in [tool-system](../../.agents/memory/tool-system.md). A row shows raw JSON only with developer details on.
 - **Status:** running (animated, with Stop), done, failed (with the reason in the row), cancelled, waiting for approval, device offline.
 - **Expand** shows a short preview of the input and output. **Open** puts the whole call in the detail panel: input, output rendered by type (text, markdown, JSON, table, image, file), device, timings, the approval decision, and, with developer details on, the raw events. Every block can be copied.
 - Three or more calls in a row with no text between them fold into one group row, which shows the current call while it runs.
@@ -109,7 +109,7 @@ A task card shows the task's title, the device running it, a live line with its 
 
 ### 4.7 Working indicator
 
-In chat view, while a turn runs and no message is streaming, a line under the last bubble says what is happening, taken from the current block: "Thinking…", "Searching the web…", "Waiting for Home server…". The avatar shows the matching cue. The line appears within 300 ms of sending.
+In chat view, while a turn runs and no message is streaming, a line under the last bubble says what is happening: "Thinking…", or the current tool's localized activity text, such as "Searching the web…". A raw MCP tool, which has no activity text, shows its display name. The avatar shows the matching cue. The line appears within 300 ms of sending.
 
 ### 4.8 Composer
 
@@ -144,7 +144,7 @@ The screens:
 3. **Past conversations.** A closed conversation of this device opens read-only from its JSONL. Carry on starts a new session from its summary (S5). On the same device the old transcript stays visible above a "Carried on from summary" divider; on another device the summary appears as a card at the top.
 4. **Character.** The large avatar, the name, a short persona summary from the pack, and the installed packs. Switching packs changes look, voice, and persona; memory stays the same. Packs are imported as data only (T8). The behavior arrives in Stage 6; Stage 1 builds the shell.
 5. **Memory.** The memory files as a list headed by the index file. Each entry shows its text, when and on which device it was written, and its source: said by the user, inferred by the character, or returned by a tool (T10). Edit, delete, search, filter (recent, urgent, by source), and export everything. Summaries appear as a read-only folder. A quiet indicator shows while memory is being organized.
-6. **Tools.** Built-in tools; MCP servers, added by command or URL, with their status and tools; tools offered by other devices, grouped by device. For each tool: on or off, and ask every time, always allow, or never. Also which capabilities of this device others may use. The behavior arrives in Stage 5.
+6. **Tools.** Toolsets grouped by source: built-in, installed NL toolsets, MCP servers (added by command or URL, shown as `MCP(name)`, with their status), and toolsets offered by other devices. For each toolset and tool: on or off, and ask every time, always allow, or never. Also which of this device's toolsets others may use. The behavior arrives in Stage 5.
 7. **Devices.** Every device of the account with its type, name, online state or last seen time, version, capabilities, and open conversations. Rename, remove (takes effect at once, T2), and add a device. Each enrollment is announced on the other devices (T2), with "Not you? Remove".
 8. **Usage.** Tokens in and out, cache hit rate, requests, and cost where the operator has set prices, per day, per device, and per kind of work (conversation, memory forks, tasks, voice), against the operator's limits (E7).
 9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: theme, default view, developer details, memory tips in chat view. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it, its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
@@ -235,7 +235,7 @@ What the screens need from the harness and the gateway. The design note of the s
 
 **Harness commands:** send a user message with attachments; stop; answer an approval; end a session; compact now; carry on from a summary; list sessions; open a closed session read-only; route the pet's input to the current conversation.
 
-**Tool display metadata:** a title, a localized summary template for built-in tools, a category icon, the risk hints that decide approvals (for MCP tools, from the server's tool annotations), and an optional dedicated rendering.
+**Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, whether the tool is bound to its node, and an optional dedicated rendering.
 
 **Gateway** (Stage 2 unless noted): sign-in, the sign-up policy, session state; the device list with presence, renaming, removal, enrollment, and enrollment announcements; usage per day, device, and kind of work, with limits; operator calls for keys, accounts, limits, and compliance settings. Stage 4: memory files with source, device, time, and version; editing, deleting, undoing the last write, and export; the summaries folder with metadata (device, time, title, preview).
 
@@ -263,7 +263,7 @@ Notices, forks, and working text have no name in the interface; it describes wha
 ## 15. Open questions
 
 1. How sign-in and enrollment work, and whether pairing uses a code (trust design, before Stage 2).
-2. The harness tool system: a fixed core of tools plus toolsets found by tool search and called through one dispatching tool, as proposed to the user on 2026-11-18 (Stage 3 design note). The tool rows in 4.4 work either way.
+2. Settled on 2026-11-18: the harness tool system, described in [tool-system](../../.agents/memory/tool-system.md) (rule M6). The Stage 3 and Stage 5 design notes settle what it still marks as proposals.
 3. Whether DeepSeek streams tool-call arguments. If it does not, a message appears whole when its call completes, and the working indicator covers the wait (provider-cache spike, before Stage 3).
 4. Who writes conversation titles, and when (Stage 3).
 5. Whether the gateway knows which devices have conversations open, for presence in the sidebar (Stage 4).

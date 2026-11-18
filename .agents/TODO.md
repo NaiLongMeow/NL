@@ -33,7 +33,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 ## Spikes
 
 - [ ] Trust design (sign-in, enrollment, credentials, the vault, sealed accounts), before Stage 2.
-- [ ] Provider cache (how DeepSeek's prefix cache behaves through the proxy and for forks), before Stage 3.
+- [ ] Provider cache (how DeepSeek's prefix cache behaves through the proxy, for forks, and across sessions; whether tool-call arguments stream; whether one response can carry several tool calls), before Stage 3.
 - [ ] Mobile toolchain (agents building the Flutter iOS and Android toolchains with the Rust core; [client-stack-decision](memory/client-stack-decision.md) depends on it), before Stage 7.
 - [ ] Transport (iroh against WebRTC with str0m or webrtc-rs), before Stage 8.
 - [ ] Voice latency, at the start of V1.

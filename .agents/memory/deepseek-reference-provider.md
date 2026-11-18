@@ -20,7 +20,7 @@ What DeepSeek's documentation said when read on 2026-11-18:
 - `cache_control` is ignored, because caching is automatic. The Responses format ignores `parallel_tool_calls` and silently ignores unsupported parameters.
 - The pages say nothing about streaming tool-call arguments or about several tool calls in one Chat Completions response.
 
-**Why:** The user's choice, stated on 2026-11-16. The user gave no reasons. The documented facts above decide parts of the tool system: without native tool search, loading tool definitions on demand must be emulated without changing the prefix (M2).
+**Why:** The user's choice, stated on 2026-11-16. The user gave no reasons. The documented facts above shaped the tool system: DeepSeek has no native tool search, and NL calls every tool beyond the core through use_tool on every provider (M6, [[tool-system]]).
 
 **How to apply:** Build each provider interface for DeepSeek first, behind the interface that E5 in [[architecture-invariants]] requires. Size the harness for a small, fast main model: few tools, plain instructions, short prompts. The speech APIs and the open items above (argument streaming, parallel calls) are unverified; read the documentation of the version in use when the work starts, and do not write calls from memory (E8).
 

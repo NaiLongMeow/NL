@@ -110,6 +110,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
 - Compaction at the context limit, as a fork (M4, S5).
 - The message and finish tools (M5): messages stream into bubbles from the tool's arguments, working text goes only to the full view, and a turn ends only through finish.
+- The fixed tool surface (M6, [tool-system](../memory/tool-system.md)): the core tools, and tool_search and use_tool over the built-in toolsets.
 - Two shells over the same core: a command-line one, used by end-to-end tests, and the desktop one, with the core embedded in the Tauri backend and the chat, character, and pet screens wired.
 
 **Not yet:** shared memory, notices, uploading compacts (Stage 4); MCP (Stage 5); the phone; voice.
@@ -124,6 +125,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
 - [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
 - [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).
+- [ ] Every request of every session sends the same tool list (automated).
 - [ ] No conversation text appears in the default logs of the node or the gateway (automated).
 - [ ] The desktop idle budgets are measured and met.
 
@@ -155,7 +157,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** The character can use tools the user adds, act on a schedule, and use what the user's other nodes can do.
 
 **Build:**
-- Tools through MCP, under a permission policy (T7), with tool output marked untrusted (T6, T10). Tools are announced in a way that leaves the prefix intact (M2). The tools screen wired.
+- Toolsets in NL's format and MCP servers used directly, found with tool_search and called through use_tool (M6, [tool-system](../memory/tool-system.md)), under a permission policy (T7), with tool output marked untrusted (T6, T10). The skill that turns an MCP server into an NL toolset, and the tool finder preset agent. The tools screen wired.
 - Whether and how local tool processes are confined, settled in this stage's design note. The permission policy is required either way. The candidates are what agent harnesses already use: operating-system sandboxing on a desktop and containers on a server (T8).
 - Routines as data: an event or a schedule leads to a prompt. Proactive contact with quiet hours, a frequency limit, and a spending limit (product rule 4, E7). A routine runs once per account even when several nodes are running.
 - Remote capabilities (S8, P3): the capability registry at the gateway, remote tool calls, and tasks as remote sub-agents, all routed through the gateway. The nodes screen wired.
@@ -164,6 +166,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 
 **Exit:**
 - [ ] A third-party MCP server works end to end, with the policy enforced in tests.
+- [ ] With hundreds of toolsets spread over several nodes, what the model sees per turn stays within its budget, and a scripted model finds and calls the right tool (automated).
 - [ ] An injection test suite (hostile tool output, pack text, web content) cannot trigger a protected action or plant an unlabeled memory.
 - [ ] With two nodes running, a routine fires once and stops at its limit (automated, fake clock).
 - [ ] A session on one node calls a tool that exists only on another node, and a task delegated to another node returns its result even though the caller was restarted meanwhile (automated).
@@ -279,7 +282,7 @@ The device gains shared memory when Stage 4 is done and remote capabilities when
 | Spike | Question | Finish before | Pass when | If it fails |
 |---|---|---|---|---|
 | Trust design | A design, not code: how people sign in; how a desktop, a phone, a server, and a device enroll and are revoked; what each credential allows; how keys are stored in the vault; how accounts are sealed (T1 to T4, S6) | Stage 2 | The user approves the note. The strongest model available writes it; get an outside review if one can be had | Stage 2 does not start without it |
-| Provider cache | How DeepSeek's prefix cache behaves through the proxy: minimum length, lifetime, scope per key, and whether a fork (the parent's prompt plus one message) hits it | Stage 3 | Measured cache hits for a growing session and for a fork, and a rule for which upstream key a session uses | Revise M2 and M4 with the user before building on them |
+| Provider cache | How DeepSeek's prefix cache behaves through the proxy: minimum length, lifetime, scope per key, whether a fork (the parent's prompt plus one message) hits it, and whether two sessions share the prefix of system prompt and core tools; also whether tool-call arguments stream (for message bubbles) and whether one response can carry several tool calls (a message and finish together) | Stage 3 | Measured cache hits for a growing session, a fork, and a second session, the answers on streaming and several calls, and a rule for which upstream key a session uses | Revise M2 and M4 with the user before building on them |
 | Mobile toolchain | Can agents set up and build the Flutter iOS and Android toolchains with the Rust core without stalling ([client-stack-decision](../memory/client-stack-decision.md))? | Stage 7 | A minimal app with the harness core builds for both platforms from the command line in CI | Revisit the mobile stack with the user |
 | Transport | Which library carries direct connections between nodes with NAT traversal: iroh first, WebRTC (str0m or webrtc-rs) second | Stage 8 | It needs no third-party infrastructure (E6); it builds and connects on Android and iOS; the binary size is acceptable | Remote calls stay on the gateway |
 | Voice latency | Does a streaming chain of recognition, model, and synthesis meet the round-trip budget with DeepSeek's APIs? | Start of V1 | The budget is met | Fix end-of-speech detection first; then consider another speech provider or a speech-to-speech backend |
