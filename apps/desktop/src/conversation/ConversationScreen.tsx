@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
 import { useI18n } from "../i18n/I18n";
 import { Button } from "../ui/Button";
 import { Composer } from "./Composer";
-import type { ToolCall, View } from "./model";
+import { pendingQuestion, type ToolCall, type View } from "./model";
 import type { SessionSource } from "./source";
 import { Transcript } from "./Transcript";
 import styles from "./ConversationScreen.module.css";
@@ -35,6 +35,7 @@ export function ConversationScreen({ source, id, view, onOpen, onOpenSession }: 
         view={view}
         onOpen={onOpen}
         onAnswer={(approvalId, decision) => source.answer(id, approvalId, decision)}
+        onAnswerQuestion={(questionId, answer) => source.answerQuestion(id, questionId, answer)}
         onOpenSession={onOpenSession}
         onCarryOn={carryOn}
       />
@@ -49,6 +50,7 @@ export function ConversationScreen({ source, id, view, onOpen, onOpenSession }: 
         <Composer
           character={conversation.character.name}
           running={conversation.activity !== undefined}
+          answering={pendingQuestion(conversation) !== undefined}
           contextUsed={conversation.contextUsed}
           onSend={(text) => source.send(id, text)}
           onStop={() => source.stop(id)}

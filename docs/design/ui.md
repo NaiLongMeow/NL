@@ -67,6 +67,7 @@ Each device remembers the choice. Defaults *(user, 2026-11-18)*: full view in th
 | Tool call | One-line row (4.4) | Hidden; feeds the working indicator |
 | Several tool calls in a row | One collapsed row, "Used 4 tools · Web.Search, Web.Fetch…" | Hidden |
 | Approval request | Card in the conversation (4.5) | Same |
+| Question (the question tool) | Card with the question and its options, Something else, Answer, and Skip (4.13) | Same |
 | Dispatch | Card listing the tasks handed out, the session each went to, and its live status (4.12) | Same |
 | Task received | Card where a dispatched task arrived: the task and the session it came from (4.12) | Same |
 | Memory written | Thin marker "Remembered: …" with View and Undo | Gray tip, on by default (a setting) |
@@ -150,9 +151,19 @@ The archive lists the summaries (the compacts folder, S3), newest first, with th
 
 *(user, 2026-11-18)* The user can tell one session many things at once. The harness splits them into tasks and gives each one to a session that accepts tasks and suits it, such as the device session on the device that has the right tools, or starts new sessions for the rest; what it can do quickly itself, it keeps. Unlike a sub-agent, a dispatched task belongs to the session that runs it: it keeps running when the dispatching session is ended or archived, and it reports to the user from its own session, and to the dispatching session too while that is still open.
 
-- The **dispatch card** in the dispatching session lists each task in a row: its short title, the session it went to (marked New when the harness started that session), the session's device, and a live status: queued, running, waiting for approval, waiting for the device, done, or failed. A row opens its session. The card's header counts the tasks by status, and its footer says that the tasks carry on in their own sessions if this one closes.
+- The **dispatch card** in the dispatching session lists each task in a row: its short title, the session it went to (marked New when the harness started that session), the session's device, and a live status: queued, running, waiting for an answer, waiting for approval, waiting for the device, done, or failed. A row opens its session. The card's header counts the tasks by status, and its footer says that the tasks carry on in their own sessions if this one closes.
 - A session that **receives a task** shows it as a card where it arrived: the task in the dispatcher's words, and the session it came from, as a link, or marked archived. The work and the result that follow read like any other turn.
 - How the harness matches tasks to sessions, and whether dispatching is a core tool or a toolset (M6), is open question 11.
+
+### 4.13 Questions
+
+*(user, 2026-11-19: the character can ask the user a question, as harnesses commonly do)* When the character needs the user to decide something before it goes on, it asks with the question tool, a core tool like message and finish (M5, M6), and the turn waits for the answer.
+
+- A question is the question in the character's words, a few options, each with an optional line of detail, and whether the user may pick one or several. The user can always answer in their own words under Something else, or Skip; the character then goes on as it sees fit.
+- It is asked in place, as a card in the conversation, never as a modal (principle 5), and it stays in chat view. Nothing is picked at first and no button takes the default focus, so a stray Enter answers nothing.
+- While a question waits, what the user sends from the composer is the answer, and the composer says so ("Answer Dafeiyu"); the message also appears as the user's bubble.
+- Once answered or skipped, the card shows the answer and nothing more can be picked.
+- A waiting question shows wherever the session's state shows: the sidebar's status line, "Waiting for your answer"; the row of a dispatched task; the avatar (section 10). Proposal: the pet and notifications announce it as they announce an approval.
 
 ## 5. Desktop main window
 
@@ -165,7 +176,7 @@ The **sidebar** *(user, 2026-11-18)* holds search, the live sessions, and, at th
 - **Shared:** the account's shared sessions.
 - **Devices:** this device first, then the others, each with its sessions; the sessions of an offline device are dimmed.
 
-Each row shows the title and one status line: what the session is doing, that it waits for approval, that it waits for its device, or that it is idle, with the archive countdown. A session running a dispatched task names the session it came from.
+Each row shows the title and one status line: what the session is doing, that it waits for approval, for an answer (4.13), or for its device, or that it is idle, with the archive countdown. A session running a dispatched task names the session it came from.
 
 **A window, not a browser.** *(user, 2026-11-18: mind the webview's F5 and F12)* In release builds the webview's browser keys are off: F5 and Ctrl+R (reload, which would drop the window's state), Ctrl+P (print), Ctrl+F (find), Ctrl+plus and Ctrl+minus (zoom), Alt+Left and Alt+Right (history), and F12 and Ctrl+Shift+I (developer tools, which release builds do not include anyway). Keys the app uses itself still reach it. The browser's context menu appears only in text fields and on selected text. The webview never leaves the app's own pages; links in messages will open in the system browser. Swiping back and pinch zoom stay off, as Tauri sets them. Development builds keep reload and the developer tools.
 
@@ -240,7 +251,8 @@ Device faces are simulated in `web/stage` for review and for golden tests.
 | Thinking, working | Eyes glancing aside, three dots | Accent, slow pulse |
 | Speaking | Eyes and a mouth bar that follows the audio level | Accent, following the audio level |
 | Expressions | One eye shape per expression | None |
-| Waiting for approval | Eyes looking up, a question mark | Accent, double blink |
+| Waiting for approval | Wide, hopeful eyes looking up, an exclamation mark | Accent, double blink |
+| Waiting for an answer | Head tilted, one eye narrowed, a question mark | Accent, slow wave |
 | Sleeping (quiet hours) | Closed eyes | Off or very dim |
 | Offline | Dimmed eyes and a no-connection glyph | Slow, dim blink |
 | Pairing | The pairing code, if the trust design uses one | Accent, fast blink |
@@ -250,7 +262,7 @@ Device faces are simulated in `web/stage` for review and for golden tests.
 
 Cues are semantic (P8). The initial set:
 
-- **States**, derived from harness events rather than chosen by the model: idle, listening, thinking, working, speaking, waiting, sleeping, offline, error.
+- **States**, derived from harness events rather than chosen by the model: idle, listening, thinking, working, speaking, waiting for approval, waiting for an answer, waiting for a device, sleeping, offline, error.
 - **Expressions**, chosen by the model: neutral, happy, excited, sad, worried, surprised, shy, pouting. Proposal for Stage 3: the message tool carries an optional expression, so that a message and its face arrive together.
 - **Gestures**, chosen by the model: nod, shake head, wave, tilt head, bounce.
 
@@ -289,9 +301,9 @@ Avatars side by side never move in step. With reduced motion the ball keeps stil
 
 What the screens need from the harness and the gateway. The design note of the stage named settles each item.
 
-**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; user message queued and accepted; context usage; compact started and finished; session idle (with the time it archives), ended, and archived. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: tasks dispatched (each task's title and target session, and whether the session is new), a task's status changing, a task received, a task's result reported.
+**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; question asked (its text, options, and whether several may be picked), answered, and skipped; user message queued and accepted; context usage; compact started and finished; session idle (with the time it archives), ended, and archived. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: tasks dispatched (each task's title and target session, and whether the session is new), a task's status changing, a task received, a task's result reported.
 
-**Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends; stop; answer an approval; start a shared or a device session; end a session; compact now; set whether a session accepts tasks; set the idle time; carry on from a summary; list the live sessions of every device, with their kind, device, status, and idle deadline; list the archive; open an archived session read-only; route the pet's input to this device's current session.
+**Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends, or answering the question that waits; stop; answer an approval; answer or skip a question; start a shared or a device session; end a session; compact now; set whether a session accepts tasks; set the idle time; carry on from a summary; list the live sessions of every device, with their kind, device, status, and idle deadline; list the archive; open an archived session read-only; route the pet's input to this device's current session.
 
 **Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, and an optional dedicated rendering. A remote tool's display name comes from its node's toolset, as in `Remote(desktop3).Files.Read`.
 
@@ -308,6 +320,7 @@ The internal terms in the [vocabulary](../../.agents/memory/product-direction.md
 | Session | Session *(user, 2026-11-18)* | 会话 |
 | Shared session, device session | Shared session, device session | 共享会话、设备会话 |
 | Dispatching a task | Dispatch | 分派 |
+| The question tool's call | Question; the character "asks" | 提问；“想问你” |
 | Compact | Summary | 摘要 |
 | The compacts folder | Archive | 归档 |
 | Node | Device | 设备 |

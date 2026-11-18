@@ -1,11 +1,11 @@
 ---
 name: tool-system
-description: Recall before designing or implementing the harness's tools, tool search, toolsets, MCP support, remote tool calls, the message and finish tools, preset agents, or how tool calls are named and shown in the UI.
+description: Recall before designing or implementing the harness's tools, tool search, toolsets, MCP support, remote tool calls, the message, ask, and finish tools, preset agents, or how tool calls are named and shown in the UI.
 metadata:
   type: project
   scope: The harness core's tool surface on every node and provider, NL toolsets, MCP servers, and how tool calls appear in every UI
   status: active
-  last_verified: 2026-11-18
+  last_verified: 2026-11-19
 ---
 
 The harness offers the model one small, fixed set of tools and reaches every other tool through two of them: `tool_search` finds tools and `use_tool` calls them, on every provider. The rules are M5 and M6 in [[architecture-invariants]]; this entry explains the parts and the reasons, and marks what is still the agent's proposal.
@@ -25,6 +25,7 @@ Nothing the model sees grows with the number of toolsets or devices that exist.
 The core tools (working names; the Stage 3 design note fixes names and schemas):
 
 - `message`: the only way to talk to the user; it streams into a bubble (M5).
+- `ask`: asks the user a question, with options and whether one or several may be picked, and waits for the answer; it renders as a question card, and the user may answer in their own words or skip *(user, 2026-11-19: "向用户提问的功能，这个实则在harness里很常见")*. How it shows is in [docs/design/ui.md](../../docs/design/ui.md), section 4.13.
 - `finish`: the only way to end a turn (M5). When the turn sent no message, or its last tool call before finish was not a message, finish must carry an explicit silence argument whose value names that case; otherwise the harness refuses it with an error the model sees.
 - `read`, `write`, `edit`, `glob`, `grep`: the base file tools *(user, 2026-11-18)*. `glob` finds files by path pattern, newest first, and also lists folders; `grep` searches file contents by regular expression and returns matching lines, matching files, or counts. The names and their meaning follow Claude Code and OpenCode, which DeepSeek documents integrations with, so the model already knows them. They act on this node only: paths under `/memory/` are the shared file system, `/compacts/` is its read-only folder, the session's output folder holds its tool outputs, and other paths are files of this node. Memory needs no tools of its own, because memory is files (S3).
 - `web_search`, `web_fetch`: through the gateway's proxy (E5). DeepSeek offers these as server tools ([[deepseek-reference-provider]]); the adapter decides how to map them.

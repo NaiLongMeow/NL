@@ -1,7 +1,7 @@
 /**
  * Cards inside the conversation: approval requests (UI design note,
- * section 4.5; T7), the tasks a session dispatched, and a task it received
- * (section 4.12; S8).
+ * section 4.5; T7), questions the character asks (section 4.13), the tasks
+ * a session dispatched, and a task it received (section 4.12; S8).
  */
 
 import { useId, useState } from "react";
@@ -13,6 +13,7 @@ import {
   CornerDownRight,
   Inbox,
   LoaderCircle,
+  MessageCircleQuestionMark,
   ShieldQuestionMark,
   Split,
   WifiOff,
@@ -20,7 +21,15 @@ import {
 } from "lucide-react";
 import { useI18n } from "../i18n/I18n";
 import { Button } from "../ui/Button";
-import { countByStatus, type ApprovalRequest, type DispatchStatus, type DispatchedTask, type SessionLink } from "./model";
+import {
+  countByStatus,
+  type ApprovalRequest,
+  type DispatchStatus,
+  type DispatchedTask,
+  type QuestionAnswer,
+  type QuestionRequest,
+  type SessionLink,
+} from "./model";
 import styles from "./Cards.module.css";
 
 /**
@@ -85,6 +94,125 @@ export function ApprovalCard({
   );
 }
 
+/**
+ * A question the character asks (UI design note, section 4.13), in place
+ * like an approval: the options to pick from, Something else for the user's
+ * own words, Answer, and Skip. A message typed in the composer answers it
+ * too. Nothing is picked at first and no button takes the default focus, so
+ * a stray Enter answers nothing.
+ */
+export function QuestionCard({
+  question,
+  character,
+  onAnswer,
+}: {
+  question: QuestionRequest;
+  character: string;
+  onAnswer: (answer: QuestionAnswer) => void;
+}) {
+  const { t } = useI18n();
+  const titleId = useId();
+  const group = useId();
+  const [picked, setPicked] = useState<readonly string[]>([]);
+  const [otherOn, setOtherOn] = useState(false);
+  const [other, setOther] = useState("");
+  const otherText = other.trim();
+  const ready = picked.length > 0 || (otherOn && otherText !== "");
+  const kind = question.multiple ? "checkbox" : "radio";
+
+  const pick = (label: string) => {
+    if (question.multiple) {
+      setPicked(picked.includes(label) ? picked.filter((choice) => choice !== label) : [...picked, label]);
+    } else {
+      setPicked([label]);
+      setOtherOn(false);
+    }
+  };
+  const pickOther = () => {
+    if (question.multiple) {
+      setOtherOn(!otherOn);
+    } else {
+      setPicked([]);
+      setOtherOn(true);
+    }
+  };
+  const submit = () => {
+    if (ready) onAnswer({ choices: [...picked], ...(otherOn && otherText ? { other: otherText } : {}) });
+  };
+
+  const { answer } = question;
+  return (
+    <section className={styles.card} data-kind="question" aria-labelledby={titleId}>
+      <header className={styles.header}>
+        <MessageCircleQuestionMark className={styles.questionIcon} aria-hidden />
+        <h3 id={titleId} className={styles.title}>
+          {t.question.title(character)}
+        </h3>
+      </header>
+      <p className={styles.questionText}>{question.text}</p>
+      {answer ? (
+        "skipped" in answer ? (
+          <p className={styles.decision}>
+            <X aria-hidden />
+            {t.question.skipped}
+          </p>
+        ) : (
+          <p className={styles.decision}>
+            <Check aria-hidden />
+            {t.question.answered([...answer.choices, ...(answer.other ? [answer.other] : [])].join(t.question.separator))}
+          </p>
+        )
+      ) : (
+        <>
+          <fieldset className={styles.options}>
+            <legend className={styles.optionsHint}>{question.multiple ? t.question.pickAny : t.question.pickOne}</legend>
+            {question.options.map((option) => (
+              <label key={option.label} className={styles.option}>
+                <input type={kind} name={group} checked={picked.includes(option.label)} onChange={() => pick(option.label)} />
+                <span className={styles.optionText}>
+                  <span>{option.label}</span>
+                  {option.detail && <span className={styles.optionDetail}>{option.detail}</span>}
+                </span>
+              </label>
+            ))}
+            <label className={styles.option}>
+              <input type={kind} name={group} checked={otherOn} onChange={pickOther} />
+              <span className={styles.optionText}>{t.question.other}</span>
+            </label>
+            {otherOn && (
+              <input
+                className={styles.otherInput}
+                type="text"
+                value={other}
+                placeholder={t.question.otherPlaceholder}
+                aria-label={t.question.otherPlaceholder}
+                autoFocus
+                onChange={(event) => setOther(event.target.value)}
+                onKeyDown={(event) => {
+                  // Enter answers, except while an input method is composing.
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                    submit();
+                  }
+                }}
+              />
+            )}
+          </fieldset>
+          <div className={styles.actions}>
+            <Button variant="primary" disabled={!ready} onClick={submit}>
+              {t.question.answer}
+            </Button>
+            <Button variant="ghost" onClick={() => onAnswer({ skipped: true })}>
+              {t.question.skip}
+            </Button>
+            <span className={styles.typeBelow}>{t.question.typeBelow}</span>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 /** The icon of each dispatch status: quiet for running and done, warning for what waits on the user. */
 function StatusIcon({ status }: { status: DispatchStatus }) {
   switch (status) {
@@ -92,6 +220,8 @@ function StatusIcon({ status }: { status: DispatchStatus }) {
       return <Clock aria-hidden />;
     case "running":
       return <LoaderCircle className={styles.spin} aria-hidden />;
+    case "question":
+      return <MessageCircleQuestionMark aria-hidden />;
     case "approval":
       return <ShieldQuestionMark aria-hidden />;
     case "device":
@@ -103,7 +233,7 @@ function StatusIcon({ status }: { status: DispatchStatus }) {
   }
 }
 
-const STATUS_ORDER: readonly DispatchStatus[] = ["running", "approval", "device", "queued", "done", "failed"];
+const STATUS_ORDER: readonly DispatchStatus[] = ["running", "question", "approval", "device", "queued", "done", "failed"];
 
 /**
  * The tasks a session handed out (UI design note, section 4.12): each row

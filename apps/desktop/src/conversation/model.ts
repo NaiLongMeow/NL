@@ -4,8 +4,8 @@
  * A session's conversation is a list of blocks in the order they happened.
  * Each block is one kind of thing from section 4.2 of the note: the user's
  * messages, the character's messages (the message tool, M5), working text,
- * thinking, tool calls, approvals, dispatched and received tasks, and
- * markers. Screens only render blocks; a `SessionSource` (source.ts)
+ * thinking, tool calls, approvals, questions, dispatched and received tasks,
+ * and markers. Screens only render blocks; a `SessionSource` (source.ts)
  * supplies them. In Stage 1 the source is a scripted fake; Stage 3 builds
  * blocks from the harness's events.
  */
@@ -66,6 +66,23 @@ export interface ApprovalRequest {
   decision?: "allowed" | "denied";
 }
 
+/** What the user gave for a question: the options picked and any words of their own, or nothing. */
+export type QuestionAnswer = { choices: string[]; other?: string } | { skipped: true };
+
+/**
+ * A question the character asks the user, with options to pick from (note,
+ * section 4.13). The turn waits for the answer.
+ */
+export interface QuestionRequest {
+  id: string;
+  /** The question, in the character's words. */
+  text: string;
+  options: { label: string; detail?: string }[];
+  /** The user may pick more than one option. */
+  multiple?: boolean;
+  answer?: QuestionAnswer;
+}
+
 /** The two kinds of session (note, section 4.10). */
 export type SessionKind = "shared" | "device";
 
@@ -78,7 +95,7 @@ export interface SessionLink {
 }
 
 /** Where a dispatched task stands (note, section 4.12). */
-export type DispatchStatus = "queued" | "running" | "approval" | "device" | "done" | "failed";
+export type DispatchStatus = "queued" | "running" | "question" | "approval" | "device" | "done" | "failed";
 
 /** One row of a dispatch card: a task and the session it went to. */
 export interface DispatchedTask {
@@ -105,6 +122,7 @@ export type Block =
   | { kind: "thinking"; id: string; seconds: number }
   | { kind: "tool"; id: string; call: ToolCall }
   | { kind: "approval"; id: string; request: ApprovalRequest }
+  | { kind: "question"; id: string; question: QuestionRequest }
   | { kind: "dispatch"; id: string; tasks: DispatchedTask[] }
   | { kind: "received"; id: string; text: string; from: SessionLink }
   | { kind: "remembered"; id: string; text: string }
@@ -144,6 +162,8 @@ export interface Conversation {
   blocks: Block[];
   /** Set while a turn runs. */
   activity?: Activity;
+  /** The turn waits for the session's device to come online. */
+  waitsForDevice?: boolean;
   /** How full the context is, 0 to 1. */
   contextUsed: number;
 }
@@ -153,6 +173,7 @@ const CHAT_VIEW_KINDS: ReadonlySet<Block["kind"]> = new Set([
   "user",
   "message",
   "approval",
+  "question",
   "dispatch",
   "received",
   "remembered",
@@ -163,8 +184,8 @@ const CHAT_VIEW_KINDS: ReadonlySet<Block["kind"]> = new Set([
 
 /**
  * The blocks to render for a view. Chat view keeps what a chat app shows:
- * both sides' messages, approvals, dispatched and received tasks, and a few
- * tips. Full view shows everything, with runs of three or more tool calls
+ * both sides' messages, approvals, questions, dispatched and received tasks,
+ * and a few tips. Full view shows everything, with runs of three or more tool calls
  * folded into a group.
  */
 export function shownBlocks(blocks: readonly Block[], view: View): ShownBlock[] {
@@ -212,4 +233,28 @@ export function countByStatus(tasks: readonly DispatchedTask[]): Partial<Record<
   const counts: Partial<Record<DispatchStatus, number>> = {};
   for (const task of tasks) counts[task.status] = (counts[task.status] ?? 0) + 1;
   return counts;
+}
+
+/**
+ * What the character is doing in a session, which its avatar shows and the
+ * sidebar names (note, sections 5 and 10). What waits on the user comes
+ * first: an approval, then a question; then a device that is offline; then
+ * a running turn.
+ */
+export type CharacterState = "idle" | "working" | "approval" | "question" | "device";
+
+export function characterState(conversation: Conversation): CharacterState {
+  if (conversation.archived) return "idle";
+  const { blocks } = conversation;
+  if (blocks.some((block) => block.kind === "approval" && !block.request.decision)) return "approval";
+  if (pendingQuestion(conversation)) return "question";
+  if (conversation.waitsForDevice) return "device";
+  if (conversation.activity) return "working";
+  return "idle";
+}
+
+/** The question the session waits to have answered, if any. */
+export function pendingQuestion(conversation: Conversation): QuestionRequest | undefined {
+  for (const block of conversation.blocks) if (block.kind === "question" && !block.question.answer) return block.question;
+  return undefined;
 }

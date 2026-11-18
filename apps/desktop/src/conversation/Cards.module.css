@@ -27,7 +27,8 @@
 }
 
 .dispatchIcon,
-.receivedIcon {
+.receivedIcon,
+.questionIcon {
   color: var(--nl-color-accent-text);
 }
 
@@ -165,6 +166,7 @@
   color: var(--nl-color-accent-text);
 }
 
+.task[data-status="question"] .taskStatus,
 .task[data-status="approval"] .taskStatus,
 .task[data-status="device"] .taskStatus {
   color: var(--nl-color-warning-icon);
@@ -316,4 +318,90 @@
   .spin {
     animation: none;
   }
+}
+
+/* A question (QuestionCard): the options as rows to pick, the picked one in the accent. */
+.questionText {
+  margin: 0;
+  color: var(--nl-color-ink-primary);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.optionsHint {
+  margin-bottom: var(--nl-space-1);
+  padding: 0;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nl-space-2);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-default);
+  border-radius: var(--nl-radius-md);
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--nl-color-surface-sunken);
+}
+
+.option:has(input:checked) {
+  border-color: var(--nl-color-accent-fill);
+  background: var(--nl-color-accent-soft);
+}
+
+.option:has(input:focus-visible) {
+  outline: var(--nl-focus-width) solid var(--nl-color-focus);
+  outline-offset: 1px;
+}
+
+.option input {
+  flex: none;
+  margin: 3px 0 0;
+  accent-color: var(--nl-color-accent-fill);
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--nl-color-ink-primary);
+}
+
+.optionDetail {
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+}
+
+.otherInput {
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-default);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-app);
+  color: var(--nl-color-ink-primary);
+  font: inherit;
+}
+
+.otherInput:focus-visible {
+  outline: var(--nl-focus-width) solid var(--nl-color-focus);
+  outline-offset: 1px;
+}
+
+.typeBelow {
+  align-self: center;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
 }

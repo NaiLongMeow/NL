@@ -12,8 +12,17 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { useI18n } from "../i18n/I18n";
 import { Avatar } from "../ui/Avatar";
 import { Archived, BreakCard, ErrorRow, MessageBubble, Notice, Remembered, Summarized, Thinking, UserBubble, WorkingText } from "./Blocks";
-import { ApprovalCard, DispatchCard, ReceivedCard } from "./Cards";
-import { shownBlocks, startsGroup, type Conversation, type ShownBlock, type ToolCall, type View } from "./model";
+import { ApprovalCard, DispatchCard, QuestionCard, ReceivedCard } from "./Cards";
+import {
+  characterState,
+  shownBlocks,
+  startsGroup,
+  type Conversation,
+  type QuestionAnswer,
+  type ShownBlock,
+  type ToolCall,
+  type View,
+} from "./model";
 import { ToolGroup, ToolRow } from "./ToolRow";
 import styles from "./Transcript.module.css";
 
@@ -22,13 +31,14 @@ interface Props {
   view: View;
   onOpen: (call: ToolCall) => void;
   onAnswer: (approvalId: string, decision: "allowed" | "denied") => void;
+  onAnswerQuestion: (questionId: string, answer: QuestionAnswer) => void;
   /** Opens another session, such as the one a task went to or came from. */
   onOpenSession: (id: string) => void;
   /** Starts a new session from this one's summary. */
   onCarryOn: () => void;
 }
 
-export function Transcript({ conversation, view, onOpen, onAnswer, onOpenSession, onCarryOn }: Props) {
+export function Transcript({ conversation, view, onOpen, onAnswer, onAnswerQuestion, onOpenSession, onCarryOn }: Props) {
   const { t } = useI18n();
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -75,6 +85,15 @@ export function Transcript({ conversation, view, onOpen, onAnswer, onOpenSession
             onAnswer={(decision) => onAnswer(block.request.id, decision)}
           />
         );
+      case "question":
+        return (
+          <QuestionCard
+            key={block.id}
+            question={block.question}
+            character={conversation.character.name}
+            onAnswer={(answer) => onAnswerQuestion(block.question.id, answer)}
+          />
+        );
       case "dispatch":
         return <DispatchCard key={block.id} tasks={block.tasks} onOpenSession={onOpenSession} />;
       case "received":
@@ -100,7 +119,8 @@ export function Transcript({ conversation, view, onOpen, onAnswer, onOpenSession
         {blocks.map(render)}
         {conversation.activity && (
           <div className={styles.working} role="status">
-            <Avatar size={20} cue="working" />
+            {/* The avatar shows what the turn waits for: an approval, an answer, a device, or nothing. */}
+            <Avatar size={20} cue={characterState(conversation)} />
             <span>{conversation.activity.text ?? t.blocks.thinking}</span>
             <span className={styles.dots} aria-hidden>
               <i />

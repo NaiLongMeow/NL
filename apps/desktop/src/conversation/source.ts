@@ -9,7 +9,7 @@
  * without changing the screens.
  */
 
-import type { Conversation, SessionKind, SessionLink } from "./model";
+import type { Conversation, QuestionAnswer, SessionKind, SessionLink } from "./model";
 
 /** A device of the account, as the sidebar groups sessions by it (note, section 5). */
 export interface Device {
@@ -27,6 +27,7 @@ export interface Device {
 export type SessionStatus =
   | { kind: "working"; text: string }
   | { kind: "approval" }
+  | { kind: "question" }
   | { kind: "device" }
   /** Idle, and archives itself in this many minutes (note, section 4.11). */
   | { kind: "idle"; archivesInMinutes: number };
@@ -71,13 +72,19 @@ export interface SessionSource {
   subscribe(listener: () => void): () => void;
   /**
    * Sends the user's message. During a turn it cuts in at the turn's next
-   * step (the default the user chose, note section 4.8).
+   * step (the default the user chose, note section 4.8). While a question
+   * waits, the message is its answer, in the user's own words.
    */
   send(id: string, text: string): void;
   /** Stops the running turn (P7). */
   stop(id: string): void;
   /** Answers an approval request (T7). */
   answer(id: string, approvalId: string, decision: "allowed" | "denied"): void;
+  /**
+   * Answers the character's question, or skips it (note, section 4.13).
+   * A message sent while a question waits answers it too (`send`).
+   */
+  answerQuestion(id: string, questionId: string, answer: QuestionAnswer): void;
   /** Lets other sessions dispatch tasks to this one, or stops them (note, section 4.10). */
   setAcceptsTasks(id: string, accepts: boolean): void;
   /** Ends the session at once (product rule 4): it is summarized and archived. */

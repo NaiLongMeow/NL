@@ -10,8 +10,9 @@
  *   sessions of an offline device are dimmed.
  *
  * Each row shows the title and one status line: what the session is doing,
- * that it waits for approval or for its device, or that it is idle, with
- * the archive countdown, and for a dispatched task, where it came from.
+ * that it waits for approval, for an answer, or for its device, or that it
+ * is idle, with the archive countdown, and for a dispatched task, where it
+ * came from.
  */
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
@@ -24,6 +25,7 @@ import {
   Search,
   Server,
   Settings,
+  MessageCircleQuestionMark,
   ShieldQuestionMark,
   Smartphone,
   Speaker,
@@ -166,6 +168,14 @@ function Row({ item, current, onSelect }: { item: SessionSummary; current: boole
         <>
           <ShieldQuestionMark className={styles.attention} aria-hidden />
           {t.sidebar.approval}
+        </>
+      );
+      break;
+    case "question":
+      line = (
+        <>
+          <MessageCircleQuestionMark className={styles.attention} aria-hidden />
+          {t.sidebar.question}
         </>
       );
       break;

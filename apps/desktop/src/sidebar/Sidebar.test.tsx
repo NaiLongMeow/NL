@@ -33,6 +33,7 @@ describe("Sidebar", () => {
     const row = (title: string) => screen.getByRole("button", { name: new RegExp(`^${title}`) });
     expect(row("Errands this week").textContent).toContain(en.sidebar.idle(26));
     expect(row("Weekend hike").textContent).toContain(en.sidebar.approval);
+    expect(row("Sorting photos").textContent).toContain(en.sidebar.question);
     expect(row("Message Mia").textContent).toContain(en.sidebar.waitingForDevice);
     expect(row("Sort the Downloads folder").textContent).toContain("Moving files…");
     expect(row("Sort the Downloads folder").textContent).toContain(en.sidebar.from("Errands this week"));

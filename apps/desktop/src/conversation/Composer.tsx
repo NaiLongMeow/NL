@@ -5,7 +5,9 @@
  * input method is composing, so Chinese and Japanese input works. While the
  * character replies, the send button becomes Stop when the box is empty,
  * and Esc stops too (P7); a message sent then cuts in at the turn's next
- * step. A small ring shows how full the context is.
+ * step. While the character waits for the answer to a question, what the
+ * user sends is the answer (section 4.13), and the box says so. A small ring
+ * shows how full the context is.
  */
 
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
@@ -18,6 +20,8 @@ import styles from "./Composer.module.css";
 interface Props {
   character: string;
   running: boolean;
+  /** A question waits for its answer. */
+  answering?: boolean;
   contextUsed: number;
   onSend: (text: string) => void;
   onStop: () => void;
@@ -28,7 +32,7 @@ const NEAR_LIMIT = 0.85;
 /** The tallest the box grows, in pixels, before it scrolls. */
 const MAX_HEIGHT = 240;
 
-export function Composer({ character, running, contextUsed, onSend, onStop }: Props) {
+export function Composer({ character, running, answering = false, contextUsed, onSend, onStop }: Props) {
   const { t } = useI18n();
   const [text, setText] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
@@ -73,8 +77,8 @@ export function Composer({ character, running, contextUsed, onSend, onStop }: Pr
           className={styles.input}
           rows={1}
           value={text}
-          placeholder={t.composer.placeholder(character)}
-          aria-label={t.composer.placeholder(character)}
+          placeholder={answering ? t.composer.answerPlaceholder(character) : t.composer.placeholder(character)}
+          aria-label={answering ? t.composer.answerPlaceholder(character) : t.composer.placeholder(character)}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKeyDown}
         />

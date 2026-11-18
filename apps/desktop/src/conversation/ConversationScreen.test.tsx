@@ -5,6 +5,7 @@ import { useState, useSyncExternalStore } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n/I18n";
 import { en } from "../i18n/messages";
+import { QuestionCard } from "./Cards";
 import { ConversationScreen } from "./ConversationScreen";
 import { createFakeSource } from "./fake";
 import { Header } from "./Header";
@@ -19,7 +20,9 @@ interface Options {
 }
 
 /** A session with its header, as the main window shows them. */
-function Session({ id = "hike", initialView = "full", source = createFakeSource("en"), onOpenSession = () => {} }: Options) {
+function Session({ id = "hike", initialView = "full", source: given, onOpenSession = () => {} }: Options) {
+  // One source for the whole test: a default parameter would make a new one on every render.
+  const [source] = useState(() => given ?? createFakeSource("en"));
   const [view, setView] = useState<View>(initialView);
   const conversation = useSyncExternalStore(source.subscribe, () => source.conversation(id));
   return (
@@ -87,7 +90,9 @@ describe("ConversationScreen", () => {
     const onOpenSession = vi.fn();
     render(<Session id="errands" onOpenSession={onOpenSession} />);
     const card = screen.getByRole("region", { name: en.dispatch.title(8) });
-    expect(within(card).getByText(/3 running · 1 waiting for approval · 1 waiting for a device · 3 done/)).toBeTruthy();
+    expect(
+      within(card).getByText(/2 running · 1 waiting for your answer · 1 waiting for approval · 1 waiting for a device · 3 done/),
+    ).toBeTruthy();
     expect(within(card).getAllByText(en.dispatch.kept)).toHaveLength(2);
     expect(within(card).getAllByText(en.dispatch.created)).toHaveLength(4);
     expect(within(card).getByText(en.dispatch.footer)).toBeTruthy();
@@ -103,6 +108,51 @@ describe("ConversationScreen", () => {
     expect(within(card).getByText(/Sort the Downloads folder by type/)).toBeTruthy();
     await user.click(within(card).getByRole("button", { name: en.received.from("Errands this week") }));
     expect(onOpenSession).toHaveBeenCalledWith("errands");
+  });
+
+  it("asks a question in place: nothing picked at first, then the picked option is the answer", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    const answerQuestion = vi.spyOn(source, "answerQuestion");
+    render(<Session id="photos" source={source} />);
+    const card = screen.getByRole("region", { name: en.question.title("Dafeiyu") });
+    expect(within(card).getByText(/212 photos have no date/)).toBeTruthy();
+    const answer = within(card).getByRole("button", { name: en.question.answer });
+    expect(answer).toHaveProperty("disabled", true);
+    expect(card.contains(document.activeElement)).toBe(false);
+    await user.click(within(card).getByRole("radio", { name: /Into a folder named Undated/ }));
+    await user.click(answer);
+    expect(answerQuestion).toHaveBeenCalledWith("photos", "q1", { choices: ["Into a folder named Undated"] });
+    expect(within(card).getByText(en.question.answered("Into a folder named Undated"))).toBeTruthy();
+    expect(within(card).queryByRole("radio")).toBeNull();
+  });
+
+  it("takes the user's own words under Something else, and can skip", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    const answerQuestion = vi.spyOn(source, "answerQuestion");
+    render(<Session id="photos" source={source} />);
+    const card = screen.getByRole("region", { name: en.question.title("Dafeiyu") });
+    await user.click(within(card).getByRole("radio", { name: en.question.other }));
+    await user.type(within(card).getByRole("textbox", { name: en.question.otherPlaceholder }), "Ask me later{Enter}");
+    expect(answerQuestion).toHaveBeenLastCalledWith("photos", "q1", { choices: [], other: "Ask me later" });
+
+    const again = createFakeSource("en");
+    const skip = vi.spyOn(again, "answerQuestion");
+    render(<Session id="photos" source={again} />);
+    const [, second] = screen.getAllByRole("region", { name: en.question.title("Dafeiyu") });
+    await user.click(within(second!).getByRole("button", { name: en.question.skip }));
+    expect(skip).toHaveBeenCalledWith("photos", "q1", { skipped: true });
+    expect(within(second!).getByText(en.question.skipped)).toBeTruthy();
+  });
+
+  it("answers a waiting question with what the user types in the composer, and keeps it in chat view", async () => {
+    const user = userEvent.setup();
+    render(<Session id="photos" initialView="chat" />);
+    const card = screen.getByRole("region", { name: en.question.title("Dafeiyu") });
+    await user.type(screen.getByRole("textbox", { name: en.composer.answerPlaceholder("Dafeiyu") }), "Undated, please{Enter}");
+    expect(within(card).getByText(en.question.answered("Undated, please"))).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: en.composer.placeholder("Dafeiyu") })).toBeTruthy();
   });
 
   it("makes an archived session read-only, with Carry on in place of the composer", async () => {
@@ -123,7 +173,41 @@ describe("ConversationScreen", () => {
   });
 });
 
+describe("QuestionCard", () => {
+  it("lets the user pick several options and add their own words when the question allows it", async () => {
+    const user = userEvent.setup();
+    const onAnswer = vi.fn();
+    render(
+      <I18nProvider initial="en">
+        <QuestionCard
+          character="Dafeiyu"
+          question={{ id: "q", text: "Which snacks?", multiple: true, options: [{ label: "Crisps" }, { label: "Fruit" }, { label: "Nuts" }] }}
+          onAnswer={onAnswer}
+        />
+      </I18nProvider>,
+    );
+    expect(screen.getByText(en.question.pickAny)).toBeTruthy();
+    await user.click(screen.getByRole("checkbox", { name: "Fruit" }));
+    await user.click(screen.getByRole("checkbox", { name: "Crisps" }));
+    await user.click(screen.getByRole("checkbox", { name: "Fruit" }));
+    await user.click(screen.getByRole("checkbox", { name: "Nuts" }));
+    await user.click(screen.getByRole("checkbox", { name: en.question.other }));
+    await user.type(screen.getByRole("textbox", { name: en.question.otherPlaceholder }), "Tea");
+    await user.click(screen.getByRole("button", { name: en.question.answer }));
+    expect(onAnswer).toHaveBeenCalledWith({ choices: ["Crisps", "Nuts"], other: "Tea" });
+  });
+});
+
 describe("Header", () => {
+  it("shows on the avatar what the session waits for, or that it works or rests", () => {
+    const states: Record<string, string> = { hike: "approval", photos: "question", mia: "device", downloads: "working", errands: "idle" };
+    for (const [id, cue] of Object.entries(states)) {
+      const { container, unmount } = render(<Session id={id} />);
+      expect(container.querySelector("header [data-cue]")?.getAttribute("data-cue"), id).toBe(cue);
+      unmount();
+    }
+  });
+
   it("marks the character as an AI next to its name, and says what kind of session it is", () => {
     render(<Session id="errands" />);
     expect(screen.getByLabelText(en.header.aiLabel).textContent).toBe("AI");

@@ -157,7 +157,8 @@
   height: 12px;
 }
 
-.itemMeta[data-status="approval"] {
+.itemMeta[data-status="approval"],
+.itemMeta[data-status="question"] {
   color: var(--nl-color-ink-secondary);
 }
 

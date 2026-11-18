@@ -13,6 +13,7 @@
  *   that accept tasks ("photos" on the study desktop, "hike" on this laptop);
  * - "hike", with working text, thinking, tool calls (local, remote, cut), a
  *   memory marker, and an approval that waits;
+ * - "photos", which stopped to ask the user a question (4.13);
  * - "presentation", a plain chat that does not accept tasks;
  * - an archive of earlier sessions to carry on from.
  *
@@ -21,7 +22,7 @@
  */
 
 import type { Locale } from "../i18n/messages";
-import type { Block, Conversation, DispatchedTask, SessionKind, SessionLink, ToolCall } from "./model";
+import { characterState, pendingQuestion, type Block, type Conversation, type DispatchedTask, type QuestionAnswer, type SessionKind, type SessionLink, type ToolCall } from "./model";
 import type { ArchivedSession, Device, SessionSource, SessionStatus, SessionSummary } from "./source";
 
 /** Texts of the fake data, which plays the part of model output and of names the user chose. */
@@ -73,6 +74,15 @@ const text = {
     photosAnswer: "Pictures holds 3,412 photos, 18.6 GB in all. Half of them are from 2026.",
     photosTask: "File this year's photos by month, into Pictures/2026/01 to 12.",
     photosMoving: "Filing photos by month…",
+    photosQuestion: "212 photos have no date, so I can't tell their month. Where should they go?",
+    photosUndated: "Into a folder named Undated",
+    photosUndatedDetail: "Pictures/2026/Undated",
+    photosModified: "By the date the file was last changed",
+    photosModifiedDetail: "Often the day it was copied, not the day it was taken",
+    photosLeave: "Leave them where they are",
+    photosWaiting: "Waiting for your answer…",
+    photosAnswered: (answer: string) => `Got it: ${answer}. Filing the rest now.`,
+    photosSkipped: "All right, I'll leave the undated photos where they are.",
     photos1706: "1,706 photos",
     photos842: "842 photos",
 
@@ -181,6 +191,15 @@ const text = {
     photosAnswer: "图片文件夹里有 3,412 张照片，一共 18.6 GB，其中一半是 2026 年拍的。",
     photosTask: "把今年的照片按月份归档，放到 Pictures/2026/01 到 12。",
     photosMoving: "正在按月份归档照片…",
+    photosQuestion: "有 212 张照片没有拍摄日期，分不出月份。它们放哪儿？",
+    photosUndated: "放进一个叫“无日期”的文件夹",
+    photosUndatedDetail: "Pictures/2026/无日期",
+    photosModified: "按文件最后修改的日期",
+    photosModifiedDetail: "往往是拷进来的那天，不一定是拍摄那天",
+    photosLeave: "留在原处不动",
+    photosWaiting: "等你回答…",
+    photosAnswered: (answer: string) => `好的：${answer}。剩下的这就归档。`,
+    photosSkipped: "好，没日期的照片先留在原处。",
     photos1706: "1,706 张",
     photos842: "842 张",
 
@@ -240,7 +259,7 @@ const text = {
     nov12: "11月12日",
     nov10: "11月10日",
   },
-} satisfies Record<Locale, Record<string, string>>;
+} satisfies Record<Locale, Record<string, string | ((value: string) => string)>>;
 
 type Texts = (typeof text)["en"];
 
@@ -271,8 +290,6 @@ interface Live {
   deviceId?: string;
   /** Minutes the session has been idle so far, for its archive countdown. */
   idleFor: number;
-  /** The task waits for its device to come online. */
-  waitsForDevice?: boolean;
 }
 
 function session(
@@ -296,7 +313,7 @@ function scripted(t: Texts): Live[] {
       id: "d2",
       title: t.dPhotos,
       session: { id: "photos", title: t.photosTitle, created: false, kind: "device", device: t.desk },
-      status: "running",
+      status: "question",
     },
     {
       id: "d3",
@@ -608,18 +625,20 @@ function scripted(t: Texts): Live[] {
               }),
             },
             {
-              kind: "tool",
-              id: "p-t3",
-              call: tool({
-                id: "p-t3",
-                name: { toolset: "Files", tool: "Move", argument: "2026-07 … 2026-11" },
-                category: "files",
-                status: "running",
-                device: t.desk,
-              }),
+              kind: "question",
+              id: "p-q",
+              question: {
+                id: "q1",
+                text: t.photosQuestion,
+                options: [
+                  { label: t.photosUndated, detail: t.photosUndatedDetail },
+                  { label: t.photosModified, detail: t.photosModifiedDetail },
+                  { label: t.photosLeave },
+                ],
+              },
             },
           ],
-          activity: { text: t.photosMoving },
+          activity: { text: t.photosWaiting },
         },
         t,
       ),
@@ -659,10 +678,10 @@ function scripted(t: Texts): Live[] {
     {
       deviceId: "phone",
       idleFor: 0,
-      waitsForDevice: true,
       conversation: session(
         {
           id: "mia",
+          waitsForDevice: true,
           title: t.miaTitle,
           kind: "device",
           device: t.phone,
@@ -712,10 +731,30 @@ function archivedConversation(t: Texts, item: ArchivedSession, idleLimit: number
 
 function statusOf(live: Live, idleLimit: number): SessionStatus {
   const { conversation } = live;
-  if (conversation.blocks.some((block) => block.kind === "approval" && !block.request.decision)) return { kind: "approval" };
-  if (live.waitsForDevice) return { kind: "device" };
-  if (conversation.activity) return { kind: "working", text: conversation.activity.text ?? "" };
-  return { kind: "idle", archivesInMinutes: Math.max(1, idleLimit - live.idleFor) };
+  const state = characterState(conversation);
+  switch (state) {
+    case "approval":
+    case "question":
+    case "device":
+      return { kind: state };
+    case "working":
+      return { kind: "working", text: conversation.activity?.text ?? "" };
+    case "idle":
+      return { kind: "idle", archivesInMinutes: Math.max(1, idleLimit - live.idleFor) };
+  }
+}
+
+/** The blocks with the question `questionId` answered. */
+function answered(blocks: readonly Block[], questionId: string, answer: QuestionAnswer): Block[] {
+  return blocks.map((block) =>
+    block.kind === "question" && block.question.id === questionId ? { ...block, question: { ...block.question, answer } } : block,
+  );
+}
+
+/** The words of an answer, as the character's reply repeats them. */
+function answerText(answer: QuestionAnswer): string {
+  if ("skipped" in answer) return "";
+  return [...answer.choices, ...(answer.other ? [answer.other] : [])].join(", ");
 }
 
 export function createFakeSource(locale: Locale): SessionSource {
@@ -795,7 +834,22 @@ export function createFakeSource(locale: Locale): SessionSource {
       return () => listeners.delete(listener);
     },
     send(id, message) {
-      const running = live.get(id)?.conversation.activity !== undefined;
+      const current = live.get(id)?.conversation;
+      const question = current && pendingQuestion(current);
+      if (question) {
+        // The message is the answer, in the user's own words; the turn goes on.
+        updateConversation(id, (conversation) => ({
+          ...conversation,
+          blocks: [
+            ...answered(conversation.blocks, question.id, { choices: [], other: message }),
+            { kind: "user", id: nextId("u"), text: message, time: now() },
+          ],
+          activity: { text: t.thinking },
+        }));
+        reply(id, t.photosAnswered(message));
+        return;
+      }
+      const running = current?.activity !== undefined;
       updateConversation(id, (conversation) => ({
         ...conversation,
         // During a turn the message waits for the next step (it cuts in).
@@ -807,9 +861,9 @@ export function createFakeSource(locale: Locale): SessionSource {
     stop(id) {
       update(id, (item) => ({
         ...item,
-        waitsForDevice: false,
         conversation: {
           ...item.conversation,
+          waitsForDevice: false,
           activity: undefined,
           blocks: item.conversation.blocks.map((block) =>
             block.kind === "tool" && (block.call.status === "running" || block.call.status === "waiting")
@@ -828,6 +882,14 @@ export function createFakeSource(locale: Locale): SessionSource {
         activity: { text: t.thinking },
       }));
       reply(id, decision === "allowed" ? t.allowedReply : t.deniedReply);
+    },
+    answerQuestion(id, questionId, answer) {
+      updateConversation(id, (conversation) => ({
+        ...conversation,
+        blocks: answered(conversation.blocks, questionId, answer),
+        activity: { text: t.thinking },
+      }));
+      reply(id, "skipped" in answer ? t.photosSkipped : t.photosAnswered(answerText(answer)));
     },
     setAcceptsTasks(id, accepts) {
       update(id, (item) => ({ ...item, conversation: { ...item.conversation, acceptsTasks: accepts } }));

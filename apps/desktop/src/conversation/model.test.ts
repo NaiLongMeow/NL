@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { countByStatus, shownBlocks, startsGroup, toolDisplayName, type Block, type DispatchedTask, type ToolCall } from "./model";
+import {
+  characterState,
+  countByStatus,
+  pendingQuestion,
+  shownBlocks,
+  startsGroup,
+  toolDisplayName,
+  type Block,
+  type Conversation,
+  type DispatchedTask,
+  type ToolCall,
+} from "./model";
 
 const call = (id: string): ToolCall => ({
   id,
@@ -47,13 +58,14 @@ describe("shownBlocks", () => {
     { kind: "remembered", id: "r", text: "likes tea" },
     { kind: "dispatch", id: "d", tasks: [] },
     { kind: "received", id: "rv", text: "do this", from: { id: "other", title: "Other" } },
+    { kind: "question", id: "q", question: { id: "q1", text: "Which one?", options: [{ label: "This" }] } },
     { kind: "notice", id: "n", text: "digest" },
     { kind: "summarized", id: "s" },
     { kind: "archived", id: "a", reason: "idle", idleMinutes: 30 },
   ];
 
-  it("shows only what a chat app would in chat view, with dispatched and received tasks", () => {
-    expect(shownBlocks(blocks, "chat").map((block) => block.id)).toEqual(["u", "m", "r", "d", "rv", "a"]);
+  it("shows only what a chat app would in chat view, with dispatched and received tasks and questions", () => {
+    expect(shownBlocks(blocks, "chat").map((block) => block.id)).toEqual(["u", "m", "r", "d", "rv", "q", "a"]);
   });
 
   it("folds three or more tool calls in a row into a group in full view", () => {
@@ -68,6 +80,7 @@ describe("shownBlocks", () => {
       "remembered",
       "dispatch",
       "received",
+      "question",
       "notice",
       "summarized",
       "archived",
@@ -102,5 +115,43 @@ describe("countByStatus", () => {
       done: 1,
       device: 1,
     });
+  });
+});
+
+describe("characterState", () => {
+  const base: Conversation = {
+    id: "s",
+    title: "S",
+    kind: "shared",
+    acceptsTasks: true,
+    character: { name: "Dafeiyu" },
+    blocks: [],
+    contextUsed: 0,
+  };
+  const approval: Block = {
+    kind: "approval",
+    id: "ap",
+    request: { id: "a1", action: "buy", device: "Laptop", reason: "spends", arguments: "{}" },
+  };
+  const question: Block = { kind: "question", id: "qu", question: { id: "q1", text: "Which?", options: [{ label: "A" }] } };
+
+  it("puts what waits on the user first: an approval, then a question, then a device, then a running turn", () => {
+    const working = { ...base, activity: { text: "Working" } };
+    expect(characterState(base)).toBe("idle");
+    expect(characterState(working)).toBe("working");
+    expect(characterState({ ...working, waitsForDevice: true })).toBe("device");
+    expect(characterState({ ...working, waitsForDevice: true, blocks: [question] })).toBe("question");
+    expect(characterState({ ...working, waitsForDevice: true, blocks: [question, approval] })).toBe("approval");
+  });
+
+  it("stops waiting once the approval and the question are answered, and an archived session is idle", () => {
+    const answered: Block[] = [
+      { ...approval, request: { id: "a1", action: "buy", device: "Laptop", reason: "spends", arguments: "{}", decision: "denied" } },
+      { kind: "question", id: "qu", question: { id: "q1", text: "Which?", options: [{ label: "A" }], answer: { skipped: true } } },
+    ];
+    expect(characterState({ ...base, blocks: answered })).toBe("idle");
+    expect(pendingQuestion({ ...base, blocks: answered })).toBeUndefined();
+    expect(pendingQuestion({ ...base, blocks: [question] })?.id).toBe("q1");
+    expect(characterState({ ...base, archived: true, blocks: [approval] })).toBe("idle");
   });
 });

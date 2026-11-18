@@ -59,11 +59,12 @@ describe("createFakeSource", () => {
     }
   });
 
-  it("derives each session's status: working, waiting for approval or a device, or idle with a countdown", () => {
+  it("derives each session's status: working, waiting for approval, an answer, or a device, or idle with a countdown", () => {
     const source = createFakeSource("en");
     const status = (id: string) => source.list().find((item) => item.id === id)?.status;
     expect(status("downloads")).toMatchObject({ kind: "working" });
     expect(status("hike")).toEqual({ kind: "approval" });
+    expect(status("photos")).toEqual({ kind: "question" });
     expect(status("mia")).toEqual({ kind: "device" });
     expect(status("errands")).toEqual({ kind: "idle", archivesInMinutes: DEFAULT_IDLE_LIMIT - 4 });
     source.setIdleLimit(10);
@@ -104,6 +105,31 @@ describe("createFakeSource", () => {
     expect(approval?.kind === "approval" && approval.request.decision).toBe("allowed");
     vi.advanceTimersByTime(FAKE_REPLY_DELAY_MS);
     expect(source.conversation("hike")!.blocks.at(-1)?.kind).toBe("message");
+  });
+
+  it("records the answer to a question, picked or skipped, and continues the turn", () => {
+    for (const answer of [{ choices: ["Into a folder named Undated"] }, { skipped: true as const }]) {
+      const source = createFakeSource("en");
+      source.answerQuestion("photos", "q1", answer);
+      const question = source.conversation("photos")!.blocks.find((block) => block.kind === "question");
+      expect(question?.kind === "question" && question.question.answer).toEqual(answer);
+      expect(source.list().find((item) => item.id === "photos")?.status.kind).toBe("working");
+      vi.advanceTimersByTime(FAKE_REPLY_DELAY_MS);
+      const reply = source.conversation("photos")!.blocks.at(-1);
+      expect(reply?.kind).toBe("message");
+      if ("choices" in answer) expect(reply?.kind === "message" && reply.text).toContain("Into a folder named Undated");
+      expect(source.list().find((item) => item.id === "photos")?.status.kind).toBe("idle");
+    }
+  });
+
+  it("takes a message sent while a question waits as its answer, in the user's own words", () => {
+    const source = createFakeSource("en");
+    source.send("photos", "Put them in 2026/Unknown");
+    const blocks = source.conversation("photos")!.blocks;
+    const question = blocks.find((block) => block.kind === "question");
+    expect(question?.kind === "question" && question.question.answer).toEqual({ choices: [], other: "Put them in 2026/Unknown" });
+    expect(blocks.at(-1)).toMatchObject({ kind: "user", text: "Put them in 2026/Unknown" });
+    expect(blocks.at(-1)).not.toMatchObject({ pending: true });
   });
 
   it("stops the turn and cancels tool calls still running", () => {

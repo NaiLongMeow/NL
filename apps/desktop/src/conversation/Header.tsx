@@ -16,7 +16,7 @@ import { useI18n } from "../i18n/I18n";
 import { Avatar } from "../ui/Avatar";
 import { IconButton } from "../ui/Button";
 import { Switch } from "../ui/Switch";
-import type { Conversation, View } from "./model";
+import { characterState, type Conversation, type View } from "./model";
 import type { SessionSource } from "./source";
 import styles from "./Header.module.css";
 
@@ -55,7 +55,7 @@ export function Header({ source, conversation, view, onViewChange, developerDeta
   return (
     <div className={styles.header}>
       <div className={styles.identity}>
-        <Avatar size={22} cue={conversation.activity ? "working" : "idle"} />
+        <Avatar size={22} cue={characterState(conversation)} />
         <span className={styles.name}>{conversation.character.name}</span>
         <span className={styles.ai} aria-label={t.header.aiLabel}>
           {t.header.ai}
