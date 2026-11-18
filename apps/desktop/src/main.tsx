@@ -1,0 +1,16 @@
+/** Main window entry: renders the app into #root (index.html). */
+
+import "@nl/tokens/tokens.css";
+import "./app/global.css";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./app/App";
+
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}

@@ -30,3 +30,6 @@ node_modules/
 # Generated from design/tokens.json by the build (web/tokens); never committed.
 /web/tokens/generated/
 /apps/client/lib/src/theme/tokens.g.dart
+
+# Screenshots and page snapshots from the Playwright MCP server agents use for review.
+/.playwright-mcp/

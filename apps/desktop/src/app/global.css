@@ -1,0 +1,49 @@
+/*
+ * Base styles of the desktop windows. Colors, type, and spacing come from the
+ * design tokens (@nl/tokens), which also switch between the light and dark
+ * themes.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--nl-color-surface-app);
+  color: var(--nl-color-ink-primary);
+  font-family: var(--nl-type-ui-font-family);
+  font-size: var(--nl-type-ui-font-size);
+  font-weight: var(--nl-type-ui-font-weight);
+  line-height: var(--nl-type-ui-line-height);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: var(--nl-focus-width) solid var(--nl-color-focus);
+  outline-offset: var(--nl-focus-offset);
+}
+
+/* Thin, quiet scrollbars that follow the theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nl-color-line-default) transparent;
+}

@@ -4,6 +4,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Waiting for the user
 
+- [ ] Review the first desktop screens and approve them or ask for changes: the main window's sidebar, the conversation in full and chat view (bubbles, working text, tool rows, the approval and task cards, markers, the composer), and the detail panel, in both languages and both themes. Run `pnpm tauri dev` in apps/desktop (a review strip at the top switches language, theme, and conversation). Changes the user asks for go into [docs/design/ui.md](../docs/design/ui.md) first.
 - [ ] Get a license for the 大肥鱼 art and voice NL will ship (product rule 9). The character is fan-made, grown from 溟月 by the Bilibili creator 上善无形, so the license must come from whoever made the particular art, not from DeepSeek. Stage 1 uses a neutral placeholder until then.
 - [ ] Decide on Dependabot alert 1: the Rust crate glib, which Cargo.lock pulls in through the desktop app, has a moderate unsoundness fixed in glib 0.20.
 - [ ] Supply a Code of Conduct reporting email to replace `[reporting address to be announced]` in CODE_OF_CONDUCT.md and `[举报邮箱待公布]` in CODE_OF_CONDUCT.zh-CN.md. The user chose to supply it later (2026-11-16).
@@ -21,7 +22,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 ## Stage 1: Design
 
 - [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then). It replaces the orange "NL" disc in web/stage/src/stage.ts, whose colors are the last ones not taken from the design tokens; web/stage then depends on @nl/tokens and runs `nl-tokens` in its scripts like apps/desktop.
-- [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.
+- [ ] The remaining main-window screens, following the conversation screen (apps/desktop/src: the `ConversationSource` interface with its scripted fake, typed en and zh-CN catalogs in src/i18n, CSS Modules over the tokens, Testing Library tests): first run and sign-in, past conversations, character, memory, tools, devices, usage, settings. Still missing from the conversation screen: streaming from scripted event streams, the gallery page with headless screenshots and accessibility checks in CI (UI design note, section 12).
 - [ ] The pet window: cue states and menu; tray and autostart with the official Tauri plugins; per-pixel click-through. Verify transparency, dragging, and double-click close on macOS and Linux (Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked, on Ubuntu 24.04 under Xvfb without a compositor, so transparency could not be judged).
 - [ ] `[pattern]` The first phone screen as a shell with widget and golden tests. Then the remaining phone screens, following it.
 - [ ] The gateway's user site and admin site as shells on two ports, built from the shared components (UI design note, section 8).

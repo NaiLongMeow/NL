@@ -39,7 +39,7 @@ These decisions are settled, though most are not implemented yet. [docs/architec
 | `crates/nl-assets` | Character asset pack format and validation | Rust |
 | `crates/nl-node` | Harness node (shared by the desktop daemon and the cloud) | Rust + axum |
 | `crates/nl-gateway` | Cloud gateway | Rust + axum |
-| `apps/desktop` | Desktop app: main window and desktop pet window | Tauri 2 (TypeScript + Rust) |
+| `apps/desktop` | Desktop app: main window and desktop pet window | Tauri 2 (React + TypeScript, Rust) |
 | `apps/client` | Mobile app (Android, iOS) | Flutter |
 | `web/stage` | Character rendering page (shared by desktop and mobile) | TypeScript + Vite |
 | `web/tokens` | Design tokens for the web code, and the generator that writes every platform's copy during the build | TypeScript |

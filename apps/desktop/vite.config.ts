@@ -1,10 +1,13 @@
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
 
 // Frontend of the Tauri desktop app. Each window is its own page, so the build
 // has one entry per window (labels and URLs in src-tauri/tauri.conf.json).
 export default defineConfig({
   base: "./",
+  // React with the automatic JSX runtime and, in development, Fast Refresh.
+  plugins: [react()],
   // Tauri prints its own logs; keep Vite from clearing them in `tauri dev`.
   clearScreen: false,
   server: {
@@ -24,5 +27,10 @@ export default defineConfig({
         pet: resolve(import.meta.dirname, "pet.html"),
       },
     },
+  },
+  test: {
+    // Components render into a simulated DOM; plain logic does not mind it.
+    environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
   },
 });

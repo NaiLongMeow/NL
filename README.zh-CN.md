@@ -38,7 +38,7 @@ NL（NaiLongMeow）是一个开源的分布式 agent harness，以陪伴与娱�
 | `crates/nl-assets` | 角色素材包格式与校验 | Rust |
 | `crates/nl-node` | harness 节点（桌面守护进程与云端共用） | Rust + axum |
 | `crates/nl-gateway` | 云端总网关 | Rust + axum |
-| `apps/desktop` | 桌面端：主窗口与桌宠窗口 | Tauri 2（TypeScript + Rust） |
+| `apps/desktop` | 桌面端：主窗口与桌宠窗口 | Tauri 2（React + TypeScript、Rust） |
 | `apps/client` | 移动端（Android、iOS） | Flutter |
 | `web/stage` | 角色形象渲染页（桌面端与移动端共用） | TypeScript + Vite |
 | `web/tokens` | Web 端的设计令牌，以及在构建时为各平台生成令牌文件的生成器 | TypeScript |

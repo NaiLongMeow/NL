@@ -1,0 +1,69 @@
+.avatar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  border-radius: var(--nl-radius-full);
+}
+
+.avatar svg {
+  display: block;
+}
+
+.body {
+  fill: var(--nl-character-body);
+}
+
+.eye {
+  fill: var(--nl-character-eye);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 5.2s infinite;
+}
+
+/* The ring sits just outside the avatar so it never covers the face. */
+.avatar[data-cue="working"]::after,
+.avatar[data-cue="listening"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--nl-radius-full);
+  border: 2px solid var(--nl-color-accent-fill);
+}
+
+.avatar[data-cue="working"]::after {
+  animation: pulse 1.6s var(--nl-motion-easing-in-out) infinite;
+}
+
+.avatar[data-cue="listening"]::after {
+  border-color: var(--nl-character-mic);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* A short blink now and then; the character is never fully still. */
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.12);
+  }
+}
+
+/* With reduced motion the interface stops, and the character only blinks. */
+@media (prefers-reduced-motion: reduce) {
+  .avatar[data-cue="working"]::after {
+    animation: none;
+    opacity: 0.6;
+  }
+}

@@ -1,0 +1,96 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  border-left: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  background: var(--nl-color-surface-sidebar);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-1);
+  height: 52px;
+  padding: 0 var(--nl-space-2) 0 var(--nl-space-4);
+  border-bottom: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+}
+
+.header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--nl-type-ui-strong-font-size);
+  font-weight: var(--nl-type-ui-strong-font-weight);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--nl-space-4);
+}
+
+.name {
+  margin: 0 0 var(--nl-space-3);
+  font-family: var(--nl-type-code-font-family);
+  font-size: var(--nl-type-code-font-size);
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--nl-space-1) var(--nl-space-4);
+  margin: 0 0 var(--nl-space-4);
+}
+
+.facts dt {
+  color: var(--nl-color-ink-tertiary);
+}
+
+.facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.section + .section {
+  margin-top: var(--nl-space-4);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.note {
+  margin: 0 0 var(--nl-space-2);
+  color: var(--nl-color-ink-secondary);
+  font-size: var(--nl-type-caption-font-size);
+}
+
+.section pre {
+  margin: 0;
+  padding: var(--nl-space-3);
+  overflow: auto;
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-raised);
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  font-family: var(--nl-type-code-font-family);
+  font-size: var(--nl-type-code-font-size);
+  line-height: var(--nl-type-code-line-height);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty {
+  margin: var(--nl-space-4);
+  color: var(--nl-color-ink-tertiary);
+}

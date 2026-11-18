@@ -1,0 +1,112 @@
+.button,
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nl-space-2);
+  border: var(--nl-border-width-hairline) solid transparent;
+  border-radius: var(--nl-radius-md);
+  background: transparent;
+  color: var(--nl-color-ink-primary);
+  font-family: var(--nl-type-ui-strong-font-family);
+  font-size: var(--nl-type-ui-strong-font-size);
+  font-weight: var(--nl-type-ui-strong-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--nl-motion-duration-fast) var(--nl-motion-easing-out),
+    border-color var(--nl-motion-duration-fast) var(--nl-motion-easing-out);
+}
+
+.button svg,
+.icon svg {
+  flex: none;
+  width: var(--nl-size-icon-sm);
+  height: var(--nl-size-icon-sm);
+}
+
+.button:disabled,
+.icon:disabled {
+  color: var(--nl-color-ink-disabled);
+  cursor: default;
+}
+
+.md.button {
+  height: var(--nl-size-control-md);
+  padding: 0 var(--nl-space-4);
+}
+
+.sm.button {
+  height: var(--nl-size-control-sm);
+  padding: 0 var(--nl-space-3);
+  font-size: var(--nl-type-ui-font-size);
+}
+
+.md.icon {
+  width: var(--nl-size-control-md);
+  height: var(--nl-size-control-md);
+}
+
+.sm.icon {
+  width: var(--nl-size-control-sm);
+  height: var(--nl-size-control-sm);
+}
+
+.round {
+  border-radius: var(--nl-radius-full);
+}
+
+/* Neutral ink, so the interface stays quiet whatever the character's accent. */
+.primary {
+  background: var(--nl-color-action-fill);
+  color: var(--nl-color-action-on-fill);
+}
+
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--nl-color-action-fill) 86%, var(--nl-color-surface-app));
+}
+
+.primary:disabled {
+  background: var(--nl-color-state-pressed);
+  color: var(--nl-color-ink-disabled);
+}
+
+.secondary {
+  background: var(--nl-color-surface-raised);
+  border-color: var(--nl-color-line-default);
+}
+
+.secondary:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  background: var(--nl-color-state-hover);
+}
+
+.secondary:active:not(:disabled),
+.ghost:active:not(:disabled) {
+  background: var(--nl-color-state-pressed);
+}
+
+.ghost {
+  color: var(--nl-color-ink-secondary);
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--nl-color-ink-primary);
+}
+
+.danger {
+  background: var(--nl-color-danger-fill);
+  color: var(--nl-color-danger-on-fill);
+}
+
+.tooltip {
+  padding: var(--nl-space-1) var(--nl-space-2);
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-color-surface-inverse);
+  color: var(--nl-color-ink-inverse);
+  font-size: var(--nl-type-caption-font-size);
+  line-height: var(--nl-type-caption-line-height);
+  box-shadow: var(--nl-shadow-popover);
+  z-index: 50;
+}
