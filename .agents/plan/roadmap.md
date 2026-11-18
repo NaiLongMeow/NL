@@ -72,7 +72,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Not yet:** real sign-in, real model calls, any backend behaviour; visual polish beyond the design language. Voice and device screens are designed and built as shells here, but their behaviour belongs to the voice and device track.
 
 **Exit:**
-- [ ] The user has approved the UI design note.
+- [x] The user has approved the UI design note ([docs/design/ui.md](../../docs/design/ui.md), 2026-11-18).
 - [ ] Every screen in the note exists as a shell on fake data, in both languages.
 - [ ] The design tokens come from one source, and both UI code bases build from it.
 - [ ] UI tests run headless in CI; the pet window's transparency, dragging, and click-through are checked by hand on Windows, macOS, and Linux, and recorded.

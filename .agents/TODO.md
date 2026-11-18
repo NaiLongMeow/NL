@@ -21,7 +21,6 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Stage 1: Design
 
-- [ ] Get the user's approval of the whole UI design note, [docs/design/ui.md](../docs/design/ui.md) (drafted 2026-11-18). The user approved on 2026-11-18 the framework (React with TypeScript), the default views, how messages sent during a turn behave, and the gateway's two sites.
 - [ ] `[pattern]` One design-token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from.
 - [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then).
 - [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.

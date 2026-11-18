@@ -1,6 +1,6 @@
 # UI design
 
-**Status:** draft (Stage 1 of the [roadmap](../../.agents/plan/roadmap.md)). Choices the user has made are marked *(user)* with the date; the note as a whole still awaits the user's approval. Everything unmarked is the agent's proposal and can change in review.
+**Status:** approved by the user on 2026-11-18 for Stage 1 of the [roadmap](../../.agents/plan/roadmap.md). Choices the user made explicitly are marked *(user)* with the date; the unmarked parts were the agent's proposals and were approved with the note. A change to a screen starts with a change to this note.
 
 This note describes how every NL end looks and behaves on screen: the visual language, the conversation screen that all ends share, the screens of each end, and what those screens need from the harness and the gateway. It follows the product rules in [product-direction](../../.agents/memory/product-direction.md) and cites the rules in [architecture-invariants](../../.agents/memory/architecture-invariants.md) by id. It does not fix exact colors, sizes, or durations, which live in the design tokens (section 11), and it says nothing about avatar formats, which are chosen in Stage 6 (P8).
 
