@@ -248,7 +248,7 @@ What the screens need from the harness and the gateway. The design note of the s
 
 **Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends; stop; answer an approval; end a session; compact now; carry on from a summary; list sessions; open a closed session read-only; route the pet's input to the current conversation.
 
-**Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, whether the tool is bound to its node, and an optional dedicated rendering.
+**Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, and an optional dedicated rendering. A remote tool's display name comes from its node's toolset, as in `Remote(desktop3).Files.Read`.
 
 **Gateway** (Stage 2 unless noted): sign-in, the sign-up policy, session state; the device list with presence, renaming, removal, enrollment, and enrollment announcements; usage per day, device, and kind of work, with limits; operator calls for keys, accounts, limits, and compliance settings. Stage 4: memory files with source, device, time, and version; editing, deleting, undoing the last write, and export; the summaries folder with metadata (device, time, title, preview).
 
