@@ -5,7 +5,8 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 ## Waiting for the user
 
 - [ ] Get a license for the 大肥鱼 art and voice NL will ship (product rule 9). The character is fan-made, grown from 溟月 by the Bilibili creator 上善无形, so the license must come from whoever made the particular art, not from DeepSeek. Stage 1 uses a neutral placeholder until then.
-- [ ] Merge NaiLongMeow/NL#1, then NaiLongMeow/NL#2 (rebase the second onto main if the first is squash-merged), then the branch that carries the direction records.
+- [ ] Merge NaiLongMeow/NL#5 (the UI design note and the rules M5 to M7) before Stage 1 work branches from main. NaiLongMeow/NL#1 to #3 are merged.
+- [ ] Decide on Dependabot alert 1: the Rust crate glib, which Cargo.lock pulls in through the desktop app, has a moderate unsoundness fixed in glib 0.20.
 - [ ] Supply a Code of Conduct reporting email to replace `[reporting address to be announced]` in CODE_OF_CONDUCT.md and `[举报邮箱待公布]` in CODE_OF_CONDUCT.zh-CN.md. The user chose to supply it later (2026-11-16).
 
 ## Stage 0: Ground
