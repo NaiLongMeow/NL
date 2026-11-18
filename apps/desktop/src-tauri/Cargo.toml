@@ -18,3 +18,25 @@ tauri-build.workspace = true
 # macos-private-api lets macOS windows be transparent, which the desktop pet
 # needs. The cost: apps using private APIs are not accepted by the Mac App Store.
 tauri = { workspace = true, features = ["macos-private-api"] }
+serde.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+# The title bar (src/titlebar.rs) calls DWM and Win32 directly. Keep this the
+# version Tauri itself uses (`cargo tree -p wry --depth 1`), so that the HWND
+# types match and nothing is built twice.
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Controls",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+# WebView2's settings interfaces, for a setting Tauri does not expose
+# (src/webview.rs). The version wry uses, for the same reason.
+webview2-com = "0.39"
+
+[dev-dependencies]
+serde_json.workspace = true

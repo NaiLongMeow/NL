@@ -5,3 +5,14 @@
   height: 100%;
   background: var(--nl-color-surface-app);
 }
+
+/* In place of the composer when the session is archived. */
+.archived {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nl-space-3);
+  padding: var(--nl-space-4);
+  border-top: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  color: var(--nl-color-ink-secondary);
+}

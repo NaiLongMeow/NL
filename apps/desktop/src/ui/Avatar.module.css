@@ -7,14 +7,54 @@
 
 .avatar svg {
   display: block;
+  overflow: visible;
 }
 
+.bodyTop {
+  stop-color: var(--nl-character-body);
+}
+
+.bodyBottom {
+  stop-color: var(--nl-character-body-shade);
+}
+
+/* A thin edge in the lower body's color keeps the light body readable on light surfaces. */
 .body {
-  fill: var(--nl-character-body);
+  stroke: var(--nl-character-body-shade);
+  stroke-width: 1.2;
+}
+
+.spout {
+  fill: var(--nl-character-spout);
+  stroke: var(--nl-character-body-shade);
+  stroke-width: 0.9;
+}
+
+.shine {
+  fill: var(--nl-character-eye-light);
+  opacity: 0.55;
+}
+
+.blush {
+  fill: var(--nl-character-blush);
 }
 
 .eye {
   fill: var(--nl-character-eye);
+}
+
+.eyeLight {
+  fill: var(--nl-character-eye-light);
+}
+
+.mouth {
+  fill: none;
+  stroke: var(--nl-character-eye);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.eyes {
   transform-box: fill-box;
   transform-origin: center;
   animation: blink 5.2s infinite;

@@ -70,3 +70,8 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Reading text selects and copies like text, though the window chrome does not (global.css). */
+.column {
+  user-select: text;
+}

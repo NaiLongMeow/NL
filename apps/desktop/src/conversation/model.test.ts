@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shownBlocks, startsGroup, toolDisplayName, type Block, type ToolCall } from "./model";
+import { countByStatus, shownBlocks, startsGroup, toolDisplayName, type Block, type DispatchedTask, type ToolCall } from "./model";
 
 const call = (id: string): ToolCall => ({
   id,
@@ -45,13 +45,15 @@ describe("shownBlocks", () => {
     { kind: "message", id: "m", text: "hello", time: "09:00" },
     tool("d"),
     { kind: "remembered", id: "r", text: "likes tea" },
-    { kind: "task", id: "k", task: { id: "k", title: "t", device: "d", latest: "l", elapsedSeconds: 1, running: true, steps: [] } },
+    { kind: "dispatch", id: "d", tasks: [] },
+    { kind: "received", id: "rv", text: "do this", from: { id: "other", title: "Other" } },
     { kind: "notice", id: "n", text: "digest" },
     { kind: "summarized", id: "s" },
+    { kind: "archived", id: "a", reason: "idle", idleMinutes: 30 },
   ];
 
-  it("shows only what a chat app would in chat view", () => {
-    expect(shownBlocks(blocks, "chat").map((block) => block.id)).toEqual(["u", "m", "r"]);
+  it("shows only what a chat app would in chat view, with dispatched and received tasks", () => {
+    expect(shownBlocks(blocks, "chat").map((block) => block.id)).toEqual(["u", "m", "r", "d", "rv", "a"]);
   });
 
   it("folds three or more tool calls in a row into a group in full view", () => {
@@ -64,9 +66,11 @@ describe("shownBlocks", () => {
       "message",
       "tool",
       "remembered",
-      "task",
+      "dispatch",
+      "received",
       "notice",
       "summarized",
+      "archived",
     ]);
     const group = shown[3];
     expect(group?.kind === "tools" && group.calls.map((c) => c.id)).toEqual(["a", "b", "c"]);
@@ -87,5 +91,16 @@ describe("startsGroup", () => {
       { kind: "message", id: "m3", text: "c", time: "" },
     ];
     expect(blocks.map((_, index) => startsGroup(blocks, index))).toEqual([true, true, false, true, true]);
+  });
+});
+
+describe("countByStatus", () => {
+  it("counts dispatched tasks by status, leaving out statuses no task has", () => {
+    const task = (id: string, status: DispatchedTask["status"]): DispatchedTask => ({ id, title: id, status });
+    expect(countByStatus([task("a", "running"), task("b", "done"), task("c", "running"), task("d", "device")])).toEqual({
+      running: 2,
+      done: 1,
+      device: 1,
+    });
   });
 });

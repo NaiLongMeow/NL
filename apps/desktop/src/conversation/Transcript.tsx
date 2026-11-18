@@ -1,7 +1,7 @@
 /**
- * The scrolling column of a conversation: its blocks for the chosen view,
- * then the working indicator while a turn runs (UI design note, sections 4.1
- * to 4.7 and 4.9).
+ * The scrolling column of a session: its blocks for the chosen view, then
+ * the working indicator while a turn runs (UI design note, sections 4.1 to
+ * 4.12).
  *
  * The view stays at the bottom as content arrives unless the user has
  * scrolled up. Screen readers hear each finished message through the polite
@@ -11,8 +11,8 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useI18n } from "../i18n/I18n";
 import { Avatar } from "../ui/Avatar";
-import { BreakCard, Ended, ErrorRow, MessageBubble, Notice, Remembered, Summarized, Thinking, UserBubble, WorkingText } from "./Blocks";
-import { ApprovalCard, TaskCard } from "./Cards";
+import { Archived, BreakCard, ErrorRow, MessageBubble, Notice, Remembered, Summarized, Thinking, UserBubble, WorkingText } from "./Blocks";
+import { ApprovalCard, DispatchCard, ReceivedCard } from "./Cards";
 import { shownBlocks, startsGroup, type Conversation, type ShownBlock, type ToolCall, type View } from "./model";
 import { ToolGroup, ToolRow } from "./ToolRow";
 import styles from "./Transcript.module.css";
@@ -22,9 +22,13 @@ interface Props {
   view: View;
   onOpen: (call: ToolCall) => void;
   onAnswer: (approvalId: string, decision: "allowed" | "denied") => void;
+  /** Opens another session, such as the one a task went to or came from. */
+  onOpenSession: (id: string) => void;
+  /** Starts a new session from this one's summary. */
+  onCarryOn: () => void;
 }
 
-export function Transcript({ conversation, view, onOpen, onAnswer }: Props) {
+export function Transcript({ conversation, view, onOpen, onAnswer, onOpenSession, onCarryOn }: Props) {
   const { t } = useI18n();
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -71,8 +75,10 @@ export function Transcript({ conversation, view, onOpen, onAnswer }: Props) {
             onAnswer={(decision) => onAnswer(block.request.id, decision)}
           />
         );
-      case "task":
-        return <TaskCard key={block.id} task={block.task} onOpen={onOpen} />;
+      case "dispatch":
+        return <DispatchCard key={block.id} tasks={block.tasks} onOpenSession={onOpenSession} />;
+      case "received":
+        return <ReceivedCard key={block.id} text={block.text} from={block.from} onOpenSession={onOpenSession} />;
       case "remembered":
         return <Remembered key={block.id} text={block.text} />;
       case "notice":
@@ -83,8 +89,8 @@ export function Transcript({ conversation, view, onOpen, onAnswer }: Props) {
         return <ErrorRow key={block.id} reason={block.reason} />;
       case "break":
         return <BreakCard key={block.id} />;
-      case "ended":
-        return <Ended key={block.id} />;
+      case "archived":
+        return <Archived key={block.id} reason={block.reason} idleMinutes={block.idleMinutes} onCarryOn={onCarryOn} />;
     }
   };
 

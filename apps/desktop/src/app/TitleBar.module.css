@@ -1,0 +1,186 @@
+/*
+ * The title bar's geometry follows the tauri-custom-titlebar recipe. On
+ * Windows `watchTitlebarInsets()` writes three properties on the root:
+ *
+ * - --titlebar-height: the height of the system's caption buttons, which is
+ *   smaller when the window is maximized;
+ * - --titlebar-top: rows hidden above the screen while maximized;
+ * - --titlebar-right: the width of the caption buttons. Nothing drawn in
+ *   that corner is visible, so the bar keeps its content out of it.
+ *
+ * Elsewhere the fallbacks apply. The bar is at least
+ * --nl-layout-titlebar-height tall, so that its controls fit when Windows
+ * shrinks the buttons of a maximized window.
+ */
+.titlebar {
+  --bar: max(var(--titlebar-height, 0px), var(--nl-layout-titlebar-height));
+  display: flex;
+  flex: none;
+  padding-top: var(--titlebar-top, 0px);
+  background: var(--nl-color-surface-sidebar);
+  app-region: drag;
+  user-select: none;
+}
+
+/* Controls take clicks; the rest of the bar drags the window. */
+.titlebar :is(button, input, select, textarea, a, label, [role="button"], [role="switch"], [role="note"], [tabindex]) {
+  app-region: no-drag;
+}
+
+.side {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--nl-space-1);
+  height: var(--bar);
+  padding: 0 var(--nl-space-2);
+  background: var(--nl-color-surface-app);
+}
+
+/* With the sidebar open, this part of the bar is the top of the sidebar. */
+.side[data-open] {
+  width: var(--nl-layout-sidebar-width);
+  border-right: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  background: var(--nl-color-surface-sidebar);
+}
+
+.brand {
+  flex: 1;
+  padding-left: var(--nl-space-1);
+  color: var(--nl-color-ink-secondary);
+  font-weight: var(--nl-font-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+.newSession {
+  display: flex;
+  align-items: center;
+  height: calc(var(--bar) - 8px);
+  border-radius: var(--nl-radius-md);
+}
+
+.newMain,
+.newMore {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nl-space-1);
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--nl-color-ink-primary);
+  cursor: pointer;
+}
+
+.newMain {
+  padding: 0 var(--nl-space-2);
+  border-radius: var(--nl-radius-md) 0 0 var(--nl-radius-md);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.newMore {
+  padding: 0 var(--nl-space-1);
+  border-radius: 0 var(--nl-radius-md) var(--nl-radius-md) 0;
+  color: var(--nl-color-ink-secondary);
+}
+
+.newMain:hover,
+.newMore:hover,
+.newMore[data-state="open"] {
+  background: var(--nl-color-state-hover);
+}
+
+.newMain svg {
+  width: var(--nl-size-icon-sm);
+  height: var(--nl-size-icon-sm);
+}
+
+.newMore svg {
+  width: 12px;
+  height: 12px;
+}
+
+.side:not([data-open]) .newLabel {
+  display: none;
+}
+
+/*
+ * Over the session: the session's header or a screen's title. Its right
+ * padding keeps content out of the caption buttons. Its background is what
+ * Windows paints behind the buttons too (setTitlebarColor, native.ts).
+ *
+ * Where DWM refuses to color the caption (data-caption="system"), the strip
+ * behind the buttons keeps the system's default caption, so the bar takes
+ * that color instead. The values below were measured on Windows 10 22H2
+ * with the caption color reset to the default: white in light mode, active
+ * or not; in dark mode black, and #2b2b2b while the window is inactive.
+ */
+.main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  box-sizing: content-box;
+  min-width: 0;
+  height: var(--bar);
+  padding-right: var(--titlebar-right, var(--nl-space-2));
+  border-bottom: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  background: var(--nl-color-surface-app);
+}
+
+:global(:root[data-caption="system"]) .main {
+  background: #ffffff;
+}
+
+:global(:root[data-caption="system"][data-mode="dark"]) .main {
+  background: #000000;
+}
+
+:global(:root[data-caption="system"][data-mode="dark"][data-window="inactive"]) .main {
+  background: #2b2b2b;
+}
+
+.screenTitle {
+  margin: 0 0 0 var(--nl-space-4);
+  font-size: var(--nl-type-ui-strong-font-size);
+  font-weight: var(--nl-type-ui-strong-font-weight);
+}
+
+.menu {
+  min-width: 240px;
+  padding: var(--nl-space-1);
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  border-radius: var(--nl-radius-lg);
+  background: var(--nl-color-surface-overlay);
+  box-shadow: var(--nl-shadow-popover);
+  z-index: 40;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  padding: var(--nl-space-2);
+  border-radius: var(--nl-radius-md);
+  outline: none;
+  cursor: pointer;
+}
+
+.item[data-highlighted] {
+  background: var(--nl-color-state-hover);
+}
+
+.item svg {
+  flex: none;
+  width: var(--nl-size-icon-md);
+  height: var(--nl-size-icon-md);
+  color: var(--nl-color-ink-secondary);
+}
+
+.itemText {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemText small {
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+}

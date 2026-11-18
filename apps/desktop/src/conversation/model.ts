@@ -1,13 +1,13 @@
 /**
- * What the conversation screen shows, as plain data (UI design note,
- * section 4).
+ * What the session screen shows, as plain data (UI design note, section 4).
  *
- * A conversation is a list of blocks in the order they happened. Each block
- * is one kind of thing from section 4.2 of the note: the user's messages,
- * the character's messages (the message tool, M5), working text, thinking,
- * tool calls, approvals, tasks, and markers. Screens only render blocks; a
- * `ConversationSource` (source.ts) supplies them. In Stage 1 the source is a
- * scripted fake; Stage 3 builds blocks from the harness's events.
+ * A session's conversation is a list of blocks in the order they happened.
+ * Each block is one kind of thing from section 4.2 of the note: the user's
+ * messages, the character's messages (the message tool, M5), working text,
+ * thinking, tool calls, approvals, dispatched and received tasks, and
+ * markers. Screens only render blocks; a `SessionSource` (source.ts)
+ * supplies them. In Stage 1 the source is a scripted fake; Stage 3 builds
+ * blocks from the harness's events.
  */
 
 export type ToolStatus = "running" | "done" | "failed" | "cancelled" | "waiting" | "offline";
@@ -66,15 +66,36 @@ export interface ApprovalRequest {
   decision?: "allowed" | "denied";
 }
 
-export interface Task {
+/** The two kinds of session (note, section 4.10). */
+export type SessionKind = "shared" | "device";
+
+/** A link to another session, such as the one a dispatched task came from. */
+export interface SessionLink {
   id: string;
   title: string;
-  device: string;
-  /** The latest step, shown live. */
-  latest: string;
-  elapsedSeconds: number;
-  running: boolean;
-  steps: ToolCall[];
+  /** The session has been archived since; the link opens its summary. */
+  archived?: boolean;
+}
+
+/** Where a dispatched task stands (note, section 4.12). */
+export type DispatchStatus = "queued" | "running" | "approval" | "device" | "done" | "failed";
+
+/** One row of a dispatch card: a task and the session it went to. */
+export interface DispatchedTask {
+  id: string;
+  /** A short title, in the dispatcher's words. */
+  title: string;
+  /** The session running it; absent when the dispatching session kept the task itself. */
+  session?: SessionLink & {
+    /** The harness started this session for the task. */
+    created: boolean;
+    kind: SessionKind;
+    /** The device of a device session, by its display name. */
+    device?: string;
+  };
+  status: DispatchStatus;
+  /** A short result, or why it failed, once there is one. */
+  note?: string;
 }
 
 export type Block =
@@ -84,13 +105,15 @@ export type Block =
   | { kind: "thinking"; id: string; seconds: number }
   | { kind: "tool"; id: string; call: ToolCall }
   | { kind: "approval"; id: string; request: ApprovalRequest }
-  | { kind: "task"; id: string; task: Task }
+  | { kind: "dispatch"; id: string; tasks: DispatchedTask[] }
+  | { kind: "received"; id: string; text: string; from: SessionLink }
   | { kind: "remembered"; id: string; text: string }
   | { kind: "notice"; id: string; text: string }
   | { kind: "summarized"; id: string }
   | { kind: "error"; id: string; reason: string }
   | { kind: "break"; id: string }
-  | { kind: "ended"; id: string };
+  /** The session was ended by the user, or archived itself after being idle (note, section 4.11). */
+  | { kind: "archived"; id: string; reason: "ended" | "idle"; idleMinutes?: number };
 
 /** Three or more tool calls in a row fold into one group (note, section 4.4). */
 export type ShownBlock = Block | { kind: "tools"; id: string; calls: ToolCall[] };
@@ -108,8 +131,15 @@ export interface Activity {
 export interface Conversation {
   id: string;
   title: string;
-  /** The device the conversation runs on. */
-  device: string;
+  kind: SessionKind;
+  /** The device a device session belongs to and runs on, by its display name. */
+  device?: string;
+  /** The session a dispatched task came from, for a session the harness started for it. */
+  from?: SessionLink;
+  /** Other sessions may dispatch tasks to this one (note, section 4.10). */
+  acceptsTasks: boolean;
+  /** Ended or archived: the conversation is read-only and can be carried on. */
+  archived?: boolean;
   character: { name: string };
   blocks: Block[];
   /** Set while a turn runs. */
@@ -123,16 +153,19 @@ const CHAT_VIEW_KINDS: ReadonlySet<Block["kind"]> = new Set([
   "user",
   "message",
   "approval",
+  "dispatch",
+  "received",
   "remembered",
   "error",
   "break",
-  "ended",
+  "archived",
 ]);
 
 /**
  * The blocks to render for a view. Chat view keeps what a chat app shows:
- * both sides' messages, approvals, and a few tips. Full view shows
- * everything, with runs of three or more tool calls folded into a group.
+ * both sides' messages, approvals, dispatched and received tasks, and a few
+ * tips. Full view shows everything, with runs of three or more tool calls
+ * folded into a group.
  */
 export function shownBlocks(blocks: readonly Block[], view: View): ShownBlock[] {
   if (view === "chat") return blocks.filter((block) => CHAT_VIEW_KINDS.has(block.kind));
@@ -172,4 +205,11 @@ export function startsGroup(blocks: readonly ShownBlock[], index: number): boole
   const previous = blocks[index - 1];
   if (!block || block.kind !== "message") return true;
   return !previous || previous.kind !== "message";
+}
+
+/** How many dispatched tasks are in each status, for the dispatch card's header. */
+export function countByStatus(tasks: readonly DispatchedTask[]): Partial<Record<DispatchStatus, number>> {
+  const counts: Partial<Record<DispatchStatus, number>> = {};
+  for (const task of tasks) counts[task.status] = (counts[task.status] ?? 0) + 1;
+  return counts;
 }

@@ -1,15 +1,26 @@
 /**
  * Cards inside the conversation: approval requests (UI design note,
- * section 4.5; T7) and tasks running on other devices (section 4.6; S8).
+ * section 4.5; T7), the tasks a session dispatched, and a task it received
+ * (section 4.12; S8).
  */
 
 import { useId, useState } from "react";
-import { Check, ChevronRight, ListTodo, LoaderCircle, ShieldQuestionMark, Square, X } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CircleX,
+  Clock,
+  CornerDownRight,
+  Inbox,
+  LoaderCircle,
+  ShieldQuestionMark,
+  Split,
+  WifiOff,
+  X,
+} from "lucide-react";
 import { useI18n } from "../i18n/I18n";
 import { Button } from "../ui/Button";
-import { formatDuration } from "./format";
-import type { ApprovalRequest, Task, ToolCall } from "./model";
-import { ToolRow } from "./ToolRow";
+import { countByStatus, type ApprovalRequest, type DispatchStatus, type DispatchedTask, type SessionLink } from "./model";
 import styles from "./Cards.module.css";
 
 /**
@@ -74,48 +85,100 @@ export function ApprovalCard({
   );
 }
 
-export function TaskCard({ task, onOpen }: { task: Task; onOpen: (call: ToolCall) => void }) {
+/** The icon of each dispatch status: quiet for running and done, warning for what waits on the user. */
+function StatusIcon({ status }: { status: DispatchStatus }) {
+  switch (status) {
+    case "queued":
+      return <Clock aria-hidden />;
+    case "running":
+      return <LoaderCircle className={styles.spin} aria-hidden />;
+    case "approval":
+      return <ShieldQuestionMark aria-hidden />;
+    case "device":
+      return <WifiOff aria-hidden />;
+    case "done":
+      return <Check aria-hidden />;
+    case "failed":
+      return <CircleX aria-hidden />;
+  }
+}
+
+const STATUS_ORDER: readonly DispatchStatus[] = ["running", "approval", "device", "queued", "done", "failed"];
+
+/**
+ * The tasks a session handed out (UI design note, section 4.12): each row
+ * names the task, the session it went to (marked New when the harness
+ * started it, or kept in this session), and its live status, and opens that
+ * session. The footer says the tasks outlive this session.
+ */
+export function DispatchCard({ tasks, onOpenSession }: { tasks: DispatchedTask[]; onOpenSession: (id: string) => void }) {
   const { t } = useI18n();
-  const [expanded, setExpanded] = useState(false);
-  const stepsId = useId();
   const titleId = useId();
+  const counts = countByStatus(tasks);
   return (
-    <section className={styles.card} data-kind="task" aria-labelledby={titleId}>
+    <section className={styles.card} data-kind="dispatch" aria-labelledby={titleId}>
       <header className={styles.header}>
-        <ListTodo className={styles.taskIcon} aria-hidden />
+        <Split className={styles.dispatchIcon} aria-hidden />
         <h3 id={titleId} className={styles.title}>
-          {task.title}
+          {t.dispatch.title(tasks.length)}
         </h3>
         <span className={styles.meta}>
-          {t.task.on(task.device)} · {t.task.elapsed(formatDuration(task.elapsedSeconds * 1000, t))}
+          {STATUS_ORDER.filter((status) => counts[status]).map((status) => t.dispatch.count[status](counts[status]!)).join(" · ")}
         </span>
-        {task.running && (
-          <Button size="sm" variant="ghost" icon={<Square />}>
-            {t.task.stop}
-          </Button>
-        )}
       </header>
-      <p className={styles.live}>
-        {task.running && <LoaderCircle className={styles.spin} aria-hidden />}
-        {task.latest}
-      </p>
-      <button
-        type="button"
-        className={styles.disclosure}
-        aria-expanded={expanded}
-        aria-controls={stepsId}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <ChevronRight aria-hidden />
-        {t.task.steps} ({task.steps.length})
-      </button>
-      {expanded && (
-        <div id={stepsId} className={styles.steps}>
-          {task.steps.map((step) => (
-            <ToolRow key={step.id} call={step} onOpen={onOpen} />
-          ))}
-        </div>
-      )}
+      <ul className={styles.tasks}>
+        {tasks.map((task) => (
+          <li key={task.id} className={styles.task} data-status={task.status}>
+            <span className={styles.taskStatus} title={t.dispatch.status[task.status]}>
+              <StatusIcon status={task.status} />
+              <span className={styles.visuallyHidden}>{t.dispatch.status[task.status]}</span>
+            </span>
+            <span className={styles.taskTitle}>{task.title}</span>
+            {task.session ? (
+              <button
+                type="button"
+                className={styles.taskTarget}
+                aria-label={t.dispatch.open(task.session.title)}
+                onClick={() => onOpenSession(task.session!.id)}
+              >
+                <CornerDownRight aria-hidden />
+                <span className={styles.targetTitle}>{task.session.title}</span>
+                {task.session.created && <span className={styles.badge}>{t.dispatch.created}</span>}
+                <span className={styles.targetWhere}>
+                  {task.session.kind === "shared" ? t.dispatch.shared : task.session.device}
+                </span>
+              </button>
+            ) : (
+              <span className={styles.taskKept}>{t.dispatch.kept}</span>
+            )}
+            {task.note && <span className={styles.taskNote}>{task.note}</span>}
+          </li>
+        ))}
+      </ul>
+      <p className={styles.footer}>{t.dispatch.footer}</p>
+    </section>
+  );
+}
+
+/**
+ * A task this session received from another (UI design note, section 4.12),
+ * in the dispatcher's words, with a link to the session it came from.
+ */
+export function ReceivedCard({ text, from, onOpenSession }: { text: string; from: SessionLink; onOpenSession: (id: string) => void }) {
+  const { t } = useI18n();
+  const titleId = useId();
+  return (
+    <section className={styles.received} aria-labelledby={titleId}>
+      <header className={styles.header}>
+        <Inbox className={styles.receivedIcon} aria-hidden />
+        <h3 id={titleId} className={styles.title}>
+          {t.received.title}
+        </h3>
+        <button type="button" className={styles.fromLink} onClick={() => onOpenSession(from.id)}>
+          {from.archived ? `${t.received.from(from.title)} · ${t.received.archived}` : t.received.from(from.title)}
+        </button>
+      </header>
+      <p className={styles.receivedText}>{text}</p>
     </section>
   );
 }

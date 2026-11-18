@@ -90,12 +90,24 @@ export function Summarized() {
   );
 }
 
-export function Ended() {
+/**
+ * The end of a session (UI design note, section 4.11): ended by the user, or
+ * archived after being idle. Carry on starts a new session from its summary.
+ */
+export function Archived({
+  reason,
+  idleMinutes,
+  onCarryOn,
+}: {
+  reason: "ended" | "idle";
+  idleMinutes?: number;
+  onCarryOn: () => void;
+}) {
   const { t } = useI18n();
   return (
     <div className={styles.divider} role="separator">
-      <span>{t.blocks.ended}</span>
-      <button type="button" className={styles.link}>
+      <span>{reason === "idle" ? t.blocks.archivedIdle(idleMinutes ?? 0) : t.blocks.archivedEnded}</span>
+      <button type="button" className={styles.link} onClick={onCarryOn}>
         {t.blocks.carryOn}
       </button>
     </div>

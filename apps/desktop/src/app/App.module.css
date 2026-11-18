@@ -18,15 +18,27 @@
   grid-template-columns: var(--nl-layout-sidebar-width) minmax(0, 1fr) var(--nl-layout-detail-width);
 }
 
+.layout[data-sidebar="closed"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layout[data-sidebar="closed"][data-detail] {
+  grid-template-columns: minmax(0, 1fr) var(--nl-layout-detail-width);
+}
+
 /*
  * Narrower than the "wide" breakpoint (1120 px), the detail panel floats
- * over the conversation instead of taking a column. Media queries cannot
- * read custom properties, so the breakpoints are written out here and must
- * match --nl-breakpoint-wide and --nl-breakpoint-medium.
+ * over the session instead of taking a column. Media queries cannot read
+ * custom properties, so the breakpoints are written out here and must match
+ * --nl-breakpoint-wide and --nl-breakpoint-medium.
  */
 @media (max-width: 1119.98px) {
   .layout[data-detail] {
     grid-template-columns: var(--nl-layout-sidebar-width) minmax(0, 1fr);
+  }
+
+  .layout[data-sidebar="closed"][data-detail] {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .layout[data-detail] > aside {
@@ -40,7 +52,7 @@
   }
 }
 
-/* Below the "medium" breakpoint the sidebar gives way to the conversation. */
+/* Below the "medium" breakpoint an open sidebar floats over the session. */
 @media (max-width: 719.98px) {
   .layout,
   .layout[data-detail] {
@@ -48,6 +60,21 @@
   }
 
   .layout > nav {
-    display: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(var(--nl-layout-sidebar-width), 85%);
+    box-shadow: var(--nl-shadow-sheet);
+    z-index: 20;
   }
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--nl-color-surface-app);
+  color: var(--nl-color-ink-tertiary);
 }

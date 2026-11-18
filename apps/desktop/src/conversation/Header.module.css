@@ -1,11 +1,18 @@
+/*
+ * The session header inside the title bar: one row as tall as the bar, with
+ * controls sized from it (the bar is shorter when Windows maximizes the
+ * window, App.module.css).
+ */
 .header {
+  container-type: inline-size;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nl-space-4);
-  height: 52px;
-  padding: 0 var(--nl-space-4) 0 var(--nl-space-5);
-  border-bottom: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  gap: var(--nl-space-3);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--nl-space-2) 0 var(--nl-space-4);
 }
 
 .identity {
@@ -23,47 +30,94 @@
 /* Product rule 5: the product makes clear that the character is an AI. */
 .ai {
   flex: none;
-  padding: 1px 6px;
+  padding: 0 5px;
   border: var(--nl-border-width-hairline) solid var(--nl-color-line-default);
   border-radius: var(--nl-radius-sm);
   color: var(--nl-color-ink-secondary);
   font-size: 11px;
   font-weight: var(--nl-font-weight-semibold);
   letter-spacing: 0.04em;
-  line-height: 16px;
+  line-height: 15px;
 }
 
 .title {
   min-width: 0;
   overflow: hidden;
   margin-left: var(--nl-space-2);
-  color: var(--nl-color-ink-secondary);
+  color: var(--nl-color-ink-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.device {
+.chip,
+.from {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: var(--nl-space-1);
-  padding: 2px var(--nl-space-2);
+  height: 20px;
+  padding: 0 var(--nl-space-2);
   border-radius: var(--nl-radius-full);
   background: var(--nl-color-state-hover);
   color: var(--nl-color-ink-secondary);
   font-size: var(--nl-type-caption-font-size);
+  white-space: nowrap;
 }
 
-.device svg {
+.chip svg,
+.from svg {
   width: 12px;
   height: 12px;
+}
+
+.from {
+  min-width: 0;
+  max-width: 220px;
+  flex: 0 1 auto;
+  border: none;
+  background: var(--nl-color-accent-soft);
+  color: var(--nl-color-accent-text);
+  cursor: pointer;
+}
+
+.from span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.from:hover {
+  text-decoration: underline;
 }
 
 .actions {
   display: flex;
   flex: none;
   align-items: center;
-  gap: var(--nl-space-2);
+  gap: var(--nl-space-3);
+}
+
+/* Narrow windows keep the switches and drop the chips first, then the title. */
+@container (max-width: 620px) {
+  .chip,
+  .from {
+    display: none;
+  }
+}
+
+@container (max-width: 470px) {
+  .title,
+  .acceptTasks {
+    display: none;
+  }
+}
+
+.tooltip {
+  padding: var(--nl-space-1) var(--nl-space-2);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-inverse);
+  color: var(--nl-color-ink-inverse);
+  font-size: var(--nl-type-caption-font-size);
+  z-index: 50;
 }
 
 .menu {

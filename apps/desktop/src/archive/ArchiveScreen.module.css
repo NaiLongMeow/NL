@@ -1,0 +1,118 @@
+.screen {
+  height: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--nl-color-surface-app);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-3);
+  max-width: var(--nl-layout-reading-width);
+  margin: 0 auto;
+  padding: var(--nl-space-6) var(--nl-space-6) var(--nl-space-8);
+}
+
+.intro {
+  margin: 0;
+  color: var(--nl-color-ink-secondary);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  height: var(--nl-size-control-md);
+  padding: 0 var(--nl-space-3);
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-default);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-raised);
+}
+
+.search svg {
+  width: var(--nl-size-icon-sm);
+  height: var(--nl-size-icon-sm);
+  color: var(--nl-color-ink-secondary);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.search:focus-within {
+  outline: var(--nl-focus-width) solid var(--nl-color-focus);
+  outline-offset: 0;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-default);
+  border-radius: var(--nl-radius-lg);
+  background: var(--nl-color-surface-raised);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  padding: var(--nl-space-2) var(--nl-space-3) var(--nl-space-2) var(--nl-space-2);
+}
+
+.item + .item {
+  border-top: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+}
+
+.open {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--nl-space-2);
+  border: none;
+  border-radius: var(--nl-radius-md);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.open:hover {
+  background: var(--nl-color-state-hover);
+}
+
+.title {
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+}
+
+.meta svg {
+  width: 12px;
+  height: 12px;
+}
+
+.summary {
+  overflow: hidden;
+  color: var(--nl-color-ink-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  color: var(--nl-color-ink-tertiary);
+}

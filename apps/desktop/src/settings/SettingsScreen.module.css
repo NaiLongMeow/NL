@@ -1,0 +1,220 @@
+.screen {
+  height: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--nl-color-surface-app);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-8);
+  max-width: var(--nl-layout-reading-width);
+  margin: 0 auto;
+  padding: var(--nl-space-6) var(--nl-space-6) var(--nl-space-12);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--nl-space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--nl-type-title-font-size);
+  font-weight: var(--nl-type-title-font-weight);
+  line-height: var(--nl-type-title-line-height);
+}
+
+.label {
+  margin: var(--nl-space-2) 0 0;
+  color: var(--nl-color-ink-secondary);
+  font-size: var(--nl-type-ui-strong-font-size);
+  font-weight: var(--nl-type-ui-strong-font-weight);
+}
+
+.hint {
+  margin: 0;
+  max-width: 620px;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+  line-height: var(--nl-type-caption-line-height);
+}
+
+/* The theme cards. Each card carries data-theme and data-mode, so the
+   token rules give it, and everything inside it, that theme's colors. */
+.themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--nl-space-3);
+  align-self: stretch;
+}
+
+.theme {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-2);
+  padding: var(--nl-space-2);
+  border: 2px solid transparent;
+  border-radius: var(--nl-radius-lg);
+  background: var(--nl-color-surface-raised);
+  box-shadow: 0 0 0 var(--nl-border-width-hairline) var(--nl-color-line-default);
+  color: var(--nl-color-ink-primary);
+  cursor: pointer;
+}
+
+.theme[aria-checked="true"] {
+  border-color: var(--nl-color-accent-fill);
+  box-shadow: none;
+}
+
+.themeName {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-1);
+  padding: 0 var(--nl-space-1);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.themeName svg {
+  width: 14px;
+  height: 14px;
+  color: var(--nl-color-accent-text);
+}
+
+.preview {
+  display: flex;
+  height: 72px;
+  overflow: hidden;
+  border: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-app);
+}
+
+.previewSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 30%;
+  padding: 8px 6px;
+  border-right: var(--nl-border-width-hairline) solid var(--nl-color-line-subtle);
+  background: var(--nl-color-surface-sidebar);
+}
+
+.previewSidebar i {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--nl-color-line-default);
+}
+
+.previewSidebar i:first-child {
+  background: var(--nl-color-state-selected);
+}
+
+.previewMain {
+  position: relative;
+  flex: 1;
+}
+
+.previewUser,
+.previewCharacter,
+.previewButton {
+  position: absolute;
+  border-radius: 6px;
+}
+
+.previewUser {
+  top: 8px;
+  right: 8px;
+  width: 45%;
+  height: 12px;
+  background: var(--nl-color-bubble-user);
+}
+
+.previewCharacter {
+  top: 26px;
+  left: 8px;
+  width: 58%;
+  height: 18px;
+  background: var(--nl-color-bubble-character);
+}
+
+.previewButton {
+  right: 8px;
+  bottom: 8px;
+  width: 26%;
+  height: 10px;
+  background: var(--nl-color-action-fill);
+}
+
+/* A segmented control. */
+.choice {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-sunken);
+}
+
+.choiceItem {
+  height: calc(var(--nl-size-control-sm) - 4px);
+  padding: 0 var(--nl-space-3);
+  border: none;
+  border-radius: calc(var(--nl-radius-md) - 2px);
+  background: transparent;
+  color: var(--nl-color-ink-secondary);
+  cursor: pointer;
+}
+
+.choiceItem:hover {
+  color: var(--nl-color-ink-primary);
+}
+
+.choiceItem[data-state="on"] {
+  background: var(--nl-color-surface-raised);
+  box-shadow: 0 0 0 var(--nl-border-width-hairline) var(--nl-color-line-default);
+  color: var(--nl-color-ink-primary);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.customList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-1);
+}
+
+.customItem {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  cursor: pointer;
+}
+
+.customItem[data-problem] {
+  color: var(--nl-color-ink-disabled);
+  cursor: default;
+}
+
+.customItem input {
+  accent-color: var(--nl-color-accent-fill);
+}
+
+.problem {
+  color: var(--nl-color-danger-text);
+  font-size: var(--nl-type-caption-font-size);
+}
+
+.customActions {
+  display: flex;
+  gap: var(--nl-space-2);
+}
+
+.folder {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--nl-color-ink-tertiary);
+  font-family: var(--nl-type-code-font-family);
+  font-size: var(--nl-type-caption-font-size);
+  user-select: text;
+}

@@ -94,3 +94,8 @@
   margin: var(--nl-space-4);
   color: var(--nl-color-ink-tertiary);
 }
+
+/* The details are reading text: they select and copy like text (global.css turns selection off for the chrome). */
+.body {
+  user-select: text;
+}

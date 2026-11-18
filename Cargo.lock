@@ -2238,8 +2238,12 @@ dependencies = [
 name = "nl-desktop"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
+ "webview2-com",
+ "windows",
 ]
 
 [[package]]

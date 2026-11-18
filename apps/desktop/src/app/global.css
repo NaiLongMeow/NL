@@ -1,7 +1,7 @@
 /*
  * Base styles of the desktop windows. Colors, type, and spacing come from the
- * design tokens (@nl/tokens), which also switch between the light and dark
- * themes.
+ * design tokens (@nl/tokens), which also switch between the themes and
+ * between light and dark (app/appearance.ts).
  */
 
 *,
@@ -27,6 +27,9 @@ body {
   line-height: var(--nl-type-ui-line-height);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* A window, not a page: its chrome does not select like text. Reading
+     text (the transcript, details) opts back in. */
+  user-select: none;
 }
 
 button,

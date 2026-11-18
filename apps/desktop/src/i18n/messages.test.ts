@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { localeFor } from "./I18n";
+import { themes } from "@nl/tokens";
+import { localeFor, storedLocale } from "./I18n";
 import { en, zhCN } from "./messages";
 
 /** Every leaf of a catalog: strings, and functions called with sample arguments. */
@@ -19,6 +20,18 @@ describe("messages", () => {
 
   it("leaves no text empty in either language", () => {
     for (const [path, text] of [...leaves(en), ...leaves(zhCN)]) expect(text.trim(), path).not.toBe("");
+  });
+
+  it("names every built-in theme, and nothing else, in both languages", () => {
+    for (const catalog of [en, zhCN]) expect(Object.keys(catalog.settings.themes)).toEqual(Object.keys(themes));
+  });
+
+  it("reads back only a locale it knows", () => {
+    const storage = (value: string | null) => ({ getItem: () => value });
+    expect(storedLocale(storage("zh-CN"))).toBe("zh-CN");
+    expect(storedLocale(storage("en"))).toBe("en");
+    expect(storedLocale(storage("fr"))).toBeUndefined();
+    expect(storedLocale(storage(null))).toBeUndefined();
   });
 
   it("picks Chinese for any zh system language and English otherwise", () => {
