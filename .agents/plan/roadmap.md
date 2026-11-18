@@ -122,7 +122,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] The command-line shell holds a conversation through a test gateway and a fake provider (automated, end to end).
 - [ ] The prefix holds: each request of a session equals the previous one plus what was appended, and a fork's request equals its parent's plus one message (automated).
 - [ ] A session that passes the compaction threshold compacts and goes on (automated).
-- [ ] A tool output that would pass the output threshold is cut and marked, and the session can still take several steps before it compacts (automated).
+- [ ] A tool output that would pass the output threshold is cut and marked, the model can read the rest from the session's output file, and the session can still take several steps before it compacts; the JSONL holds only what the model saw (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
 - [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
 - [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).

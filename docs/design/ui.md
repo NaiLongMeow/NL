@@ -94,7 +94,7 @@ A row reads: status icon, tool icon, the tool's display name with its key argume
 
 - **Display name** *(user, 2026-11-18)*: `Toolset.Tool` in PascalCase with the key argument, such as `Web.Search("Shanghai weather") · 5 results` or `Docs.Read(hello.md)`. A tool that runs on another device names it in front, as in `Remote(desktop3).Docs.Read(hello.md)`, and a raw MCP tool keeps its own name behind its server, as in `MCP(github).create_issue`. Display names stay English in both languages; the expanded row adds the tool's localized description. How names are formed is in [tool-system](../../.agents/memory/tool-system.md). A row shows raw JSON only with developer details on.
 - **Status:** running (animated, with Stop), done, failed (with the reason in the row), cancelled, waiting for approval, device offline. An output cut at the output threshold (M7) says so in its row.
-- **Expand** shows a short preview of the input and output. **Open** puts the whole call in the detail panel: input, output rendered by type (text, markdown, JSON, table, image, file), device, timings, the approval decision, and, with developer details on, the raw events. Every block can be copied.
+- **Expand** shows a short preview of the input and output. **Open** puts the whole call in the detail panel: input, the full output from the session's output file (even when the model saw only part of it, M7) rendered by type (text, markdown, JSON, table, image, file), device, timings, the approval decision, and, with developer details on, the raw events. Every block can be copied.
 - Three or more calls in a row with no text between them fold into one group row, which shows the current call while it runs.
 
 ### 4.5 Approvals (T7)
