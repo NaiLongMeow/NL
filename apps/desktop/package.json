@@ -5,14 +5,15 @@
   "description": "NL desktop app: main window, desktop pet window, and the embedded node",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "dev": "nl-tokens && vite",
+    "build": "nl-tokens && vite build",
+    "typecheck": "nl-tokens && tsc --noEmit",
+    "test": "nl-tokens && vitest run",
     "tauri": "tauri"
   },
   "dependencies": {
     "@nl/stage": "workspace:*",
+    "@nl/tokens": "workspace:*",
     "@tauri-apps/api": "2.12.4"
   },
   "devDependencies": {

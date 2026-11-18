@@ -26,3 +26,7 @@ node_modules/
 
 # Desktop app frontend build output.
 /apps/desktop/dist/
+
+# Generated from design/tokens.json by the build (web/tokens); never committed.
+/web/tokens/generated/
+/apps/client/lib/src/theme/tokens.g.dart

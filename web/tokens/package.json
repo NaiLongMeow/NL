@@ -1,0 +1,24 @@
+{
+  "name": "@nl/tokens",
+  "private": true,
+  "description": "NL's design tokens for the web code, and the generator that writes every platform's copy from design/tokens.json",
+  "type": "module",
+  "bin": {
+    "nl-tokens": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./generated/tokens.ts",
+    "./tokens.css": "./generated/tokens.css"
+  },
+  "scripts": {
+    "prepare": "node src/cli.ts",
+    "generate": "node src/cli.ts",
+    "typecheck": "node src/cli.ts && tsc --noEmit",
+    "test": "node src/cli.ts && vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
