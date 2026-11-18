@@ -171,7 +171,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] With hundreds of toolsets spread over several nodes, what the model sees per turn stays within its budget, and a scripted model finds and calls the right tool (automated).
 - [ ] An injection test suite (hostile tool output, pack text, web content) cannot trigger a protected action or plant an unlabeled memory.
 - [ ] With two nodes running, a routine fires once and stops at its limit (automated, fake clock).
-- [ ] A node that allows reading its files but not editing them offers other nodes no edit tool (automated).
+- [ ] A node that allows reading its files but not editing them offers other nodes no edit tool, and a node's tools leave the catalog when it goes offline and return when it comes back (automated).
 - [ ] A session on one node calls a tool that exists only on another node, and a task delegated to another node returns its result even though the caller was restarted meanwhile (automated).
 
 ### Stage 6: Character (packs and avatars)
