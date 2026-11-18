@@ -1,12 +1,12 @@
-// NL client: the mobile app and the desktop main app share this code base.
+// NL mobile app (Android and iOS). The desktop app is a separate Tauri app
+// in apps/desktop; the two share the design tokens, not code.
 //
-// On desktop it is one of three processes (next to the nl-node daemon and the
-// desktop pet); on mobile it is an intermittently online light node. See
-// docs/architecture.md. For now it only shows the companion's home screen.
+// For now it only shows the companion's home screen.
 
 import 'package:material_ui/material_ui.dart';
 
 import 'src/greeting.dart';
+import 'src/theme/nl_theme.dart';
 
 void main() {
   runApp(const NlApp());
@@ -23,9 +23,9 @@ class NlApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NL',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF5A623)),
-      ),
+      // Light and dark follow the system setting.
+      theme: nlTheme(Brightness.light),
+      darkTheme: nlTheme(Brightness.dark),
       home: HomePage(clock: clock),
     );
   }
