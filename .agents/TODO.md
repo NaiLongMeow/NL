@@ -21,13 +21,13 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Stage 1: Design
 
-- [ ] Get the user's approval of the UI design note, [docs/design/ui.md](../docs/design/ui.md) (drafted 2026-11-18), including the UI framework it proposes (reserved decision 5). Revise it with their answers.
+- [ ] Get the user's approval of the whole UI design note, [docs/design/ui.md](../docs/design/ui.md) (drafted 2026-11-18). The user approved on 2026-11-18 the framework (React with TypeScript), the default views, how messages sent during a turn behave, and the gateway's two sites.
 - [ ] `[pattern]` One design-token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from.
 - [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then).
 - [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.
 - [ ] The pet window: cue states and menu; tray and autostart with the official Tauri plugins; per-pixel click-through. Verify transparency, dragging, and double-click close on macOS and Linux (Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked, on Ubuntu 24.04 under Xvfb without a compositor, so transparency could not be judged).
 - [ ] `[pattern]` The first phone screen as a shell with widget and golden tests. Then the remaining phone screens, following it.
-- [ ] The gateway pages as shells, wherever the design note places them.
+- [ ] The gateway's user site and admin site as shells on two ports, built from the shared components (UI design note, section 8).
 - [ ] Device faces: the cue set on a small screen and on LEDs, shown in `web/stage`.
 
 ## Spikes

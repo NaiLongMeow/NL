@@ -62,7 +62,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
   - Desktop main window: sign-in and first run, chat, the character view, the list of conversations (local sessions and compacts to carry on from), memory, character packs, tools, nodes, usage and limits, settings.
   - Desktop pet: its cue states, menu, and interactions (dragging, click-through, tray, autostart).
   - Phone: sign-in, chat, call screen, notifications, device setup, settings.
-  - Gateway pages: sign-in, and the account, nodes, keys, and usage screens, wherever the note places them (in the apps, in a web console, or both).
+  - Gateway sites: a user site (sign-in, account, devices, usage) and an admin site (keys, accounts, limits) on two ports, sharing design and components with the desktop windows.
   - Device faces: how the cue set looks on a small screen and on LEDs.
 - One design language from a single token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from ([client-stack-decision](../memory/client-stack-decision.md)).
 - The cue vocabulary (P8) and a placeholder rendition of the default character: 大肥鱼 once its art is licensed for the project, a neutral placeholder until then (product rule 9).
@@ -126,6 +126,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
 - [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).
 - [ ] Every request of every session sends the same tool list (automated).
+- [ ] A message sent during a turn is inserted at the turn's next step by default, and waits for the turn to end when the user chose queueing (automated).
 - [ ] No conversation text appears in the default logs of the node or the gateway (automated).
 - [ ] The desktop idle budgets are measured and met.
 
@@ -330,6 +331,12 @@ Settled by the user on 2026-11-16:
 - **Networks and services:** the operator decides. NL keeps every endpoint configurable (E6).
 - **Name and default character:** the project is named NL, and the default character is 大肥鱼, the DeepSeek community's fan-made whale girl (product rule 9).
 - **Language of docs/:** no requirement. New files under docs/ are written in English because agents read them ([docs-languages](../memory/docs-languages.md)).
+
+Settled by the user on 2026-11-18:
+
+- **UI framework:** React with TypeScript for the desktop windows and the gateway's two sites (reserved decision 5; [client-stack-decision](../memory/client-stack-decision.md)).
+- **Conversation and tools:** the message and finish tools (M5) and the tool system (M6, [tool-system](../memory/tool-system.md)).
+- **Gateway sites:** a user site and an admin site on two ports ([UI design](../../docs/design/ui.md), section 8).
 
 Still open:
 

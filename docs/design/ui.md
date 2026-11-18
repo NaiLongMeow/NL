@@ -1,6 +1,6 @@
 # UI design
 
-**Status:** draft, waiting for the user's approval (Stage 1 of the [roadmap](../../.agents/plan/roadmap.md)). Choices the user made are marked *(user)* with the date. Everything else is the agent's proposal and can change in review.
+**Status:** draft (Stage 1 of the [roadmap](../../.agents/plan/roadmap.md)). Choices the user has made are marked *(user)* with the date; the note as a whole still awaits the user's approval. Everything unmarked is the agent's proposal and can change in review.
 
 This note describes how every NL end looks and behaves on screen: the visual language, the conversation screen that all ends share, the screens of each end, and what those screens need from the harness and the gateway. It follows the product rules in [product-direction](../../.agents/memory/product-direction.md) and cites the rules in [architecture-invariants](../../.agents/memory/architecture-invariants.md) by id. It does not fix exact colors, sizes, or durations, which live in the design tokens (section 11), and it says nothing about avatar formats, which are chosen in Stage 6 (P8).
 
@@ -11,7 +11,8 @@ This note describes how every NL end looks and behaves on screen: the visual lan
 | Desktop main window | The user | Chatting, watching the agent work, memory, tools, devices, usage, settings |
 | Desktop pet | The user | The character on the desktop: its messages, quick replies, approvals |
 | Phone | The user | Chatting, voice calls, notifications, setting up devices |
-| Gateway console | The operator, whoever deploys the gateway | Provider keys, accounts, limits, compliance settings |
+| Gateway user site | The user, in a browser | Signing up and in, account, devices, usage, export and deletion |
+| Gateway admin site | The operator, whoever deploys the gateway | Provider keys, accounts, limits, compliance settings |
 | Device faces | The user, at a glance | The character's state on a small screen or on LEDs |
 
 With a self-hosted gateway, the user and the operator are the same person.
@@ -51,7 +52,7 @@ The conversation is the core screen. The desktop main window and the phone rende
 - **Full view:** message bubbles, plus the full-width column with working text, thinking, tool calls, tasks, and markers, in the order they happened.
 - **Chat view:** what a chat app shows: the user's bubbles, the character's message bubbles, approvals, and a few system tips.
 
-Each device remembers the choice. Proposed defaults: full view in the desktop main window, chat view on the phone. Separately, **developer details** (off by default) add raw tool names, JSON input and output, token counts, cache hits, timings, and event ids to the full view and the detail panel.
+Each device remembers the choice. Defaults *(user, 2026-11-18)*: full view in the desktop main window, chat view on the phone. Separately, **developer details** (off by default) add raw tool names, JSON input and output, token counts, cache hits, timings, and event ids to the full view and the detail panel.
 
 ### 4.2 Blocks
 
@@ -117,7 +118,7 @@ In chat view, while a turn runs and no message is streaming, a line under the la
 - Attach by pasting, dragging, or the attach button; attachments show as chips above the text.
 - A microphone button; where voice works, hold to talk. The reserved hue shows while it listens.
 - `/` opens the commands: new conversation, compact now, end conversation, open memory, switch view.
-- While the character replies, the send button becomes Stop, and Esc stops too (P7). The user can still type and send: a message sent during a turn shows as pending and is handed to the character at its next step. (The agent's proposal; the alternative is that sending interrupts the turn.)
+- While the character replies, the send button becomes Stop, and Esc stops too (P7). The user can still type and send *(user, 2026-11-18)*. By default a message sent during a turn cuts in: it shows as pending and is inserted at the turn's next step, as most harnesses do. A setting switches to queueing instead: the message waits until the turn ends and then starts the next turn.
 - A small ring shows how full the context is. Near the limit it says that the conversation will be summarized automatically.
 
 ### 4.9 Header, scrolling, and screen readers
@@ -147,7 +148,7 @@ The screens:
 6. **Tools.** Toolsets grouped by source: built-in, installed NL toolsets, MCP servers (added by command or URL, shown as `MCP(name)`, with their status), and toolsets offered by other devices. For each toolset and tool: on or off, and ask every time, always allow, or never. Also which of this device's toolsets others may use. The behavior arrives in Stage 5.
 7. **Devices.** Every device of the account with its type, name, online state or last seen time, version, capabilities, and open conversations. Rename, remove (takes effect at once, T2), and add a device. Each enrollment is announced on the other devices (T2), with "Not you? Remove".
 8. **Usage.** Tokens in and out, cache hit rate, requests, and cost where the operator has set prices, per day, per device, and per kind of work (conversation, memory forks, tasks, voice), against the operator's limits (E7).
-9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: theme, default view, developer details, memory tips in chat view. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it, its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
+9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: theme, default view, developer details, memory tips in chat view. Messages sent while the character works: cut in at its next step (the default) or wait until the turn ends. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it, its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
 10. **Detail panel.** A tool call, a task, a memory entry, a summary, or an approval's full arguments.
 
 Every action is reachable from the keyboard, with shortcuts for new conversation, search, stop (Esc), switch view, and focus the composer.
@@ -172,9 +173,21 @@ Every action is reachable from the keyboard, with shortcuts for new conversation
 - **Device setup.** Put the device in pairing mode (its face shows it); find it over Bluetooth; choose a Wi-Fi network; the device joins the account and gets a name; it greets the user. Errors: not found, wrong Wi-Fi password, joining failed. Stage 1 uses a fake Bluetooth layer.
 - The phone is a node like any other, but the system may stop its background work. When it hands work to another device (S8), the tool row or task card says where the work runs.
 
-## 8. Gateway console
+## 8. Gateway sites
 
-The account screens every user needs (sign-in, devices, usage, export, and deletion) live in the apps. The gateway serves a small web console for the operator, built like the desktop UI and embedded in the gateway binary, so it adds no deployable component (E4):
+*(user, 2026-11-18)* The gateway serves two web sites on two ports, so that an operator can bind each to its own domain: a user site and an admin site. Both are built from the same design tokens and React components as the desktop windows and are embedded in the gateway binary, so they add no deployable component (E4). Like every listener, both bind to loopback unless the operator configures otherwise (T5); the separate port also lets an operator keep the admin site on an internal network.
+
+**User site**, for everyone with an account on the gateway:
+
+- Sign up, as the sign-up policy allows, and sign in, by the method the trust design chooses.
+- Account: profile, sign-out, export all data, delete the account.
+- Devices: the account's devices, renaming, removal, and enrollment announcements.
+- Usage: the same figures as the apps' usage screen, against the operator's limits.
+- The operator's terms, privacy policy, and AI disclosure.
+
+The desktop app shows the same account screens from the same components, and the phone has Flutter versions of them. Proposal: the API that nodes use is served on the user site's port, under its own path.
+
+**Admin site**, for the operator:
 
 - **First-run setup** of a new gateway: create the operator account, add the DeepSeek key, and choose the sign-up policy (open, invite only, or closed).
 - **Overview:** version, health of PostgreSQL and Redis, number of accounts, usage.
@@ -183,7 +196,7 @@ The account screens every user needs (sign-in, devices, usage, export, and delet
 - **Limits:** defaults and per-account overrides.
 - **Compliance:** the break reminder interval, whether minors' mode is offered, crisis resources per locale, the AI disclosure text, and links to the terms and the privacy policy.
 
-The console shows no conversation or memory content.
+The admin site shows no conversation or memory content. The user site offers memory only inside the data export.
 
 ## 9. Device faces
 
@@ -215,17 +228,17 @@ Each surface renders what it can: the pack's art on the pet, in the main window,
 ## 11. Design tokens and theming
 
 - One source file, `design/tokens.json`, in the format of the W3C Design Tokens Community Group. Read the current version of that format before writing the generator (E8).
-- A small generator writes CSS custom properties for the web code (the desktop windows, `web/stage`, the console), a Dart theme for `apps/client`, and, when the device track starts, Rust constants for the device faces. The generated files are committed, and CI fails when they are stale, so that Flutter and firmware builds do not need Node.
+- A small generator writes CSS custom properties for the web code (the desktop windows, `web/stage`, the gateway's two sites), a Dart theme for `apps/client`, and, when the device track starts, Rust constants for the device faces. The generated files are committed, and CI fails when they are stale, so that Flutter and firmware builds do not need Node.
 - Groups: color (neutrals, ink, semantic colors, the reserved microphone hue, the accent slot), typography, spacing on a 4 px grid, radius, elevation, motion (interface durations and easings; character springs live in the renderer), and layout breakpoints.
 - The accent slot is filled at run time from the character pack, checked for contrast and for distance from the reserved hue, with a fallback.
 - The colors now hard-coded in `apps/desktop/index.html`, `web/stage/src/stage.ts`, and the Flutter seed color move into the tokens.
 
 ## 12. How it is built
 
-- **Framework** (reserved decision 5, needs the user's approval): React with TypeScript for the desktop windows and the console, CSS Modules over the token variables, and Radix primitives for menus, popovers, dialogs, and tooltips, which are accessible by default. The reason is that it is the most widely known stack, so the cheaper models that will build most of NL write it most reliably ([tech-choice-criteria](../../.agents/memory/tech-choice-criteria.md)). The phone uses Flutter widgets themed entirely from the tokens, not stock Material looks.
+- **Framework** *(user, 2026-11-18; reserved decision 5)*: React with TypeScript for the desktop windows and the gateway's two sites, which share one component package (proposal: `web/ui`), CSS Modules over the token variables, and Radix primitives for menus, popovers, dialogs, and tooltips, which are accessible by default. The reason is that it is the most widely known stack, so the cheaper models that will build most of NL write it most reliably ([tech-choice-criteria](../../.agents/memory/tech-choice-criteria.md)). The phone uses Flutter widgets themed entirely from the tokens, not stock Material looks.
 - **Interfaces with fakes** (E2). Every screen reads from and acts on an interface. The conversation source plays scripted event streams: a plain chat, a turn with tool calls, an approval, a task, an error, a very long conversation, each in both languages. A fake gateway client serves the account, devices, usage, memory files, and summaries, and a fake setup layer stands in for Bluetooth. A later stage swaps a fake for the real thing without touching the screen.
 - **Gallery.** A development-only page in each app shows every screen in every state, in both languages and both themes. CI captures it headless (Playwright for the web code, golden tests for Flutter) and runs automated accessibility checks on the web code. The screenshots are what the user reviews.
-- **Order of work:** tokens, cues, and the placeholder character; the conversation screen as the pattern; the rest of the main window; the pet; the phone; the console; the device faces.
+- **Order of work:** tokens, cues, and the placeholder character; the conversation screen as the pattern; the rest of the main window; the pet; the phone; the gateway's two sites; the device faces.
 
 ## 13. Needs list
 
@@ -233,7 +246,7 @@ What the screens need from the harness and the gateway. The design note of the s
 
 **Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; user message queued and accepted; context usage; compact started and finished; session ended. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: task started, step, progress, finished.
 
-**Harness commands:** send a user message with attachments; stop; answer an approval; end a session; compact now; carry on from a summary; list sessions; open a closed session read-only; route the pet's input to the current conversation.
+**Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends; stop; answer an approval; end a session; compact now; carry on from a summary; list sessions; open a closed session read-only; route the pet's input to the current conversation.
 
 **Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, whether the tool is bound to its node, and an optional dedicated rendering.
 
@@ -270,3 +283,4 @@ Notices, forks, and working text have no name in the interface; it describes wha
 6. Whether a message can be addressed to another device, for example from a routine on a server to the phone (Stage 5, proactive contact).
 7. Where MCP servers' own credentials are kept (Stage 5).
 8. Avatar formats (Stage 6, P8).
+9. Whether the user site should also offer chat in a browser. That would make the browser a new kind of node, and a new end is the user's decision.
