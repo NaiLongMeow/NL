@@ -322,13 +322,13 @@ Settled by the user on 2026-11-16:
 
 - **Who runs gateways:** whoever deploys one runs it and carries its duties. The project ships the software.
 - **Networks and services:** the operator decides. NL keeps every endpoint configurable (E6).
-- **Name and default character:** the project is named NL, and the default character is 大肥鱼, the mascot of the ds community (product rule 9).
+- **Name and default character:** the project is named NL, and the default character is 大肥鱼, the DeepSeek community's fan-made whale girl (product rule 9).
 - **Language of docs/:** no requirement. New files under docs/ are written in English because agents read them ([docs-languages](../memory/docs-languages.md)).
 
 Still open:
 
 1. **Avatar formats.** Decided with the user when Stage 6 starts (P8).
-2. **The license for 大肥鱼.** Who owns its art and voice, and under what license NL may ship them (product rule 9). Stage 1 uses a neutral placeholder until this is answered.
+2. **The license for 大肥鱼.** The character is fan-made (it grew from 溟月 by the Bilibili creator 上善无形), so a license that allows redistribution must come from whoever made the art and voice NL ships (product rule 9). Stage 1 uses a neutral placeholder until then.
 3. **The open points in [distributed-design](../memory/distributed-design.md).** They are the agent's assumptions about the distributed core, and the design notes of Stages 3 and 4 settle them with the user.
 
 ## Parked ideas
