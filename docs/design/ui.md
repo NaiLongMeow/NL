@@ -71,7 +71,9 @@ Each device remembers the choice. Proposed defaults: full view in the desktop ma
 | Error | Row with the reason and Retry | Gray tip with Retry |
 | Break reminder, crisis help | System card | Same |
 | Conversation ended | Divider "Ended · summary saved" with Carry on | Same |
-| A turn that sent no message | Nothing extra | Gray tip "No message this time · Show work" |
+| Finish (the turn ends) | Hidden when accepted; a refused finish shows as a failed row with the reason | Hidden |
+
+A turn that sends no message adds nothing to chat view: the finish tool has already recorded that the silence was deliberate (M5).
 
 ### 4.3 Message bubbles
 
@@ -229,7 +231,7 @@ Each surface renders what it can: the pack's art on the pet, in the main window,
 
 What the screens need from the harness and the gateway. The design note of the stage named settles each item.
 
-**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; approval requested and resolved; user message queued and accepted; context usage; compact started and finished; session ended. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: task started, step, progress, finished.
+**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; user message queued and accepted; context usage; compact started and finished; session ended. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: task started, step, progress, finished.
 
 **Harness commands:** send a user message with attachments; stop; answer an approval; end a session; compact now; carry on from a summary; list sessions; open a closed session read-only; route the pet's input to the current conversation.
 
@@ -261,7 +263,7 @@ Notices, forks, and working text have no name in the interface; it describes wha
 ## 15. Open questions
 
 1. How sign-in and enrollment work, and whether pairing uses a code (trust design, before Stage 2).
-2. What the harness does when a turn ends without a message (Stage 3).
+2. The harness tool system: a fixed core of tools plus toolsets found by tool search and called through one dispatching tool, as proposed to the user on 2026-11-18 (Stage 3 design note). The tool rows in 4.4 work either way.
 3. Whether DeepSeek streams tool-call arguments. If it does not, a message appears whole when its call completes, and the working indicator covers the wait (provider-cache spike, before Stage 3).
 4. Who writes conversation titles, and when (Stage 3).
 5. Whether the gateway knows which devices have conversations open, for presence in the sidebar (Stage 4).

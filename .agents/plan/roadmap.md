@@ -109,7 +109,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - The prompt layout (M1 to M3) and the session record as local JSONL with its history flag (S2, S9); replay from the record (E3).
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
 - Compaction at the context limit, as a fork (M4, S5).
-- The message tool (M5): messages stream into bubbles from the tool's arguments, and working text goes only to the full view.
+- The message and finish tools (M5): messages stream into bubbles from the tool's arguments, working text goes only to the full view, and a turn ends only through finish.
 - Two shells over the same core: a command-line one, used by end-to-end tests, and the desktop one, with the core embedded in the Tauri backend and the chat, character, and pet screens wired.
 
 **Not yet:** shared memory, notices, uploading compacts (Stage 4); MCP (Stage 5); the phone; voice.
@@ -123,6 +123,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] A session that passes the context limit compacts and goes on (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
 - [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
+- [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).
 - [ ] No conversation text appears in the default logs of the node or the gateway (automated).
 - [ ] The desktop idle budgets are measured and met.
 
