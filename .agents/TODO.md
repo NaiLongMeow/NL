@@ -21,7 +21,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 
 ## Stage 1: Design
 
-- [ ] `[pattern]` Write the UI design note under `docs/design/`: who uses what, the flows and screens of every end (desktop main window, desktop pet, phone, gateway pages, device faces), and the needs list for the harness and the gateway.
+- [ ] Get the user's approval of the UI design note, [docs/design/ui.md](../docs/design/ui.md) (drafted 2026-11-18), including the UI framework it proposes (reserved decision 5). Revise it with their answers.
 - [ ] `[pattern]` One design-token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from.
 - [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then).
 - [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.

@@ -58,7 +58,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** Every screen NL will have exists and can be clicked through on fake data, in English and Simplified Chinese, under one design language. From here on, each stage fills in real behaviour behind screens that already exist.
 
 **Build:**
-- A UI design note, approved by the user: who uses what, and the flows and screens of every end.
+- A UI design note ([docs/design/ui.md](../../docs/design/ui.md)), approved by the user: who uses what, and the flows and screens of every end.
   - Desktop main window: sign-in and first run, chat, the character view, the list of conversations (local sessions and compacts to carry on from), memory, character packs, tools, nodes, usage and limits, settings.
   - Desktop pet: its cue states, menu, and interactions (dragging, click-through, tray, autostart).
   - Phone: sign-in, chat, call screen, notifications, device setup, settings.
@@ -109,6 +109,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - The prompt layout (M1 to M3) and the session record as local JSONL with its history flag (S2, S9); replay from the record (E3).
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
 - Compaction at the context limit, as a fork (M4, S5).
+- The message tool (M5): messages stream into bubbles from the tool's arguments, and working text goes only to the full view.
 - Two shells over the same core: a command-line one, used by end-to-end tests, and the desktop one, with the core embedded in the Tauri backend and the chat, character, and pet screens wired.
 
 **Not yet:** shared memory, notices, uploading compacts (Stage 4); MCP (Stage 5); the phone; voice.
@@ -121,6 +122,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] The prefix holds: each request of a session equals the previous one plus what was appended, and a fork's request equals its parent's plus one message (automated).
 - [ ] A session that passes the context limit compacts and goes on (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
+- [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
 - [ ] No conversation text appears in the default logs of the node or the gateway (automated).
 - [ ] The desktop idle budgets are measured and met.
 
