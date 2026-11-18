@@ -42,6 +42,8 @@ These decisions are settled, though most are not implemented yet. [docs/architec
 | `apps/desktop` | Desktop app: main window and desktop pet window | Tauri 2 (TypeScript + Rust) |
 | `apps/client` | Mobile app (Android, iOS) | Flutter |
 | `web/stage` | Character rendering page (shared by desktop and mobile) | TypeScript + Vite |
+| `web/tokens` | Design tokens for the web code, and the generator that writes every platform's copy during the build | TypeScript |
+| `design/` | The design tokens: the one source of colors, type, spacing, and motion for every UI | JSON (W3C design tokens) |
 | `firmware/esp32` | ESP32-S3 firmware | Rust + ESP-IDF |
 | `docker/` | Container images for the node and gateway | distroless |
 | `tooling/` | Scripts such as the version check | Bash |
@@ -55,8 +57,8 @@ These decisions are settled, though most are not implemented yet. [docs/architec
 | Part | Requirements | Common commands (in that directory) |
 |---|---|---|
 | Rust workspace | rustup (the version in `rust-toolchain.toml` installs automatically); on Linux also `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `libxdo-dev`, `libssl-dev` | `cargo test --workspace`, `cargo clippy --workspace --all-targets` |
-| Flutter client | Flutter (version in `environment.flutter` of `apps/client/pubspec.yaml`) | `flutter test`, `flutter run` |
-| Web frontends (stage, desktop UI) | Node.js 24, pnpm (version in the root `package.json`) | `pnpm install`, `pnpm -r run test` at the repository root |
+| Flutter client | Flutter (version in `environment.flutter` of `apps/client/pubspec.yaml`); Node.js 24 to generate the design tokens | `node web/tokens/src/cli.ts` at the repository root after cloning and after `design/tokens.json` changes (no `pnpm install` needed); then `flutter test`, `flutter run` |
+| Web packages (tokens, stage, desktop UI) | Node.js 24, pnpm (version in the root `package.json`) | `pnpm install`, `pnpm -r run test` at the repository root; the scripts generate the design tokens themselves |
 | Desktop app | The Rust and web setups above; WebView2 on Windows (included in Windows 10/11) | `pnpm tauri dev`, `pnpm tauri build` in `apps/desktop` |
 | Firmware | `cargo install espup ldproxy espflash`, then `espup install --targets esp32s3` | `cargo build --release`, `cargo run --release` (flashes the board and opens the serial monitor) |
 

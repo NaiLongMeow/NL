@@ -5,7 +5,6 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 ## Waiting for the user
 
 - [ ] Get a license for the 大肥鱼 art and voice NL will ship (product rule 9). The character is fan-made, grown from 溟月 by the Bilibili creator 上善无形, so the license must come from whoever made the particular art, not from DeepSeek. Stage 1 uses a neutral placeholder until then.
-- [ ] Merge NaiLongMeow/NL#5 (the UI design note and the rules M5 to M7) before Stage 1 work branches from main. NaiLongMeow/NL#1 to #3 are merged.
 - [ ] Decide on Dependabot alert 1: the Rust crate glib, which Cargo.lock pulls in through the desktop app, has a moderate unsoundness fixed in glib 0.20.
 - [ ] Supply a Code of Conduct reporting email to replace `[reporting address to be announced]` in CODE_OF_CONDUCT.md and `[举报邮箱待公布]` in CODE_OF_CONDUCT.zh-CN.md. The user chose to supply it later (2026-11-16).
 
@@ -18,12 +17,10 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
   - nodes reach each other through the gateway first, with direct routes last (the docs put the connection ladder at the centre);
   - drop MQTT and "扩展脚本走 MCP 或 WASM 沙箱" (extensions are MCP servers outside the node process, T8);
   - leave the avatar format open: it is chosen when Stage 6 starts (P8).
-- [ ] Remove leftovers of the abandoned Flutter-desktop design: the header comment in apps/client/lib/main.dart and the description in apps/client/pubspec.yaml still call the Flutter app the desktop main app.
 
 ## Stage 1: Design
 
-- [ ] `[pattern]` One design-token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from.
-- [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then).
+- [ ] The cue vocabulary, and a placeholder rendition of the default character (大肥鱼 once its art is licensed; a neutral placeholder until then). It replaces the orange "NL" disc in web/stage/src/stage.ts, whose colors are the last ones not taken from the design tokens; web/stage then depends on @nl/tokens and runs `nl-tokens` in its scripts like apps/desktop.
 - [ ] `[pattern]` The first desktop screen as a shell: an interface with a fake behind it, component tests, English and zh-CN text. Then the remaining main-window screens, following it.
 - [ ] The pet window: cue states and menu; tray and autostart with the official Tauri plugins; per-pixel click-through. Verify transparency, dragging, and double-click close on macOS and Linux (Windows 10 was checked by hand; on Linux only window creation and bottom-right placement were checked, on Ubuntu 24.04 under Xvfb without a compositor, so transparency could not be judged).
 - [ ] `[pattern]` The first phone screen as a shell with widget and golden tests. Then the remaining phone screens, following it.
@@ -42,6 +39,7 @@ Outstanding work. Stages, exit criteria, spikes, and budgets are in [plan/roadma
 ## Later, by stage
 
 - [ ] Stages 3 and 4: settle the open points in [memory/distributed-design.md](memory/distributed-design.md) in those stages' design notes.
+- [ ] V2 (device track): generate the device faces' Rust constants from design/tokens.json during the firmware build ([UI design](../docs/design/ui.md), section 11; [generated-files](memory/generated-files.md)).
 - [ ] Stage 6: choose the avatar formats with the user (P8). If Live2D is among them, settle the Live2D Expandable Application license terms first ([live2d-asset-packs](memory/live2d-asset-packs.md)).
 - [ ] Stage 7: configure an Android release keystore (release builds are signed with the debug key) and decide how iOS builds are signed and published (CI only checks that iOS compiles).
 - [ ] Stage 9, or earlier if users ask: code-sign the Windows and macOS desktop installers and set up the Tauri updater (needs a signing key pair).

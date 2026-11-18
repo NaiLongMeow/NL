@@ -41,6 +41,8 @@ NL（NaiLongMeow）是一个开源的分布式 agent harness，以陪伴与娱�
 | `apps/desktop` | 桌面端：主窗口与桌宠窗口 | Tauri 2（TypeScript + Rust） |
 | `apps/client` | 移动端（Android、iOS） | Flutter |
 | `web/stage` | 角色形象渲染页（桌面端与移动端共用） | TypeScript + Vite |
+| `web/tokens` | Web 端的设计令牌，以及在构建时为各平台生成令牌文件的生成器 | TypeScript |
+| `design/` | 设计令牌：所有界面的颜色、字体、间距与动效的唯一来源 | JSON（W3C 设计令牌格式） |
 | `firmware/esp32` | ESP32-S3 固件 | Rust + ESP-IDF |
 | `docker/` | 节点与网关的容器镜像 | distroless |
 | `tooling/` | 版本检查等脚本 | Bash |
@@ -54,8 +56,8 @@ NL（NaiLongMeow）是一个开源的分布式 agent harness，以陪伴与娱�
 | 部分 | 需要 | 常用命令（在对应目录下） |
 |---|---|---|
 | Rust 工作区 | rustup（版本由 `rust-toolchain.toml` 自动安装）；Linux 另需 `libwebkit2gtk-4.1-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`libxdo-dev`、`libssl-dev` | `cargo test --workspace`、`cargo clippy --workspace --all-targets` |
-| Flutter 客户端 | Flutter（版本见 `apps/client/pubspec.yaml` 的 `environment.flutter`） | `flutter test`、`flutter run` |
-| 前端（渲染页、桌面端） | Node.js 24、pnpm（版本见根目录 `package.json`） | 根目录 `pnpm install`、`pnpm -r run test` |
+| Flutter 客户端 | Flutter（版本见 `apps/client/pubspec.yaml` 的 `environment.flutter`）；生成设计令牌需要 Node.js 24 | 克隆后以及 `design/tokens.json` 改动后，在仓库根目录运行 `node web/tokens/src/cli.ts`（无需 `pnpm install`）；然后 `flutter test`、`flutter run` |
+| Web 包（设计令牌、渲染页、桌面端） | Node.js 24、pnpm（版本见根目录 `package.json`） | 根目录 `pnpm install`、`pnpm -r run test`；各脚本会自行生成设计令牌 |
 | 桌面端 | 以上 Rust 与前端环境；Windows 需 WebView2（Windows 10/11 自带） | `apps/desktop` 下 `pnpm tauri dev`、`pnpm tauri build` |
 | 固件 | `cargo install espup ldproxy espflash`，然后 `espup install --targets esp32s3` | `cargo build --release`、`cargo run --release`（烧录并打开串口） |
 

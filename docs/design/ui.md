@@ -228,10 +228,10 @@ Each surface renders what it can: the pack's art on the pet, in the main window,
 ## 11. Design tokens and theming
 
 - One source file, `design/tokens.json`, in the format of the W3C Design Tokens Community Group. Read the current version of that format before writing the generator (E8).
-- A small generator writes CSS custom properties for the web code (the desktop windows, `web/stage`, the gateway's two sites), a Dart theme for `apps/client`, and, when the device track starts, Rust constants for the device faces. The generated files are committed, and CI fails when they are stale, so that Flutter and firmware builds do not need Node.
+- A small generator (`web/tokens`) writes CSS custom properties for the web code (the desktop windows, `web/stage`, the gateway's two sites), TypeScript constants for code that draws or times things in script, and Dart tokens for `apps/client`; when the device track starts, Rust constants for the device faces come from the same source. *(user, 2026-11-18)* The generated files are build outputs and are never committed: every build step that uses them runs the generator first (the web packages' scripts, `pnpm install`, and the Flutter jobs in CI and in the release workflow), so a change to the source reaches every platform by building and cannot be forgotten. Flutter builds therefore need Node, which runs the generator without installing the workspace.
 - Groups: color (neutrals, ink, semantic colors, the reserved microphone hue, the accent slot), typography, spacing on a 4 px grid, radius, elevation, motion (interface durations and easings; character springs live in the renderer), and layout breakpoints.
 - The accent slot is filled at run time from the character pack, checked for contrast and for distance from the reserved hue, with a fallback.
-- The colors now hard-coded in `apps/desktop/index.html`, `web/stage/src/stage.ts`, and the Flutter seed color move into the tokens.
+- The colors once hard-coded in `apps/desktop/index.html` and the Flutter app's seed color come from the tokens. `web/stage/src/stage.ts` moves to them with the placeholder character (section 10).
 
 ## 12. How it is built
 

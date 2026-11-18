@@ -40,8 +40,8 @@ Issue、PR 描述和代码审查中的讨论可以用英文或中文。英文能
 |---|---|
 | Rust 工作区 | `cargo fmt --all --check`、`cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo test --workspace --locked` |
 | 固件（`firmware/esp32`） | `cargo build --release --locked`；在仓库根目录运行 `rustfmt --check --edition 2024 firmware/esp32/build.rs firmware/esp32/src/main.rs` |
-| Flutter 客户端（`apps/client`） | `dart format --output=none --set-exit-if-changed .`、`flutter analyze --fatal-infos`、`flutter test` |
-| 渲染页与桌面端前端 | 在仓库根目录运行 `pnpm -r run typecheck`、`pnpm -r run test`、`pnpm -r run build` |
+| Flutter 客户端（`apps/client`） | 先在仓库根目录运行 `node web/tokens/src/cli.ts` 生成设计令牌；然后 `dart format --output=none --set-exit-if-changed .`、`flutter analyze --fatal-infos`、`flutter test` |
+| Web 包（`web/`、`apps/desktop`） | 在仓库根目录运行 `pnpm -r run typecheck`、`pnpm -r run test`、`pnpm -r run build` |
 | 桌面端（`apps/desktop`） | `pnpm tauri build` |
 | 协议（`proto/`） | `buf lint`、`buf format --diff --exit-code` |
 | 版本号（`tooling/`） | `bash tooling/check-version.test.sh`、`bash tooling/check-version.sh` |
