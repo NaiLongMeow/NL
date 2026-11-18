@@ -9,18 +9,18 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { compositeOver, contrastRatio, hueDistance, rgbToOklch, type Rgb } from "./color.ts";
 import { parseTokens, resolveToken, type Resolved, type Token } from "./dtcg.ts";
-import { THEMES, buildDesign, relativePath, type ThemeName } from "./model.ts";
+import { MODES, buildDesign, defaultTheme, relativePath, type Mode } from "./model.ts";
 import { OUTPUTS, SOURCE, generate } from "./generate.ts";
-import { themes, tokens } from "../generated/tokens.ts";
+import { defaultTheme as generatedDefault, themes, tokens } from "../generated/tokens.ts";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const json: unknown = JSON.parse(readFileSync(`${root}${SOURCE}`, "utf8"));
 const design = buildDesign(parseTokens(json));
 
-/** A theme's resolved colors by relative path, such as "color.surface.app". */
-function colors(theme: ThemeName): Map<string, Resolved<"color">> {
+/** A theme's resolved colors in one mode by relative path, such as "color.surface.app". */
+function colors(theme: string, mode: Mode): Map<string, Resolved<"color">> {
   return new Map(
-    design.themes[theme]
+    design.themes.get(theme)![mode]
       .filter((token): token is Token & { type: "color" } => token.type === "color")
       .map((token) => [relativePath(token.path).join("."), resolveToken(design.set, token)]),
   );
@@ -57,11 +57,16 @@ const CONTRAST: Array<[string, string[], number]> = [
   ["mic.fill", SURFACES, 3],
 ];
 
-describe.each(THEMES)("the %s theme", (theme) => {
-  const palette = colors(theme);
+/** Every theme in every mode, such as ["sea", "light"]. */
+const THEME_MODES: Array<[string, Mode]> = [...design.themes.keys()].flatMap((theme) =>
+  MODES.map((mode): [string, Mode] => [theme, mode]),
+);
+
+describe.each(THEME_MODES)("the %s theme in %s", (theme, mode) => {
+  const palette = colors(theme, mode);
   const color = (name: string) => {
     const found = palette.get(`color.${name}`);
-    if (!found) throw new Error(`no color.${name} in the ${theme} theme`);
+    if (!found) throw new Error(`no color.${name} in the ${theme} theme's ${mode} mode`);
     return found;
   };
 
@@ -103,14 +108,16 @@ describe("the placeholder character", () => {
     return resolveToken(design.set, token as Token & { type: "color" });
   };
 
-  it("keeps its face readable: eyes on the body at 3:1, glyphs in their bubble at 4.5:1", () => {
-    expect(contrastRatio(rgb(color("eye")), rgb(color("body")))).toBeGreaterThanOrEqual(3);
+  it("keeps its face readable: eyes on either end of the body at 3:1, glyphs in their bubble at 4.5:1", () => {
+    for (const body of ["body", "body-shade"]) {
+      expect(contrastRatio(rgb(color("eye")), rgb(color(body))), `eye on ${body}`).toBeGreaterThanOrEqual(3);
+    }
     expect(contrastRatio(rgb(color("glyph")), rgb(color("bubble")))).toBeGreaterThanOrEqual(4.5);
   });
 
   it("keeps every hue but the listening ring at least 30 degrees from the microphone hue", () => {
     const micHue = rgbToOklch(rgb(color("mic"))).h;
-    for (const name of ["body", "eye", "blush", "bubble", "glyph"]) {
+    for (const name of ["body", "body-shade", "spout", "eye", "eye-light", "blush", "bubble", "glyph"]) {
       const oklch = rgbToOklch(rgb(color(name)));
       if (oklch.c < 0.03) continue;
       expect(hueDistance(oklch.h, micHue), `character.${name}`).toBeGreaterThanOrEqual(30);
@@ -164,8 +171,10 @@ describe("generated files", () => {
   });
 
   it("give script the same values as the source", () => {
-    expect(themes.light.color.surface.app).toBe("#fbfaf7");
-    expect(themes.dark.color.bubble.character).toBe(themes.dark.color.accent.soft);
+    expect(generatedDefault).toBe(defaultTheme(design));
+    expect(Object.keys(themes)).toEqual([...design.themes.keys()]);
+    expect(themes.sea.light.color.surface.app).toBe("#fafcfe");
+    expect(themes.sakura.dark.color.bubble.character).toBe(themes.sakura.dark.color.accent.soft);
     expect(tokens.motion.duration.fast).toBe(150);
     expect(tokens.type.body.fontSize).toBe(tokens.font.size.lg);
   });

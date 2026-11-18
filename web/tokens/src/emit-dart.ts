@@ -1,10 +1,12 @@
 /**
  * Writes the design tokens as Dart for the Flutter app (apps/client).
  *
- * Theme tokens become the fields of `NlThemeTokens`, with one constant per
- * theme (`NlTokens.light`, `NlTokens.dark`); global tokens become static
- * constants of `NlTokens`. The hand-written theme in
- * apps/client/lib/src/theme/ builds Flutter's `ThemeData` from them.
+ * Theme tokens become the fields of `NlThemeTokens`. Each theme becomes an
+ * `NlColorTheme` constant holding one `NlThemeTokens` per mode
+ * (`NlTokens.sea.light`, `NlTokens.sea.dark`), and `NlTokens.themes` lists
+ * them, the default first. Global tokens become static constants of
+ * `NlTokens`. The hand-written theme in apps/client/lib/src/theme/ builds
+ * Flutter's `ThemeData` from them.
  *
  * Flutter cannot use CSS font stacks, so a fontFamily token carries the
  * families Flutter should ask for in its `dev.nailongmeow.nl` extension,
@@ -18,7 +20,7 @@
  */
 
 import { dotted, resolveToken, type Resolved, type Token, type TokenType, type Typography } from "./dtcg.ts";
-import { THEMES, dartName, type Design } from "./model.ts";
+import { MODES, camelCase, dartName, defaultTheme, type Design, type Mode } from "./model.ts";
 import { GENERATED_NOTICE, formatNumber } from "./emit-css.ts";
 import { toByte } from "./color.ts";
 
@@ -178,9 +180,11 @@ function docLines(description: string | undefined, indent: string): string[] {
 }
 
 export function emitDart(design: Design): string {
-  const [first] = THEMES;
-  const fields = design.themes[first];
+  const reference = defaultTheme(design);
+  const fields = design.themes.get(reference)!.light;
   const needsLerpDouble = fields.some((token) => token.type === "dimension" || token.type === "number");
+  const tokensOf = (theme: string, mode: Mode, indent: string) =>
+    design.themes.get(theme)![mode].map((token) => `${indent}${dartName(token.path)}: ${dartValue(design, token, indent)},`);
 
   const lines = [
     `// ${GENERATED_NOTICE}`,
@@ -193,9 +197,9 @@ export function emitDart(design: Design): string {
     "import 'package:flutter/animation.dart' show Cubic;",
     "import 'package:flutter/painting.dart';",
     "",
-    "/// The tokens that differ between themes.",
+    "/// The tokens that differ between themes and between light and dark.",
     "///",
-    "/// [NlTokens.light] and [NlTokens.dark] hold the values.",
+    "/// Each [NlColorTheme] in [NlTokens.themes] holds one set per mode.",
     "final class NlThemeTokens {",
     "  const NlThemeTokens({",
     ...fields.map((token) => `    required this.${dartName(token.path)},`),
@@ -206,7 +210,7 @@ export function emitDart(design: Design): string {
       `  final ${DART_TYPES[token.type]} ${dartName(token.path)};`,
       "",
     ]),
-    "  /// Interpolates between two themes, for an animated theme change.",
+    "  /// Interpolates between two sets, for an animated theme change.",
     "  static NlThemeTokens lerp(NlThemeTokens a, NlThemeTokens b, double t) {",
     "    return NlThemeTokens(",
     ...fields.map((token) => `      ${dartName(token.path)}: ${dartLerp(token, dartName(token.path))},`),
@@ -214,15 +218,31 @@ export function emitDart(design: Design): string {
     "  }",
     "}",
     "",
+    "/// A color theme the user can choose, in its light and dark modes.",
+    "final class NlColorTheme {",
+    "  const NlColorTheme({required this.name, required this.light, required this.dark});",
+    "",
+    "  /// The theme's name in design/tokens.json, such as 'sea'.",
+    "  final String name;",
+    "",
+    "  final NlThemeTokens light;",
+    "",
+    "  final NlThemeTokens dark;",
+    "}",
+    "",
     "/// NL's design tokens, generated from design/tokens.json.",
     "abstract final class NlTokens {",
-    ...THEMES.flatMap((theme) => [
-      `  /// The ${theme} theme.`,
-      `  static const NlThemeTokens ${theme} = NlThemeTokens(`,
-      ...design.themes[theme].map((token) => `    ${dartName(token.path)}: ${dartValue(design, token, "    ")},`),
+    ...[...design.themes.keys()].flatMap((theme) => [
+      `  /// The ${theme} theme${theme === reference ? ", the default" : ""}.`,
+      `  static const NlColorTheme ${camelCase([theme])} = NlColorTheme(`,
+      `    name: ${dartString(theme)},`,
+      ...MODES.flatMap((mode) => [`    ${mode}: NlThemeTokens(`, ...tokensOf(theme, mode, "      "), "    ),"]),
       "  );",
       "",
     ]),
+    "  /// Every theme, the default first.",
+    `  static const List<NlColorTheme> themes = <NlColorTheme>[${[...design.themes.keys()].map((theme) => camelCase([theme])).join(", ")}];`,
+    "",
     ...design.global.flatMap((token) => [
       ...docLines(token.description, "  "),
       `  static const ${DART_TYPES[token.type]} ${dartName(token.path)} = ${dartValue(design, token, "  ")};`,

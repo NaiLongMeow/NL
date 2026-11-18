@@ -12,7 +12,7 @@
  */
 
 import { resolveToken, type Resolved, type Token, type TokenType } from "./dtcg.ts";
-import { THEMES, relativePath, type Design } from "./model.ts";
+import { MODES, defaultTheme, relativePath, type Design } from "./model.ts";
 import { GENERATED_NOTICE, cssColor, cssDimension, cssFontFamily, formatNumber } from "./emit-css.ts";
 
 /** A token's place in the generated object: the token and its value as code. */
@@ -113,28 +113,39 @@ function render(tree: Tree, indent: string, withDescriptions: boolean): string[]
 }
 
 export function emitTs(design: Design): string {
-  const [first] = THEMES;
+  const reference = defaultTheme(design);
   return [
     `// ${GENERATED_NOTICE}`,
     "",
     "/**",
-    " * Tokens that are the same in every theme. Colors and shadows are CSS",
-    " * strings, dimensions CSS pixels, durations milliseconds.",
+    " * Tokens that are the same in every theme and mode. Colors and shadows are",
+    " * CSS strings, dimensions CSS pixels, durations milliseconds.",
     " */",
     "export const tokens = {",
     ...render(buildTree(design, design.global), "  ", true),
     "} as const;",
     "",
-    "/** The tokens of each theme. Every theme has the same keys. */",
+    "/**",
+    " * Each theme's tokens in its light and dark mode, the default theme first.",
+    " * Every theme and mode has the same keys.",
+    " */",
     "export const themes = {",
-    ...THEMES.flatMap((theme) => [
-      `  ${theme}: {`,
-      ...render(buildTree(design, design.themes[theme]), "    ", theme === first),
+    ...[...design.themes].flatMap(([theme, modes]) => [
+      `  ${key(theme)}: {`,
+      ...MODES.flatMap((mode) => [
+        `    ${mode}: {`,
+        ...render(buildTree(design, modes[mode]), "      ", theme === reference && mode === MODES[0]),
+        "    },",
+      ]),
       "  },",
     ]),
     "} as const;",
     "",
     "export type ThemeName = keyof typeof themes;",
+    "export type Mode = keyof (typeof themes)[ThemeName];",
+    "",
+    "/** The theme in use until the user picks one. */",
+    `export const defaultTheme: ThemeName = ${JSON.stringify(reference)};`,
     "",
   ].join("\n");
 }

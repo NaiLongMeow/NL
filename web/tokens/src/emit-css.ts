@@ -2,25 +2,36 @@
  * Writes the design tokens as CSS custom properties for the web code: the
  * desktop windows, `web/stage`, and the gateway's two sites.
  *
- * Global tokens and the light theme go on `:root`. The dark theme applies
- * when the system prefers dark and the page has not chosen light, or when
- * the page sets `data-theme="dark"` on its root element:
+ * Global tokens and the default theme's light mode apply to the root. Two
+ * attributes choose the rest, on the root or on any element (UI design
+ * note, section 11):
  *
- *     <html>                     follows the system
- *     <html data-theme="light">  always light
- *     <html data-theme="dark">   always dark
+ *     <html>                                  default theme, system's mode
+ *     <html data-mode="dark">                 default theme, dark
+ *     <html data-theme="sakura">              sakura, system's mode
+ *     <div data-theme="matcha" data-mode="light">  a matcha preview
+ *
+ * Without `data-mode` an element follows the system's preference. The mode
+ * does not inherit from an ancestor's attribute, so an element that sets
+ * `data-theme` should set `data-mode` too.
+ *
+ * Every rule is wrapped in `:where()`, which gives it zero specificity, so
+ * the rules only compete by their order here, and a custom theme loaded
+ * after this file overrides any token with ordinary selectors (`:root`,
+ * `:root[data-mode="dark"]`).
  *
  * An alias of another emitted token stays an alias, as `var(--nl-...)`, so
- * that overriding one property on the root element at run time (the
- * character pack's accent) carries through to every token built on it.
- * Overriding it on a descendant does not: a custom property resolves its
- * `var()` where it is declared, and descendants inherit the result. Aliases
- * of primitives are written out as values, because primitives are not
- * emitted.
+ * that overriding one property carries through to every token built on it.
+ * A custom property resolves its `var()` on the element that declares it,
+ * and every theme rule declares all theme tokens, so an alias inside a
+ * preview resolves to the preview's own values. Aliases of primitives are
+ * written out as values, because primitives are not emitted.
  *
  * With reduced motion on, every duration becomes 0 ms: the interface stops
- * animating (UI design note, section 3). Code must therefore not wait for a
- * `transitionend` event, which a zero-length transition never fires.
+ * animating (UI design note, section 3). Those declarations are the only
+ * `!important` ones, so that no theme can turn animation back on. Code must
+ * therefore not wait for a `transitionend` event, which a zero-length
+ * transition never fires.
  */
 
 import {
@@ -34,7 +45,7 @@ import {
   type Token,
   type Typography,
 } from "./dtcg.ts";
-import { THEMES, cssName, isEmitted, type Design } from "./model.ts";
+import { MODES, cssName, defaultTheme, isEmitted, type Design, type Mode } from "./model.ts";
 import { toByte } from "./color.ts";
 
 export const GENERATED_NOTICE =
@@ -153,47 +164,58 @@ function tokenLines(design: Design, token: Token, indent: string, withDescriptio
   return lines;
 }
 
+/** The selectors of one theme and mode, each wrapped in `:where()` (see the module comment). */
+function selectors(design: Design, theme: string, mode: Mode, system: boolean): string {
+  const isDefault = theme === defaultTheme(design);
+  const own = `[data-theme="${theme}"]`;
+  const forMode = system ? ":not([data-mode])" : mode === "light" ? "" : `[data-mode="${mode}"]`;
+  const list = [...(isDefault ? [`:root${forMode}`] : []), `${own}${forMode}`];
+  return list.map((selector) => `:where(${selector})`).join(", ");
+}
+
 export function emitCss(design: Design): string {
-  const [light, dark] = THEMES;
-  const darkLines = (indent: string) => [
-    `${indent}color-scheme: dark;`,
-    ...design.themes[dark].flatMap((token) => tokenLines(design, token, indent, false)),
-  ];
+  const [light] = MODES;
+  const reference = defaultTheme(design);
   const durations = design.global.filter((token) => token.type === "duration");
+  const themeLines = (theme: string, mode: Mode, indent: string) => [
+    `${indent}color-scheme: ${mode};`,
+    ...design.themes.get(theme)![mode].flatMap((token) =>
+      tokenLines(design, token, indent, theme === reference && mode === light),
+    ),
+  ];
+  const block = (lines: string[]) => lines.join("\n");
 
   const blocks = [
     `/*\n * ${GENERATED_NOTICE}\n */`,
-    [
-      ":root {",
-      ...design.global.flatMap((token) => tokenLines(design, token, "  ", true)),
-      "",
-      `  /* The ${light} theme, the default. */`,
-      `  color-scheme: ${light};`,
-      ...design.themes[light].flatMap((token) => tokenLines(design, token, "  ", true)),
-      "}",
-    ].join("\n"),
-    [
-      `/* The ${dark} theme, when the system prefers it and the page has not chosen ${light}. */`,
-      "@media (prefers-color-scheme: dark) {",
-      `  :root:not([data-theme="${light}"]) {`,
-      ...darkLines("    "),
-      "  }",
-      "}",
-    ].join("\n"),
-    [`/* The ${dark} theme, when the page chooses it. */`, `:root[data-theme="${dark}"] {`, ...darkLines("  "), "}"].join(
-      "\n",
-    ),
+    block([":where(:root) {", ...design.global.flatMap((token) => tokenLines(design, token, "  ", true)), "}"]),
   ];
+  for (const theme of design.themes.keys()) {
+    const label = theme === reference ? `The ${theme} theme, the default` : `The ${theme} theme`;
+    blocks.push(block([`/* ${label}: ${light}. */`, `${selectors(design, theme, light, false)} {`, ...themeLines(theme, light, "  "), "}"]));
+    for (const mode of MODES.filter((other) => other !== light)) {
+      blocks.push(
+        block([
+          `/* ${label}: ${mode}, when the system prefers it and no mode is chosen. */`,
+          `@media (prefers-color-scheme: ${mode}) {`,
+          `  ${selectors(design, theme, mode, true)} {`,
+          ...themeLines(theme, mode, "    "),
+          "  }",
+          "}",
+        ]),
+        block([`/* ${label}: ${mode}, when it is chosen. */`, `${selectors(design, theme, mode, false)} {`, ...themeLines(theme, mode, "  "), "}"]),
+      );
+    }
+  }
   if (durations.length > 0) {
     blocks.push(
-      [
-        "/* Reduced motion: the interface stops animating. */",
+      block([
+        "/* Reduced motion: the interface stops animating, whatever a theme says. */",
         "@media (prefers-reduced-motion: reduce) {",
         "  :root {",
-        ...durations.map((token) => `    ${cssName(token.path)}: 0ms;`),
+        ...durations.map((token) => `    ${cssName(token.path)}: 0ms !important;`),
         "  }",
         "}",
-      ].join("\n"),
+      ]),
     );
   }
   return `${blocks.join("\n\n")}\n`;
@@ -201,7 +223,7 @@ export function emitCss(design: Design): string {
 
 /** Every emitted token's CSS property name, for tests and tools. */
 export function cssProperties(design: Design): string[] {
-  return [...design.global, ...design.themes.light].flatMap((token) =>
+  return [...design.global, ...design.themes.get(defaultTheme(design))!.light].flatMap((token) =>
     declarations(design, token).map(([property]) => property),
   );
 }

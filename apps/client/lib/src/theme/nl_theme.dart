@@ -12,11 +12,14 @@ import 'package:material_ui/material_ui.dart';
 
 import 'tokens.g.dart';
 
-/// The app's theme for [brightness].
-ThemeData nlTheme(Brightness brightness) {
+/// The app's theme for [brightness] in the color theme [colors], the
+/// default theme (the first of [NlTokens.themes]) unless the user chose
+/// another (UI design note, section 3).
+ThemeData nlTheme(Brightness brightness, [NlColorTheme? colors]) {
+  final theme = colors ?? NlTokens.themes.first;
   final tokens = switch (brightness) {
-    Brightness.light => NlTokens.light,
-    Brightness.dark => NlTokens.dark,
+    Brightness.light => theme.light,
+    Brightness.dark => theme.dark,
   };
   return ThemeData(
     brightness: brightness,
@@ -38,8 +41,7 @@ ThemeData nlTheme(Brightness brightness) {
 ColorScheme _colorScheme(Brightness brightness, NlThemeTokens tokens) {
   return ColorScheme(
     brightness: brightness,
-    // Primary actions are neutral on purpose: color belongs to the
-    // character and its messages, not to the interface.
+    // Primary actions take the theme's accent (UI design note, section 3).
     primary: tokens.colorActionFill,
     onPrimary: tokens.colorActionOnFill,
     secondary: tokens.colorAccentFill,

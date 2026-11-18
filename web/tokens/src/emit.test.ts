@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TokenError, parseTokens } from "./dtcg.ts";
-import { buildDesign, cssName, dartName, type Design } from "./model.ts";
+import { buildDesign, cssName, dartName, defaultTheme, type Design } from "./model.ts";
 import { cssProperties, emitCss } from "./emit-css.ts";
 import { emitTs } from "./emit-ts.ts";
 import { emitDart } from "./emit-dart.ts";
@@ -18,12 +18,14 @@ const srgb = (hex: string, alpha?: number) => {
 const px = (value: number) => ({ value, unit: "px" });
 const flutter = (families: string[]) => ({ "dev.nailongmeow.nl": { flutter: families } });
 
-const theme = (text: string, page: string) => ({
+/** One theme's tokens in one mode; `self` is the mode's own path, for the alias. */
+const themeMode = (text: string, page: string, self: string) => ({
   color: {
     $type: "color",
     text: { $description: "Body text.", $value: `{palette.${text}}` },
     page: { $value: `{palette.${page}}` },
     veil: { $value: srgb("#211d1a", 0.05) },
+    quote: { $value: `{${self}.color.text}` },
   },
   shadow: {
     $type: "shadow",
@@ -31,12 +33,13 @@ const theme = (text: string, page: string) => ({
   },
 });
 
-/** A small design with every kind of token the emitters handle. */
+const both = (name: string, text: string) => ({
+  light: themeMode(text, "paper", `theme.${name}.light`),
+  dark: themeMode("moon", "night", `theme.${name}.dark`),
+});
+
+/** A small design with two themes and every kind of token the emitters handle. */
 function fixture(): Record<string, unknown> {
-  const light = theme("ink", "paper");
-  const dark = theme("moon", "night");
-  (light.color as Record<string, unknown>).quote = { $value: "{light.color.text}" };
-  (dark.color as Record<string, unknown>).quote = { $value: "{dark.color.text}" };
   return {
     palette: {
       $type: "color",
@@ -44,9 +47,9 @@ function fixture(): Record<string, unknown> {
       paper: { $value: srgb("#fbfaf7") },
       moon: { $value: srgb("#ece9e5") },
       night: { $value: srgb("#1c1a18") },
+      rose: { $value: srgb("#a43066") },
     },
-    light,
-    dark,
+    theme: { day: both("day", "ink"), rose: both("rose", "rose") },
     font: {
       family: {
         $type: "fontFamily",
@@ -73,6 +76,13 @@ function fixture(): Record<string, unknown> {
   };
 }
 
+type Groups = Record<string, Record<string, unknown>>;
+
+/** The groups of one theme and mode in a fixture, for editing. */
+function modeOf(json: Record<string, unknown>, theme: string, mode: string): Groups {
+  return (json.theme as Record<string, Record<string, Groups>>)[theme]![mode]!;
+}
+
 function design(json: Record<string, unknown> = fixture()): Design {
   return buildDesign(parseTokens(json));
 }
@@ -88,10 +98,10 @@ function problemsOf(json: Record<string, unknown>): readonly string[] {
 }
 
 describe("names", () => {
-  it("drops the theme from CSS and Dart names", () => {
-    expect(cssName(["light", "color", "surface", "app"])).toBe("--nl-color-surface-app");
-    expect(cssName(["dark", "color", "surface", "app"])).toBe("--nl-color-surface-app");
-    expect(dartName(["light", "color", "accent", "on-fill"])).toBe("colorAccentOnFill");
+  it("drops the theme and the mode from CSS and Dart names", () => {
+    expect(cssName(["theme", "sea", "light", "color", "surface", "app"])).toBe("--nl-color-surface-app");
+    expect(cssName(["theme", "sakura", "dark", "color", "surface", "app"])).toBe("--nl-color-surface-app");
+    expect(dartName(["theme", "sea", "light", "color", "accent", "on-fill"])).toBe("colorAccentOnFill");
   });
 
   it("keeps the full path of global tokens", () => {
@@ -102,9 +112,9 @@ describe("names", () => {
 });
 
 describe("buildDesign", () => {
-  it("splits tokens into global and per-theme lists, without primitives", () => {
-    const { global, themes } = design();
-    expect(global.map((token) => token.path.join("."))).toEqual([
+  it("splits tokens into global tokens and each theme's modes, without primitives", () => {
+    const built = design();
+    expect(built.global.map((token) => token.path.join("."))).toEqual([
       "font.family.sans",
       "font.family.mono",
       "font.size.md",
@@ -114,54 +124,76 @@ describe("buildDesign", () => {
       "motion.easing.out",
       "space.1",
     ]);
-    expect(themes.light.map((token) => token.path.join("."))).toEqual([
-      "light.color.text",
-      "light.color.page",
-      "light.color.veil",
-      "light.color.quote",
-      "light.shadow.pop",
+    expect([...built.themes.keys()]).toEqual(["day", "rose"]);
+    expect(defaultTheme(built)).toBe("day");
+    expect(built.themes.get("day")!.light.map((token) => token.path.join("."))).toEqual([
+      "theme.day.light.color.text",
+      "theme.day.light.color.page",
+      "theme.day.light.color.veil",
+      "theme.day.light.color.quote",
+      "theme.day.light.shadow.pop",
     ]);
-    expect(themes.dark.map((token) => token.path.slice(1).join("."))).toEqual(
-      themes.light.map((token) => token.path.slice(1).join(".")),
-    );
+    const relative = (tokens: readonly { path: readonly string[] }[]) => tokens.map((token) => token.path.slice(3).join("."));
+    for (const theme of ["day", "rose"]) {
+      for (const mode of ["light", "dark"] as const) {
+        expect(relative(built.themes.get(theme)![mode])).toEqual(relative(built.themes.get("day")!.light));
+      }
+    }
   });
 
-  it("emits the second theme in the first theme's order", () => {
+  it("emits every theme and mode in the order of the default theme's light mode", () => {
     const json = fixture();
-    const dark = json.dark as { color: Record<string, unknown> };
-    const { page, ...rest } = dark.color;
-    dark.color = { ...rest, page };
-    expect(design(json).themes.dark.map((token) => token.path.join("."))).toEqual([
-      "dark.color.text",
-      "dark.color.page",
-      "dark.color.veil",
-      "dark.color.quote",
-      "dark.shadow.pop",
+    const groups = modeOf(json, "rose", "dark");
+    const { page, ...rest } = groups.color!;
+    groups.color = { ...rest, page };
+    expect(design(json).themes.get("rose")!.dark.map((token) => token.path.join("."))).toEqual([
+      "theme.rose.dark.color.text",
+      "theme.rose.dark.color.page",
+      "theme.rose.dark.color.veil",
+      "theme.rose.dark.color.quote",
+      "theme.rose.dark.shadow.pop",
     ]);
   });
 
-  it("requires both themes to hold the same tokens with the same types", () => {
+  it("requires every theme and mode to hold the same tokens with the same types", () => {
     const json = fixture();
-    const dark = json.dark as { color: Record<string, unknown>; shadow: Record<string, unknown> };
-    delete dark.color.page;
-    dark.color.extra = { $value: "{palette.night}" };
-    dark.shadow.pop = { $type: "color", $value: "{palette.night}" };
+    delete modeOf(json, "rose", "dark").color!.page;
+    modeOf(json, "day", "dark").color!.extra = { $value: "{palette.night}" };
+    modeOf(json, "rose", "light").shadow!.pop = { $type: "color", $value: "{palette.night}" };
     expect(problemsOf(json)).toEqual([
-      "dark.color.page: missing; every theme needs the tokens of light",
-      "dark.shadow.pop: is a color token, but light.shadow.pop is a shadow",
-      "dark.color.extra: not in light; every theme holds the same tokens",
+      "theme.day.dark.color.extra: not in theme.day.light; every theme and mode holds the same tokens",
+      "theme.rose.light.shadow.pop: is a color token, but theme.day.light.shadow.pop is a shadow",
+      "theme.rose.dark.color.page: missing; every theme and mode needs the tokens of theme.day.light",
     ]);
+  });
+
+  it("requires theme tokens at theme.<name>.<mode>, under a name that starts with a letter", () => {
+    const json = fixture();
+    const themes = json.theme as Record<string, unknown>;
+    themes.dusk = { evening: themeMode("moon", "night", "theme.dusk.evening") };
+    themes["2tone"] = both("2tone", "ink");
+    const problems = problemsOf(json);
+    expect(problems).toContain("theme.dusk.evening.color.text: a theme token must sit at theme.<name>.<light|dark>.<group>.…");
+    expect(problems).toContain("theme.2tone: a theme name must start with a letter");
+  });
+
+  it("requires at least one theme", () => {
+    const json = fixture();
+    delete json.theme;
+    expect(problemsOf(json)).toEqual(["no themes: the theme group needs at least one theme with light and dark tokens"]);
   });
 
   it("keeps aliases in scope", () => {
     const json = fixture();
-    (json.light as { color: Record<string, unknown> }).color.quote = { $value: "{dark.color.text}" };
-    (json.space as Record<string, unknown>)["2"] = { $type: "color", $value: "{light.color.text}" };
-    (json.palette as Record<string, unknown>).pale = { $value: "{light.color.page}" };
+    modeOf(json, "rose", "light").color!.quote = { $value: "{theme.day.light.color.text}" };
+    modeOf(json, "rose", "dark").color!.quote = { $value: "{theme.rose.light.color.text}" };
+    (json.space as Record<string, unknown>)["2"] = { $type: "color", $value: "{theme.day.light.color.text}" };
+    (json.palette as Record<string, unknown>).pale = { $value: "{theme.day.light.color.page}" };
     expect(problemsOf(json)).toEqual([
-      "palette.pale: a primitive token cannot alias {light.color.page}",
-      "light.color.quote: a light token cannot alias {dark.color.text}",
-      "space.2: a global token cannot alias {light.color.text}",
+      "palette.pale: a primitive token cannot alias {theme.day.light.color.page}",
+      "theme.rose.light.color.quote: a rose light token cannot alias {theme.day.light.color.text}",
+      "theme.rose.dark.color.quote: a rose dark token cannot alias {theme.rose.light.color.text}",
+      "space.2: a global token cannot alias {theme.day.light.color.text}",
     ]);
   });
 
@@ -174,25 +206,64 @@ describe("buildDesign", () => {
       "a.b-c: its Dart name aBC is also a-b.c's",
     ]);
   });
+
+  it("rejects a theme whose Dart name a token or the generated code already uses", () => {
+    const json = fixture();
+    const themes = json.theme as Record<string, unknown>;
+    themes.space1 = both("space1", "ink");
+    themes.themes = both("themes", "ink");
+    expect(problemsOf(json)).toEqual([
+      "theme.space1: its Dart name space1 is also space.1's",
+      "theme.themes: themes is not a usable Dart identifier",
+    ]);
+  });
 });
 
 describe("emitCss", () => {
   const css = emitCss(design());
+  /** The text of the rule that starts at `start`, up to and including its last declaration's line. */
+  const blockAfter = (start: string) => css.slice(css.indexOf(start), css.indexOf("\n}\n", css.indexOf(start)) + 1);
 
-  it("puts global tokens and the light theme on :root", () => {
-    const root = css.slice(css.indexOf(":root {"), css.indexOf("}\n"));
+  it("puts global tokens on the root", () => {
+    const root = blockAfter(":where(:root) {");
     expect(root).toContain('  --nl-font-family-sans: -apple-system, "Segoe UI", sans-serif;\n');
     expect(root).toContain("  --nl-space-1: 4px;\n");
-    expect(root).toContain("  color-scheme: light;\n");
-    expect(root).toContain("  /* Body text. */\n  --nl-color-text: #211d1a;\n");
   });
 
-  it("applies the dark theme by system preference and by data-theme", () => {
+  it("gives the default theme's light mode to the root and to data-theme", () => {
+    const light = blockAfter("/* The day theme, the default: light. */");
+    expect(light).toContain(':where(:root), :where([data-theme="day"]) {\n  color-scheme: light;\n');
+    expect(light).toContain("  /* Body text. */\n  --nl-color-text: #211d1a;\n");
+  });
+
+  it("applies dark by the system's preference unless a mode is chosen, and by data-mode", () => {
     expect(css).toContain(
-      '@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n    color-scheme: dark;\n    --nl-color-text: #ece9e5;\n',
+      '@media (prefers-color-scheme: dark) {\n  :where(:root:not([data-mode])), :where([data-theme="day"]:not([data-mode])) {\n    color-scheme: dark;\n    --nl-color-text: #ece9e5;\n',
     );
-    expect(css).toContain(':root[data-theme="dark"] {\n  color-scheme: dark;\n  --nl-color-text: #ece9e5;\n');
-    // Descriptions appear once, in the light block.
+    expect(css).toContain(
+      ':where(:root[data-mode="dark"]), :where([data-theme="day"][data-mode="dark"]) {\n  color-scheme: dark;\n  --nl-color-text: #ece9e5;\n',
+    );
+  });
+
+  it("gives other themes to data-theme only, never to the bare root", () => {
+    expect(css).toContain(':where([data-theme="rose"]) {\n  color-scheme: light;\n  --nl-color-text: #a43066;\n');
+    expect(css).toContain(':where([data-theme="rose"]:not([data-mode])) {\n');
+    expect(css).toContain(':where([data-theme="rose"][data-mode="dark"]) {\n');
+    expect(css).not.toMatch(/:root[^{]*rose/);
+  });
+
+  it("orders the rules so that the later, more specific choice wins", () => {
+    // Every rule has zero specificity, so order decides: the default theme
+    // before the others, and in each theme light before dark.
+    const at = (text: string) => css.indexOf(text);
+    expect(at(':where(:root), :where([data-theme="day"])')).toBeLessThan(at(':where(:root:not([data-mode]))'));
+    expect(at(':where(:root:not([data-mode]))')).toBeLessThan(at(':where(:root[data-mode="dark"])'));
+    expect(at(':where(:root[data-mode="dark"])')).toBeLessThan(at(':where([data-theme="rose"]) {'));
+    expect(at(':where([data-theme="rose"]) {')).toBeLessThan(at(':where([data-theme="rose"][data-mode="dark"])'));
+    expect(css).not.toMatch(/^(?!@media|\s|\/\*|\}|:where\()[^\n]*\{$/m);
+  });
+
+  it("writes descriptions once, in the default theme's light mode", () => {
     expect(css.match(/Body text\./g)).toHaveLength(1);
   });
 
@@ -216,9 +287,9 @@ describe("emitCss", () => {
     }
   });
 
-  it("stops interface motion when reduced motion is on", () => {
+  it("stops interface motion when reduced motion is on, whatever a theme sets", () => {
     expect(css).toContain(
-      "@media (prefers-reduced-motion: reduce) {\n  :root {\n    --nl-motion-duration-fast: 0ms;\n  }\n}\n",
+      "@media (prefers-reduced-motion: reduce) {\n  :root {\n    --nl-motion-duration-fast: 0ms !important;\n  }\n}\n",
     );
   });
 
@@ -240,11 +311,17 @@ describe("emitTs", () => {
     expect(ts).toContain(
       "    body: { fontFamily: '-apple-system, \"Segoe UI\", sans-serif', fontSize: 14, fontWeight: 400, letterSpacing: 0, lineHeight: 1.5 },\n",
     );
-    expect(ts).toContain('  light: {\n    color: {\n      /** Body text. */\n      text: "#211d1a",\n');
-    expect(ts).toContain('  dark: {\n    color: {\n      text: "#ece9e5",\n');
-    expect(ts).toContain('      quote: "#ece9e5",\n');
-    expect(ts).toContain('      pop: "0px 2px 8px 0px rgb(0 0 0 / 0.1)",\n');
+    expect(ts).toContain('  day: {\n    light: {\n      color: {\n        /** Body text. */\n        text: "#211d1a",\n');
+    expect(ts).toContain('    dark: {\n      color: {\n        text: "#ece9e5",\n');
+    expect(ts).toContain('  rose: {\n    light: {\n      color: {\n        text: "#a43066",\n');
+    expect(ts).toContain('        quote: "#ece9e5",\n');
+    expect(ts).toContain('        pop: "0px 2px 8px 0px rgb(0 0 0 / 0.1)",\n');
+  });
+
+  it("names the themes, the modes, and the default", () => {
     expect(ts).toContain("export type ThemeName = keyof typeof themes;\n");
+    expect(ts).toContain("export type Mode = keyof (typeof themes)[ThemeName];\n");
+    expect(ts).toContain('export const defaultTheme: ThemeName = "day";\n');
   });
 });
 
@@ -255,13 +332,17 @@ describe("emitDart", () => {
     expect(dart).toContain("// dart format off\n");
   });
 
-  it("makes theme tokens fields of NlThemeTokens with one constant per theme", () => {
+  it("makes theme tokens fields of NlThemeTokens, with one NlColorTheme per theme", () => {
     expect(dart).toContain("  /// Body text.\n  final Color colorText;\n");
-    expect(dart).toContain("  static const NlThemeTokens light = NlThemeTokens(\n    colorText: Color(0xFF211D1A),\n");
-    expect(dart).toContain("  static const NlThemeTokens dark = NlThemeTokens(\n    colorText: Color(0xFFECE9E5),\n");
-    expect(dart).toContain("    colorVeil: Color(0x0D211D1A),\n");
     expect(dart).toContain(
-      "    shadowPop: [\n      BoxShadow(color: Color(0x1A000000), offset: Offset(0, 2), blurRadius: 8),\n    ],\n",
+      "  static const NlColorTheme day = NlColorTheme(\n    name: 'day',\n    light: NlThemeTokens(\n      colorText: Color(0xFF211D1A),\n",
+    );
+    expect(dart).toContain("    dark: NlThemeTokens(\n      colorText: Color(0xFFECE9E5),\n");
+    expect(dart).toContain("  static const NlColorTheme rose = NlColorTheme(\n    name: 'rose',\n");
+    expect(dart).toContain("  static const List<NlColorTheme> themes = <NlColorTheme>[day, rose];\n");
+    expect(dart).toContain("      colorVeil: Color(0x0D211D1A),\n");
+    expect(dart).toContain(
+      "      shadowPop: [\n        BoxShadow(color: Color(0x1A000000), offset: Offset(0, 2), blurRadius: 8),\n      ],\n",
     );
     expect(dart).toContain("      colorText: Color.lerp(a.colorText, b.colorText, t)!,\n");
     expect(dart).toContain("      shadowPop: BoxShadow.lerpList(a.shadowPop, b.shadowPop, t)!,\n");
@@ -288,9 +369,11 @@ describe("emitDart", () => {
 
   it("refuses what Flutter cannot express", () => {
     const inset = fixture();
-    for (const name of ["light", "dark"]) {
-      const layer = (inset[name] as { shadow: { pop: { $value: Array<Record<string, unknown>> } } }).shadow.pop.$value[0]!;
-      layer.inset = true;
+    for (const theme of ["day", "rose"]) {
+      for (const mode of ["light", "dark"]) {
+        const pop = modeOf(inset, theme, mode).shadow!.pop as { $value: Array<Record<string, unknown>> };
+        pop.$value[0]!.inset = true;
+      }
     }
     expect(() => emitDart(design(inset))).toThrow(/no inset shadows/);
 
