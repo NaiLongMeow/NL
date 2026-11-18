@@ -17,7 +17,7 @@ The harness offers the model one small, fixed set of tools and reaches every oth
 | The core tools | Tool definitions, identical on every node, provider, and session | Fixed |
 | The tool categories | System prompt, fixed text written by NL | Fixed |
 | The account's devices, and a few of its most-used tools with their signatures | Session-start snapshot, refreshed at compaction | Bounded |
-| Search results and loaded definitions | Appended as tool results | Bounded per call |
+| Search results and loaded definitions | Appended as tool results | Bounded by the output threshold (M7) |
 | Changes to tools already used in the session (a device went offline, a definition changed) | Appended notices | Bounded by what was used |
 
 Nothing the model sees grows with the number of toolsets or devices that exist.
@@ -39,12 +39,12 @@ The core tools (working names; the Stage 3 design note fixes names and schemas):
 
 ## Finding and calling
 
-- `tool_search(query)` returns one line per entry, up to a limit; an exact id returns the full definition, which is what a "help" tool would do. Query forms, borrowed from Claude Code's ToolSearch: keywords; `select:<id>` to load one definition; `toolset:<id>` to list a toolset; `category:<name>` to browse a category. Listings are paged.
-- The limits are generous and set per agent type *(user, 2026-11-18)*. Starting values, to be tuned by measurement: for the main agent, 20 search results, listing pages of 50 entries, and 16 most-used tools in the snapshot; for the tool finder, whose context is thrown away once it answers, 100 search results and listing pages of 200, so that it can read whole categories.
+- `tool_search(query)` returns one line per matching entry, best matches first; an exact id returns the full definition, which is what a "help" tool would do. Query forms, borrowed from Claude Code's ToolSearch: keywords, and `select:<id>` to load one definition. Its description tells the main agent to hand broad exploration to the tool finder, so that the main context does not fill early.
+- No tool has a fixed number of results or a page size *(user, 2026-11-18)*. The only limit on any tool's output, in any agent, is the output threshold (M7): the output is cut where it would take the context past that threshold, which lies below the compaction threshold, and the cut says what was left out and how to get it.
 - The catalog version is pinned when a session starts and refreshed at compaction, so results stay stable and replayable (E3). Whether a node is online is checked when a tool is called.
 - `use_tool(tool, args, node?)` runs only tools whose definitions the model has seen in this session. Calling an unseen tool returns its definition, and the model calls again. Arguments are checked against the definition, and an error returns the correct definition. If the definition changed since the model saw it, the call fails and returns the new one.
 - The tools found in a session are recorded at compaction, and the new prefix carries their signatures, within a bound, so the model need not search again. Claude Code keeps its discovered tools across compaction the same way.
-- A preset agent, the tool finder, takes a vague need, searches with its larger limits in its own context, and returns recommended tool ids with reasons. The main agent then loads and calls them, so approvals stay with the main agent. It is the first of the harness's preset agent types.
+- A preset agent, the tool finder, takes a vague need and explores the catalog in its own context with catalog tools of its own *(user, 2026-11-18)*: listing categories, toolsets, and tools, searching, and reading definitions. Its context starts small and is thrown away once it answers, so it can read whole categories. It returns recommended tool ids with reasons. The main agent then loads and calls them, so approvals stay with the main agent. It is the first of the harness's preset agent types.
 
 ## Names and display
 
@@ -56,14 +56,15 @@ The core tools (working names; the Stage 3 design note fixes names and schemas):
 - Loading definitions into the provider's tool list on demand: it breaks the cache from that point on (M2), and function names cannot carry forms like `Remote(desktop3).Edit`.
 - Native tool search on providers that have it (Anthropic, OpenAI's Responses API): it would give the model two different contracts; the user chose `use_tool` everywhere for simplicity.
 - A directory of all toolsets in the session-start snapshot: it grows with the catalog, and its changes flood the session with notices.
+- Fixed result counts and page sizes, set per agent type: more settings than needed, where the output threshold covers every tool with one rule (user, 2026-11-18).
 - Every tool behind one dispatcher, `message` and `finish` included: a message must stream and a finish must be checked, and the base file tools are used too often to cost a lookup each time.
 
 ## Who decided what
 
-- The user, on 2026-11-18: the message and finish rules (M5); toolsets in NL's format, MCP servers usable directly, and a skill that converts them; tool search as the core; `use_tool` on every provider; the tool finder as a preset agent; generous limits, set per agent type and largest for the tool finder; the display names; internal names by the providers' standard.
-- The agent's proposals, which the user has not contradicted and which the Stage 3 and Stage 5 design notes settle: the exact core tool list and names; the silence argument's values; `finish` carrying the result of forks and tasks, which cannot call `message`; the category list; the starting values of the limits; the pinned catalog; look before calling; serving third-party NL toolsets over the MCP protocol; the defaults for raw MCP servers; the query forms.
+- The user, on 2026-11-18: the message and finish rules (M5); toolsets in NL's format, MCP servers usable directly, and a skill that converts them; tool search as the core; `use_tool` on every provider; the tool finder as a preset agent with catalog tools of its own; no result counts or page sizes, only the output threshold (M7); the display names; internal names by the providers' standard.
+- The agent's proposals, which the user has not contradicted and which the Stage 3 and Stage 5 design notes settle: the exact core tool list and names; the silence argument's values; `finish` carrying the result of forks and tasks, which cannot call `message`; the category list; the threshold values; whether a cut output is kept in a scratch file of the session that the model can read with offsets; the pinned catalog; look before calling; serving third-party NL toolsets over the MCP protocol; the defaults for raw MCP servers; the query forms.
 
-**Why:** A tool list that never changes keeps the prefix cacheable (M2), and an identical system prompt and core tool list on every node may let all sessions share one cached prefix through the gateway's key, which the provider-cache spike measures. Bounding what the model sees keeps thousands of tools on many nodes usable for a small model (E5); the user raised the scale problem on 2026-11-18. One contract serves every provider (E5), and DeepSeek has no native tool search. Third-party descriptions reach the model as untrusted tool results (T6), not as tool definitions, and looking before calling stops blind calls with side effects (T7).
+**Why:** A tool list that never changes keeps the prefix cacheable (M2), and an identical system prompt and core tool list on every node may let all sessions share one cached prefix through the gateway's key, which the provider-cache spike measures. Keeping the catalog out of the prompt keeps thousands of tools on many nodes usable for a small model (E5); the user raised the scale problem on 2026-11-18. The output threshold protects every context with one rule instead of a limit per tool. One contract serves every provider (E5), and DeepSeek has no native tool search. Third-party descriptions reach the model as untrusted tool results (T6), not as tool definitions, and looking before calling stops blind calls with side effects (T7).
 
 **How to apply:** Build the core tools, `tool_search`, and `use_tool` in Stage 3 over the built-in toolsets; add NL toolsets from third parties, MCP servers, the conversion skill, remote toolsets, and the tool finder in Stage 5. Never change the tool list within a session. Settle the proposals above with the user in those stages' design notes before building on them.
 

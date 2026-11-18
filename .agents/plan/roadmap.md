@@ -108,7 +108,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - The harness core as one crate that depends on no particular runtime or operating system (E1, P2, P6): the turn loop, event-driven and interruptible (P7), able to call tools from the start, with only built-in tools for now.
 - The prompt layout (M1 to M3) and the session record as local JSONL with its history flag (S2, S9); replay from the record (E3).
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
-- Compaction at the context limit, as a fork (M4, S5).
+- Compaction at the compaction threshold, as a fork (M4, S5), and the output threshold below it (M7).
 - The message and finish tools (M5): messages stream into bubbles from the tool's arguments, working text goes only to the full view, and a turn ends only through finish.
 - The fixed tool surface (M6, [tool-system](../memory/tool-system.md)): the core tools, and tool_search and use_tool over the built-in toolsets.
 - Two shells over the same core: a command-line one, used by end-to-end tests, and the desktop one, with the core embedded in the Tauri backend and the chat, character, and pet screens wired.
@@ -121,7 +121,8 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] After a restart a session resumes from its JSONL (automated, scripted model).
 - [ ] The command-line shell holds a conversation through a test gateway and a fake provider (automated, end to end).
 - [ ] The prefix holds: each request of a session equals the previous one plus what was appended, and a fork's request equals its parent's plus one message (automated).
-- [ ] A session that passes the context limit compacts and goes on (automated).
+- [ ] A session that passes the compaction threshold compacts and goes on (automated).
+- [ ] A tool output that would pass the output threshold is cut and marked, and the session can still take several steps before it compacts (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
 - [ ] A scripted turn that writes working text, calls tools, and sends two messages shows only the two messages in chat view and everything in full view (automated).
 - [ ] A finish that leaves the turn silent without saying so is refused with an error the model sees, and one that says so is accepted (automated).
