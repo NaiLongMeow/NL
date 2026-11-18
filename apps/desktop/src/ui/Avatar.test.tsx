@@ -16,22 +16,28 @@ describe("Avatar", () => {
     expect(unlabeled!.getAttribute("role")).toBeNull();
   });
 
-  it("shows the live character's cue, and no cue beside past messages", () => {
+  it("shows the character's state, idle unless told otherwise", () => {
     const { container } = render(
       <>
         <Avatar size={20} cue="working" />
+        <Avatar size={22} cue="approval" />
+        <Avatar size={22} cue="question" />
+        <Avatar size={22} cue="device" />
         <Avatar size={22} cue="listening" />
         <Avatar size={32} />
       </>,
     );
     expect([...container.querySelectorAll(":scope > span")].map((avatar) => avatar.getAttribute("data-cue"))).toEqual([
       "working",
+      "approval",
+      "question",
+      "device",
       "listening",
-      null,
+      "idle",
     ]);
   });
 
-  it("gives every avatar on the page its own clip, so that each ball is shaded by its own outline", () => {
+  it("gives every avatar on the page its own clip, so that each ball is shaded within its own outline", () => {
     const { container } = render(
       <>
         <Avatar size={32} />
@@ -45,7 +51,7 @@ describe("Avatar", () => {
     expect(references).toEqual(clips.map((id) => `url(#${id})`));
   });
 
-  it("starts each avatar's blinking at its own point, within a few seconds", () => {
+  it("starts each avatar's loops at its own point, within a few seconds, so that they never move in step", () => {
     const { container } = render(
       <>
         {Array.from({ length: 6 }, (_, index) => (
@@ -53,11 +59,11 @@ describe("Avatar", () => {
         ))}
       </>,
     );
-    const delays = [...container.querySelectorAll<HTMLElement>(":scope > span")].map((avatar) =>
-      parseFloat(avatar.style.getPropertyValue("--blink-delay")),
+    const phases = [...container.querySelectorAll<HTMLElement>(":scope > span")].map((avatar) =>
+      Number(avatar.style.getPropertyValue("--phase")),
     );
-    for (const delay of delays) expect(delay).toBeGreaterThan(-5.01);
-    for (const delay of delays) expect(delay).toBeLessThanOrEqual(0);
-    expect(new Set(delays).size).toBeGreaterThan(1);
+    for (const phase of phases) expect(phase).toBeGreaterThanOrEqual(0);
+    for (const phase of phases) expect(phase).toBeLessThan(5);
+    expect(new Set(phases).size).toBeGreaterThan(1);
   });
 });

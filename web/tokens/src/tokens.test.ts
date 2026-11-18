@@ -108,16 +108,14 @@ describe("the default avatar", () => {
     return resolveToken(design.set, token as Token & { type: "color" });
   };
 
-  it("keeps its face readable: eyes on the ball and on its shade at 3:1, glyphs in their bubble at 4.5:1", () => {
-    for (const body of ["body", "body-shade"]) {
-      expect(contrastRatio(rgb(color("eye")), rgb(color(body))), `eye on ${body}`).toBeGreaterThanOrEqual(3);
-    }
+  it("keeps its face readable: eyes on the ball at 3:1, glyphs in their bubble at 4.5:1", () => {
+    expect(contrastRatio(rgb(color("eye")), rgb(color("body")))).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(rgb(color("glyph")), rgb(color("bubble")))).toBeGreaterThanOrEqual(4.5);
   });
 
   it("keeps every hue but the listening ring at least 30 degrees from the microphone hue", () => {
     const micHue = rgbToOklch(rgb(color("mic"))).h;
-    for (const name of ["body", "body-shade", "eye", "bubble", "glyph"]) {
+    for (const name of ["body", "body-shade", "shine", "blush", "eye", "bubble", "glyph"]) {
       const oklch = rgbToOklch(rgb(color(name)));
       if (oklch.c < 0.03) continue;
       expect(hueDistance(oklch.h, micHue), `character.${name}`).toBeGreaterThanOrEqual(30);

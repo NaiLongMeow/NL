@@ -254,7 +254,19 @@ Cues are semantic (P8). The initial set:
 - **Expressions**, chosen by the model: neutral, happy, excited, sad, worried, surprised, shy, pouting. Proposal for Stage 3: the message tool carries an optional expression, so that a message and its face arrive together.
 - **Gestures**, chosen by the model: nod, shake head, wave, tilt head, bounce.
 
-Each surface renders what it can: an avatar on the pet, in the main window, and on the phone; eyes on a small screen; color and rhythm on LEDs. *(user, 2026-11-19: a plain, bouncy ball with two upright eyes that blink, flat and 2D)* The default avatar is a small ball, drawn flat: light sea blue with a crescent of shade, and two upright bars for eyes. It blinks now and then, a column of avatars never all at once, and it moves like soft jelly: beside the live session it wobbles now and then while idle and hops while it thinks or works, and while it listens a steady ring in the reserved hue goes around it; beside past messages it only blinks. With reduced motion it keeps still and only blinks, and a still ring in the accent shows that it works. Its eyes double as the small-screen device face (section 9). Its colors are the `character` tokens, the same in every theme. It replaces the orange "NL" disc that `web/stage` draws today. *(user, 2026-11-19)* Other avatars become choices later, as customization: an avatar the user picks, and character packs, such as 大肥鱼's art once it is licensed (product rule 9).
+Each surface renders what it can: an avatar on the pet, in the main window, and on the phone; eyes on a small screen; color and rhythm on LEDs. *(user, 2026-11-19: a ball, bouncy like jelly, lively, flat and 2D, with two upright eyes that do more than blink, livelier colors, and a look of its own for each state)* The default avatar is a jelly-like ball in bright sea blue, flat and 2D: a darker rim, a glossy highlight, pink cheeks, and two white upright bars for eyes, which turn into ^ ^ when it smiles and > < when it is squished. It is never still, and every state looks different:
+
+| State | The ball |
+|---|---|
+| Idle | Breathes; blinks with a squish, sometimes twice; looks around, leaning with its gaze; settles like jelly; smiles with ^ ^ eyes, rosy cheeks, and a sparkle; winks |
+| Working | Hops without a pause, squashed as it lands and stretched as it pushes off, squinting on every landing |
+| Waiting for approval | Bobs as if knocking, with hopeful wide eyes and a pulsing "!" bubble |
+| Waiting for an answer | Tilts its head from side to side, one eye narrowed, with a swaying "?" bubble |
+| Waiting for a device | Dozes: eyes shut, dimmed, breathing slowly, with a "z" bubble |
+| Listening | Wide eyes, small nods, and a steady ring in the reserved hue |
+| Pointed at | Squishes with > < eyes and springs back, wobbling |
+
+Avatars side by side never move in step. With reduced motion the ball keeps still: its eyes, cheeks, and bubbles still show the state, and a still ring in the accent shows that it works. Its eyes double as the small-screen device face (section 9). Its colors are the `character` tokens, the same in every theme. It replaces the orange "NL" disc that `web/stage` draws today. *(user, 2026-11-19)* Other avatars become choices later, as customization: an avatar the user picks, and character packs, such as 大肥鱼's art once it is licensed (product rule 9).
 
 ## 11. Design tokens and theming
 

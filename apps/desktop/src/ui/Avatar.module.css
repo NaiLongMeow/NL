@@ -1,11 +1,26 @@
 /*
- * The default ball (Avatar.tsx). Its motion is the character's own, not the
- * interface's, so it does not use the motion tokens, which never bounce: the
- * ball squashes and stretches like soft jelly. Every transform scales from
- * the bottom of the ball, where it rests.
+ * The default ball (Avatar.tsx) and its choreography, one section per state.
+ *
+ * Its motion is the character's own, not the interface's, so it does not use
+ * the motion tokens, which never bounce: the ball squashes, stretches, and
+ * wobbles like jelly. The body moves from the bottom of the ball, where it
+ * rests; the eyes, cheeks, and glyphs change about their own centers.
+ * Lengths are in the ball's own units (the 40-unit view box), so every motion
+ * scales with the avatar.
+ *
+ * Idle runs a 12-second routine, in which every layer's keyframes share the
+ * same clock: 7% squish blink; 15 to 34.5% look left, then right, leaning
+ * with the gaze; 41 to 57.5% settle like jelly; 61.5 to 74% smile with ^ ^
+ * eyes, rosy cheeks, and a sparkle; 81.5 to 89% wink; 93.4 to 96.6% double
+ * blink. Each avatar sets --phase (seconds, up to 5) and starts its loops
+ * that far in, so that avatars side by side never move in step. Body poses
+ * always list the same transform functions in the same order, so that every
+ * pose blends into the next.
  */
 
 .avatar {
+  --routine: 12s;
+  --routine-delay: calc(var(--phase, 0) * -2.4s);
   position: relative;
   display: inline-flex;
   flex: none;
@@ -17,7 +32,7 @@
   overflow: visible;
 }
 
-.shade {
+.rim {
   fill: var(--nl-character-body-shade);
 }
 
@@ -25,28 +40,258 @@
   fill: var(--nl-character-body);
 }
 
-.eye {
+.shine {
+  fill: var(--nl-character-shine);
+  opacity: 0.85;
+}
+
+.cheek {
+  fill: var(--nl-character-blush);
+  opacity: 0.75;
+}
+
+.open {
   fill: var(--nl-character-eye);
 }
 
-.ball {
+.happy,
+.squint {
+  fill: none;
+  stroke: var(--nl-character-eye);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.sparkle {
+  fill: var(--nl-character-shine);
+  opacity: 0;
+}
+
+.bubble {
+  display: none;
+}
+
+.bubbleBody {
+  fill: var(--nl-character-bubble);
+  stroke: var(--nl-character-body-shade);
+  stroke-width: 0.9;
+}
+
+.glyph {
+  fill: none;
+  stroke: var(--nl-character-glyph);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.glyphDot {
+  fill: var(--nl-character-glyph);
+}
+
+.alert,
+.ask,
+.sleep {
+  display: none;
+}
+
+/* Every layer that changes shape does so about its own box. */
+.motion,
+.breath {
   transform-box: fill-box;
   transform-origin: 50% 100%;
 }
 
-.eyes {
+.eyes,
+.open,
+.happy,
+.squint,
+.cheek,
+.sparkle {
   transform-box: fill-box;
   transform-origin: center;
-  animation: blink 5.6s linear infinite;
-  animation-delay: var(--blink-delay, 0s);
 }
 
-.avatar[data-cue="idle"] .ball {
-  animation: wobble 6.4s ease-in-out infinite;
+.bubble {
+  transform-box: fill-box;
+  transform-origin: 20% 90%;
 }
 
-.avatar[data-cue="working"] .ball {
-  animation: hop 1.1s infinite;
+/* ---- Idle: the routine ---- */
+
+.breath {
+  animation: breathe 3.4s ease-in-out infinite;
+  animation-delay: calc(var(--phase, 0) * -0.7s);
+}
+
+.motion {
+  animation: routine var(--routine) ease-in-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.gaze {
+  animation: gaze var(--routine) ease-in-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.openLeft {
+  animation: open-left var(--routine) ease-in-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.openRight {
+  animation: open-right var(--routine) ease-in-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.happyLeft {
+  animation: happy-left var(--routine) ease-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.happyRight {
+  animation: happy-right var(--routine) ease-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.cheek {
+  animation: blush var(--routine) ease-in-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+.sparkle {
+  animation: twinkle var(--routine) ease-out infinite;
+  animation-delay: var(--routine-delay);
+}
+
+/* ---- Working: hopping without a pause ---- */
+
+.avatar[data-cue="working"] .motion {
+  animation: hop 0.8s infinite;
+}
+
+.avatar[data-cue="working"] .open {
+  animation: hop-eyes 0.8s infinite;
+}
+
+.avatar[data-cue="working"] .breath,
+.avatar[data-cue="working"] .gaze,
+.avatar[data-cue="working"] .happy,
+.avatar[data-cue="working"] .cheek,
+.avatar[data-cue="working"] .sparkle {
+  animation: none;
+}
+
+/* ---- Approval: knocking, hopeful, with "!" ---- */
+
+.avatar[data-cue="approval"] .motion {
+  animation: knock 2s ease-in-out infinite;
+}
+
+.avatar[data-cue="approval"] .eyes {
+  transform: scale(1.06, 1.16);
+}
+
+.avatar[data-cue="approval"] .gaze {
+  animation: none;
+  transform: translate(0.6px, -1px);
+}
+
+.avatar[data-cue="approval"] .open {
+  animation: blink-now-and-then 4s ease-in-out infinite;
+}
+
+.avatar[data-cue="approval"] .cheek {
+  animation: none;
+  opacity: 0.95;
+}
+
+.avatar[data-cue="approval"] .happy,
+.avatar[data-cue="approval"] .sparkle {
+  animation: none;
+}
+
+.avatar[data-cue="approval"] .bubble {
+  display: inline;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.avatar[data-cue="approval"] .alert {
+  display: inline;
+}
+
+/* ---- Question: tilting its head, one eye narrowed, with "?" ---- */
+
+.avatar[data-cue="question"] .motion {
+  animation: tilt 6s ease-in-out infinite;
+}
+
+.avatar[data-cue="question"] .gaze {
+  animation: none;
+  transform: translate(1px, -1.2px);
+}
+
+.avatar[data-cue="question"] .openLeft {
+  animation: wonder-left 6s ease-in-out infinite;
+}
+
+.avatar[data-cue="question"] .openRight {
+  animation: wonder-right 6s ease-in-out infinite;
+}
+
+.avatar[data-cue="question"] .happy,
+.avatar[data-cue="question"] .sparkle {
+  animation: none;
+}
+
+.avatar[data-cue="question"] .bubble {
+  display: inline;
+  animation: sway 3s ease-in-out infinite;
+}
+
+.avatar[data-cue="question"] .ask {
+  display: inline;
+}
+
+/* ---- Device: dozing until the device comes online, with "z" ---- */
+
+.avatar[data-cue="device"] .motion,
+.avatar[data-cue="device"] .gaze,
+.avatar[data-cue="device"] .happy,
+.avatar[data-cue="device"] .cheek,
+.avatar[data-cue="device"] .sparkle {
+  animation: none;
+}
+
+.avatar[data-cue="device"] .breath {
+  opacity: 0.8;
+  animation: doze 5s ease-in-out infinite;
+}
+
+.avatar[data-cue="device"] .open {
+  animation: none;
+  transform: scale(1.15, 0.14);
+}
+
+.avatar[data-cue="device"] .bubble {
+  display: inline;
+  animation: float 3s ease-in-out infinite;
+}
+
+.avatar[data-cue="device"] .sleep {
+  display: inline;
+}
+
+/* ---- Listening: wide eyes, small nods, and the ring in the reserved hue ---- */
+
+.avatar[data-cue="listening"] .motion {
+  animation: nod 1.4s ease-in-out infinite;
+}
+
+.avatar[data-cue="listening"] .eyes {
+  transform: scale(1.06, 1.16);
 }
 
 /* The ring sits just outside the avatar so it never covers the face. */
@@ -58,78 +303,539 @@
   border: 2px solid var(--nl-character-mic);
 }
 
-/* One blink, and later a double blink, so that the rhythm does not feel mechanical. */
-@keyframes blink {
+/* ---- Pointing at it: a squish with the eyes shut tight, whatever the state ---- */
+
+.avatar:hover .motion {
+  animation: poke 0.9s ease-out;
+}
+
+.avatar:hover .open {
+  animation: poke-open 0.9s linear;
+}
+
+.avatar:hover .squint {
+  animation: poke-squint 0.9s linear;
+}
+
+.avatar:hover .happy {
+  animation: none;
+}
+
+/* ---- Keyframes ---- */
+
+@keyframes breathe {
   0%,
-  36%,
-  40.5%,
-  86%,
-  88.5%,
-  91%,
-  93.5%,
   100% {
-    transform: scaleY(1);
+    transform: scale(1.03, 0.97);
   }
-  38%,
-  87.2%,
-  92.2% {
-    transform: scaleY(0.12);
+  50% {
+    transform: scale(0.98, 1.025);
   }
 }
 
-/* Now and then the ball settles like jelly: squash, stretch, and back. */
-@keyframes wobble {
+@keyframes routine {
   0%,
-  76%,
+  5.5%,
+  9.6%,
+  15%,
+  34.5%,
+  41%,
+  54.5%,
+  57.5%,
+  61.5%,
+  74%,
+  81.5%,
+  89%,
+  93.4%,
+  95%,
+  96.6%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
+  }
+  7% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.06, 0.94);
+  }
+  8.3% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(0.98, 1.02);
+  }
+  17%,
+  23.5% {
+    transform: translateY(0) rotate(0deg) skewX(6deg) scale(1, 1);
+  }
+  26.5%,
+  32.5% {
+    transform: translateY(0) rotate(0deg) skewX(-6deg) scale(1, 1);
+  }
+  42.5% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.1, 0.9);
+  }
+  44.5% {
+    transform: translateY(-1px) rotate(0deg) skewX(0deg) scale(0.93, 1.08);
+  }
+  46.5% {
+    transform: translateY(0) rotate(0deg) skewX(6deg) scale(1.03, 0.97);
+  }
+  48.5% {
+    transform: translateY(0) rotate(0deg) skewX(-5deg) scale(0.99, 1.01);
+  }
+  50.5% {
+    transform: translateY(0) rotate(0deg) skewX(3deg) scale(1, 1);
+  }
+  52.5% {
+    transform: translateY(0) rotate(0deg) skewX(-1.5deg) scale(1, 1);
+  }
+  63% {
+    transform: translateY(0) rotate(-7deg) skewX(0deg) scale(1.03, 0.97);
+  }
+  65.5% {
+    transform: translateY(0) rotate(7deg) skewX(0deg) scale(1.03, 0.97);
+  }
+  68% {
+    transform: translateY(0) rotate(-5deg) skewX(0deg) scale(1, 1);
+  }
+  70.5% {
+    transform: translateY(0) rotate(4deg) skewX(0deg) scale(1, 1);
+  }
+  72.5% {
+    transform: translateY(0) rotate(-1deg) skewX(0deg) scale(1, 1);
+  }
+  83%,
+  87.5% {
+    transform: translateY(0) rotate(-9deg) skewX(0deg) scale(1.03, 0.97);
+  }
+  94.2%,
+  95.8% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.03, 0.97);
+  }
+}
+
+@keyframes gaze {
+  0%,
+  15%,
+  34.5%,
+  100% {
+    transform: translate(0, 0);
+  }
+  17%,
+  23.5% {
+    transform: translate(-2.2px, 0);
+  }
+  26.5%,
+  32.5% {
+    transform: translate(2.2px, 0);
+  }
+}
+
+/* The open eyes: blinks, squash and stretch while settling, hidden while they smile. */
+@keyframes open-right {
+  0%,
+  6.2%,
+  8.4%,
+  41%,
+  47.5%,
+  93.4%,
+  94.8%,
+  95.4%,
+  96.8%,
   100% {
     transform: scale(1, 1);
   }
-  80% {
-    transform: scale(1.08, 0.92);
+  7%,
+  7.4%,
+  94.2%,
+  95.8% {
+    transform: scale(1.1, 0.1);
   }
-  85% {
-    transform: scale(0.95, 1.05);
+  42.5% {
+    transform: scale(1.15, 0.6);
   }
-  90% {
-    transform: scale(1.03, 0.97);
+  44.5% {
+    transform: scale(0.92, 1.12);
   }
-  95% {
-    transform: scale(0.99, 1.01);
+  61.5%,
+  74% {
+    opacity: 1;
+  }
+  62.4%,
+  73.2% {
+    opacity: 0;
+  }
+}
+
+/* The left eye also winks. */
+@keyframes open-left {
+  0%,
+  6.2%,
+  8.4%,
+  41%,
+  47.5%,
+  93.4%,
+  94.8%,
+  95.4%,
+  96.8%,
+  100% {
+    transform: scale(1, 1);
+  }
+  7%,
+  7.4%,
+  94.2%,
+  95.8% {
+    transform: scale(1.1, 0.1);
+  }
+  42.5% {
+    transform: scale(1.15, 0.6);
+  }
+  44.5% {
+    transform: scale(0.92, 1.12);
+  }
+  61.5%,
+  74%,
+  81.5%,
+  88.4% {
+    opacity: 1;
+  }
+  62.4%,
+  73.2%,
+  82.4%,
+  87.6% {
+    opacity: 0;
+  }
+}
+
+@keyframes happy-right {
+  0%,
+  61.5%,
+  74%,
+  100% {
+    opacity: 0;
+    transform: scale(1, 0.4);
+  }
+  62.6% {
+    opacity: 1;
+    transform: scale(1, 1.15);
+  }
+  63.6%,
+  73.2% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes happy-left {
+  0%,
+  61.5%,
+  74%,
+  81.5%,
+  88.4%,
+  100% {
+    opacity: 0;
+    transform: scale(1, 0.4);
+  }
+  62.6%,
+  82.6% {
+    opacity: 1;
+    transform: scale(1, 1.15);
+  }
+  63.6%,
+  73.2%,
+  83.6%,
+  87.6% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes blush {
+  0%,
+  61%,
+  75%,
+  81%,
+  89%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  63%,
+  73% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  83%,
+  87.5% {
+    opacity: 0.95;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  62.5%,
+  66.4%,
+  69.5%,
+  100% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0);
+  }
+  64%,
+  67.8% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
+  }
+  65.6%,
+  69.4% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.3);
   }
 }
 
 /*
  * A hop: squashed on landing, stretched as it pushes off, round at the top.
- * It rises easing out and falls easing in, as a thrown ball does. Lengths
- * are in the ball's own units (the 64-unit view box), so the hop scales with
- * the avatar.
+ * It rises easing out and falls easing in, as a thrown ball does.
  */
 @keyframes hop {
-  0% {
-    transform: translateY(0) scale(1.1, 0.9);
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.14, 0.86);
     animation-timing-function: ease-out;
   }
   14% {
-    transform: translateY(-1px) scale(0.94, 1.07);
+    transform: translateY(-0.6px) rotate(0deg) skewX(0deg) scale(0.9, 1.12);
     animation-timing-function: ease-out;
   }
   50% {
-    transform: translateY(-10px) scale(1, 1);
+    transform: translateY(-7px) rotate(0deg) skewX(0deg) scale(1, 1);
     animation-timing-function: ease-in;
   }
   86% {
-    transform: translateY(0) scale(0.97, 1.04);
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(0.95, 1.06);
     animation-timing-function: ease-out;
-  }
-  100% {
-    transform: translateY(0) scale(1.1, 0.9);
   }
 }
 
-/* With reduced motion the ball keeps still and only blinks; a still ring shows that it works. */
+/* Squinting on every landing, wide-eyed in the air. */
+@keyframes hop-eyes {
+  0%,
+  100% {
+    transform: scale(1.25, 0.4);
+  }
+  14% {
+    transform: scale(0.92, 1.18);
+  }
+  50% {
+    transform: scale(1, 1.05);
+  }
+  86% {
+    transform: scale(1, 1);
+  }
+}
+
+/* Two little bobs, as if knocking, then a pause. */
+@keyframes knock {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
+  }
+  8% {
+    transform: translateY(-2px) rotate(0deg) skewX(0deg) scale(0.97, 1.04);
+  }
+  16% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.05, 0.95);
+  }
+  24% {
+    transform: translateY(-1.6px) rotate(0deg) skewX(0deg) scale(0.98, 1.03);
+  }
+  32% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.04, 0.96);
+  }
+}
+
+@keyframes blink-now-and-then {
+  0%,
+  48%,
+  53%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50%,
+  51% {
+    transform: scale(1.1, 0.1);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  20%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+}
+
+/* The head rests tilted to one side, then the other, lifting a little as it switches. */
+@keyframes tilt {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0) rotate(9deg) skewX(0deg) scale(1, 1);
+  }
+  46% {
+    transform: translateY(-0.8px) rotate(-2deg) skewX(0deg) scale(0.97, 1.03);
+  }
+  52%,
+  90% {
+    transform: translateY(0) rotate(-9deg) skewX(0deg) scale(1, 1);
+  }
+  96% {
+    transform: translateY(-0.8px) rotate(2deg) skewX(0deg) scale(0.97, 1.03);
+  }
+}
+
+@keyframes wonder-left {
+  0%,
+  68%,
+  72.5%,
+  100% {
+    transform: scale(1, 0.72);
+  }
+  70%,
+  70.6% {
+    transform: scale(1.1, 0.1);
+  }
+}
+
+@keyframes wonder-right {
+  0%,
+  68%,
+  72.5%,
+  100% {
+    transform: scale(1, 1.1);
+  }
+  70%,
+  70.6% {
+    transform: scale(1.1, 0.1);
+  }
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes doze {
+  0%,
+  100% {
+    transform: scale(1.05, 0.95);
+  }
+  50% {
+    transform: scale(0.98, 1.03);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-1.5px);
+    opacity: 1;
+  }
+}
+
+@keyframes nod {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
+  }
+  50% {
+    transform: translateY(0.8px) rotate(0deg) skewX(0deg) scale(1.02, 0.98);
+  }
+}
+
+@keyframes poke {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
+  }
+  12% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.2, 0.8);
+  }
+  30% {
+    transform: translateY(-3px) rotate(0deg) skewX(0deg) scale(0.88, 1.14);
+  }
+  46% {
+    transform: translateY(0) rotate(0deg) skewX(8deg) scale(1.06, 0.95);
+  }
+  60% {
+    transform: translateY(0) rotate(0deg) skewX(-6deg) scale(0.98, 1.02);
+  }
+  74% {
+    transform: translateY(0) rotate(0deg) skewX(3deg) scale(1, 1);
+  }
+  88% {
+    transform: translateY(0) rotate(0deg) skewX(-1deg) scale(1, 1);
+  }
+}
+
+@keyframes poke-open {
+  0%,
+  80%,
+  100% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+  6%,
+  70% {
+    opacity: 0;
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes poke-squint {
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+  }
+  6%,
+  70% {
+    opacity: 1;
+  }
+}
+
+/*
+ * With reduced motion the ball keeps still: no breathing, hopping, tilting,
+ * or swaying. The eyes, cheeks, and bubbles still show the state, and a
+ * still ring in the accent shows that it works.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .avatar[data-cue] .ball {
+  .avatar .motion,
+  .avatar[data-cue] .motion,
+  .avatar:hover .motion,
+  .avatar .breath,
+  .avatar[data-cue] .breath,
+  .avatar .gaze,
+  .avatar .sparkle,
+  .avatar[data-cue] .bubble,
+  .avatar[data-cue="working"] .open {
     animation: none;
+  }
+
+  .avatar[data-cue="question"] .motion {
+    transform: rotate(9deg);
   }
 
   .avatar[data-cue="working"]::after {
