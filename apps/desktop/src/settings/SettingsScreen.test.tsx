@@ -17,7 +17,9 @@ function Settings({
   avatars = null as AvatarList | null,
   onPet = vi.fn(),
   initialPet = DEFAULT_PET,
+  onNotifyMessages = vi.fn(),
 }) {
+  const [notifyMessages, setNotifyMessages] = useState(true);
   const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
   const [pet, setPet] = useState<PetPrefs>(initialPet);
   return (
@@ -34,6 +36,11 @@ function Settings({
         onOpenCustomFolder={() => {}}
         idleLimit={30}
         onIdleLimit={onIdleLimit}
+        notifyMessages={notifyMessages}
+        onNotifyMessages={(on) => {
+          onNotifyMessages(on);
+          setNotifyMessages(on);
+        }}
         pet={pet}
         onPet={(next) => {
           onPet(next);
@@ -208,6 +215,17 @@ describe("SettingsScreen's pet section", () => {
     expect(screen.getByText(en.settings.pet.empty)).toBeTruthy();
     expect(screen.getByText(SKILL_COMMAND)).toBeTruthy();
     expect(SKILL_COMMAND).toBe("npx skills add NaiLongMeow/NL --skill nl-avatar");
+  });
+
+  it("has notifications on until the user turns them off", async () => {
+    const user = userEvent.setup();
+    const onNotifyMessages = vi.fn();
+    render(<Settings onNotifyMessages={onNotifyMessages} />);
+    const messages = screen.getByRole("switch", { name: en.settings.notifications.messages });
+    expect(messages.getAttribute("aria-checked")).toBe("true");
+    await user.click(messages);
+    expect(onNotifyMessages).toHaveBeenLastCalledWith(false);
+    expect(messages.getAttribute("aria-checked")).toBe("false");
   });
 
   it("hides and shows the pet", async () => {

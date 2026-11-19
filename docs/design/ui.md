@@ -167,6 +167,15 @@ The archive lists the summaries (the compacts folder, S3), newest first, with th
 - Once answered or skipped, the card shows the answer and nothing more can be picked.
 - A waiting question shows wherever the session's state shows: the sidebar's status line, "Waiting for your answer"; the row of a dispatched task; the avatar (section 10). Proposal: the pet and notifications announce it as they announce an approval.
 
+### 4.14 When NL is not in front
+
+*(user, 2026-11-19)* A message the character sends (the message tool, M5) while the user is not looking at NL also reaches them outside the window:
+
+- **Desktop.** While the main window does not have the focus, because another app is in front or the window is minimized or hidden, the message also shows in a bubble beside the pet when the pet is shown (section 6), and as a system notification when it is not.
+- **Phone.** While the app is in the background, the message shows in a bubble beside the floating pet when the user has turned it on, and as a system notification otherwise. Only Android can show a floating pet; on iOS messages in the background are notifications.
+- Notifications go through each system's own notification service. They are on by default, and the user can turn them off in Settings, for instance not to be disturbed; the pet's bubbles still show. A notification has the character's name as its title and the start of the message as its text.
+- Proposal: only the messages of this device's own sessions and of shared sessions count, so that another device's session reaches the user through that device and nothing is announced twice.
+
 ## 5. Desktop main window
 
 The layout is a title bar, a sidebar, the open session, and a detail panel that opens when needed and can be pinned.
@@ -192,7 +201,7 @@ The screens:
 6. **Tools.** Toolsets grouped by source: built-in, installed NL toolsets, MCP servers (added by command or URL, shown as `MCP(name)`, with their status), and toolsets offered by other devices. For each toolset and tool: on or off, and ask every time, always allow, or never. Also which of this device's toolsets others may use. The behavior arrives in Stage 5.
 7. **Devices.** Every device of the account with its type, name, online state or last seen time, version, capabilities, and live sessions. Rename, remove (takes effect at once, T2), and add a device. Each enrollment is announced on the other devices (T2), with "Not you? Remove".
 8. **Usage.** Tokens in and out, cache hit rate, requests, and cost where the operator has set prices, per day, per device, and per kind of work (conversation, memory forks, tasks, voice), against the operator's limits (E7).
-9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: the theme, with a preview of each, light, dark, or the system's choice, a custom theme on top (section 11), default view, developer details, memory tips in chat view. Sessions: how long an idle session waits before it archives itself (4.11). Messages sent while the character works: cut in at its next step (the default) or wait until the turn ends. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it; its mode and the avatar chosen for each mode, with the avatars folder, Open folder, Reload, and the command that adds the `nl-avatar` skill to an agent (section 6); its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
+9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: the theme, with a preview of each, light, dark, or the system's choice, a custom theme on top (section 11), default view, developer details, memory tips in chat view. Sessions: how long an idle session waits before it archives itself (4.11). Messages sent while the character works: cut in at its next step (the default) or wait until the turn ends. Notifications: messages that arrive while NL is in the background, on by default (4.14), and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it; its mode and the avatar chosen for each mode, with the avatars folder, Open folder, Reload, and the command that adds the `nl-avatar` skill to an agent (section 6); its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
 10. **Detail panel.** A tool call, a task, a memory entry, a summary, or an approval's full arguments.
 
 Every action is reachable from the keyboard, with shortcuts for new session, search, stop (Esc), switch view, and focus the composer.
@@ -201,7 +210,7 @@ Every action is reachable from the keyboard, with shortcuts for new session, sea
 
 - **Two modes** *(user, 2026-11-19)*, chosen in Settings. **Light** shows the ball (section 10) or an avatar made of images, such as animated GIFs, numbered frames, or a sprite sheet, and costs little. **Live2D** shows an avatar's Live2D model, which is livelier and costs more memory and graphics power. Each mode remembers its own avatar. When the chosen avatar cannot show, because it is missing or broken or because no Live2D runtime is available (question 13), the pet shows the same avatar's light rendition, then the ball; it never shows nothing.
 - **Avatars** are folders in the app's avatars folder, each with an `avatar.json` that maps the cues (section 10) to its art. Users add them themselves, most easily by asking an agent such as Claude Code or Codex that has the `nl-avatar` skill, which converts the art, checks the result, and installs it ([avatars](../avatars.md)). An avatar is data only (T8); Settings shows who made it and on what terms.
-- The window shows the character and nothing else. Messages appear as bubbles beside it and fade after a time that grows with their length; hovering keeps them. A long message ends with "Open in window".
+- The window shows the character and nothing else. Messages that arrive while the main window is not in front (4.14) appear as bubbles beside it and fade after a time that grows with their length; hovering keeps them. A long message ends with "Open in window", and a click on a bubble opens the main window.
 - A click opens a one-line input beside the pet. What is sent goes to this device's most recently active session, or a new device session if none is live, so the pet and the main window show the same session.
 - While the character works, a short line beside it says what it is doing, and its cue matches.
 - An approval shows as a small card with Allow once, Deny, and Details, which opens the main window. Always allow is offered only in the main window.
@@ -217,7 +226,7 @@ Every action is reachable from the keyboard, with shortcuts for new session, sea
 - Tabs: Chat, Memory, Devices, Me. The session list is a drawer in Chat, the detail panel is a bottom sheet, and Me holds usage and settings.
 - Chat renders section 4, with chat view as the default. The composer adds hold-to-talk and a call button.
 - **Call.** The character full screen; captions of what it says (its messages); a live transcript of what the user says; the reserved hue and "Listening" while the microphone is open; mute, end call, and switch to text. Speaking or tapping interrupts. The behavior belongs to the voice track (V1); Stage 1 builds the shell.
-- **Notifications** carry only messages, approvals, and enrollment alerts. They respect quiet hours and can hide their content on the lock screen. The app never sends a notification it made up, such as "Your character misses you".
+- **Notifications** carry only messages, approvals, and enrollment alerts. Messages that arrive while the app is in the background become notifications unless the floating pet shows them (4.14); notifications are on by default and can be turned off. They respect quiet hours and can hide their content on the lock screen. The app never sends a notification it made up, such as "Your character misses you".
 - **Device setup.** Put the device in pairing mode (its face shows it); find it over Bluetooth; choose a Wi-Fi network; the device joins the account and gets a name; it greets the user. Errors: not found, wrong Wi-Fi password, joining failed. Stage 1 uses a fake Bluetooth layer.
 - The phone is a node like any other, but the system may stop its background work. When it hands work to another device (S8), the tool row or task card says where the work runs.
 
@@ -317,7 +326,7 @@ What the screens need from the harness and the gateway. The design note of the s
 
 **Gateway** (Stage 2 unless noted): sign-in, the sign-up policy, session state; the device list with presence, renaming, removal, enrollment, and enrollment announcements; usage per day, device, and kind of work, with limits; operator calls for keys, accounts, limits, and compliance settings. Stage 4: memory files with source, device, time, and version; editing, deleting, undoing the last write, and export; the summaries folder with metadata (device, time, title, preview).
 
-**Local to each device:** view, theme, and language preferences, custom theme files, the pet's mode and the avatar chosen for each mode, installed avatars, window and pet positions.
+**Local to each device:** view, theme, and language preferences, custom theme files, whether messages become notifications, whether the pet is shown, its mode and the avatar chosen for each mode, installed avatars, window and pet positions.
 
 ## 14. Words in the interface
 

@@ -16,6 +16,7 @@
     "@nl/stage": "workspace:*",
     "@nl/tokens": "workspace:*",
     "@tauri-apps/api": "2.12.4",
+    "@tauri-apps/plugin-notification": "2.8.1",
     "lucide-react": "^1.75.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",

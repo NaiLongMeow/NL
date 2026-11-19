@@ -229,6 +229,11 @@ export const en = {
     language: "Language",
     sessions: "Sessions",
     idleLimit: "Archive an idle session after",
+    notifications: {
+      title: "Notifications",
+      messages: "Notify me of messages while NL is in the background",
+      hint: "While the desktop pet is shown, messages appear in its bubbles instead.",
+    },
     minutes: (minutes: number) => `${minutes} min`,
     hours: (hours: number) => (hours === 1 ? "1 hour" : `${hours} hours`),
     pet: {
@@ -274,6 +279,7 @@ export const en = {
   pet: {
     hint: "Drag to move · right-click for the menu · double-click to play",
     menu: { open: "Open NL", settings: "Settings", hide: "Close the pet", quit: "Quit NL" },
+    openInWindow: "Open in window",
   },
   placeholder: {
     body: "This screen is not built yet.",
@@ -503,6 +509,11 @@ export const zhCN: Messages = {
     language: "语言",
     sessions: "会话",
     idleLimit: "闲置多久后自动归档",
+    notifications: {
+      title: "通知",
+      messages: "NL 在后台时，用系统通知提醒新消息",
+      hint: "显示桌宠时，消息改为在桌宠的气泡里出现。",
+    },
     minutes: (minutes: number) => `${minutes} 分钟`,
     hours: (hours: number) => `${hours} 小时`,
     pet: {
@@ -547,6 +558,7 @@ export const zhCN: Messages = {
   pet: {
     hint: "拖动移动 · 右键打开菜单 · 双击逗它玩",
     menu: { open: "打开 NL", settings: "设置", hide: "关闭桌宠", quit: "退出 NL" },
+    openInWindow: "在窗口中打开",
   },
   placeholder: {
     body: "这个页面还没有做。",

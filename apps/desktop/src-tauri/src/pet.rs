@@ -99,6 +99,12 @@ pub fn set_pet_shown<R: Runtime>(app: AppHandle<R>, shown: bool) {
     set_shown(&app, shown);
 }
 
+/// Brings the main window to the front, as a click on the pet's bubble asks.
+#[tauri::command]
+pub fn open_main<R: Runtime>(app: AppHandle<R>) {
+    show_main(&app);
+}
+
 /// Acts on a click in the pet's menu; other menus' ids are ignored.
 pub fn on_menu_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
     match id {

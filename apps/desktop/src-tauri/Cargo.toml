@@ -22,6 +22,8 @@ serde.workspace = true
 serde_json.workspace = true
 # The file rules of avatar packs and the Live2D runtime (src/avatars.rs).
 nl-assets = { path = "../../../crates/nl-assets" }
+# System notifications through each OS's own service (src/lib.rs).
+tauri-plugin-notification = "2"
 
 [target.'cfg(windows)'.dependencies]
 # The title bar (src/titlebar.rs) calls DWM and Win32 directly. Keep this the

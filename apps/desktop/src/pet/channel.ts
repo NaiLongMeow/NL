@@ -19,6 +19,8 @@ const PET = "pet";
 const CUE = "nl-pet-cue";
 const PREFS = "nl-pet-prefs";
 const READY = "nl-pet-ready";
+/** A message for the pet's bubble (UI design note, section 4.14). */
+const SAY = "nl-pet-say";
 /** Sent by the app (pet.rs) whenever the pet is shown or hidden. */
 const SHOWN = "nl-pet-shown";
 /** Sent by the app (pet.rs) to the main window when the pet's menu asks for Settings. */
@@ -30,6 +32,22 @@ let lastCue: AvatarCue = "idle";
 export function publishCue(cue: AvatarCue) {
   lastCue = cue;
   if (isTauri()) emitTo(PET, CUE, cue).catch(() => {});
+}
+
+/** Main window: shows the character's message beside the pet. */
+export function petSay(id: string, text: string) {
+  if (isTauri()) emitTo(PET, SAY, { id, text }).catch(() => {});
+}
+
+/** A message for the pet's bubble. */
+export interface PetMessage {
+  id: string;
+  text: string;
+}
+
+/** Pet window: brings the main window to the front (pet.rs), as a click on a bubble asks. */
+export function openMainWindow() {
+  if (isTauri()) invoke("open_main").catch(() => {});
 }
 
 /** Main window: tells the pet that its settings changed. */
@@ -75,10 +93,18 @@ export function openPetMenu(labels: PetMenuLabels) {
   if (isTauri()) invoke("pet_menu", { labels }).catch(() => {});
 }
 
-/** Pet window: receives cues and settings, then says it is ready. Returns the function that stops receiving. */
-export function subscribePet(onCue: (cue: AvatarCue) => void, onPrefs: (prefs: PetPrefs) => void): () => void {
+/** Pet window: receives cues, settings, and messages, then says it is ready. Returns the function that stops receiving. */
+export function subscribePet(
+  onCue: (cue: AvatarCue) => void,
+  onPrefs: (prefs: PetPrefs) => void,
+  onSay: (message: PetMessage) => void,
+): () => void {
   if (!isTauri()) return () => {};
-  const listeners = [listen<AvatarCue>(CUE, (event) => onCue(event.payload)), listen<PetPrefs>(PREFS, (event) => onPrefs(event.payload))];
+  const listeners = [
+    listen<AvatarCue>(CUE, (event) => onCue(event.payload)),
+    listen<PetPrefs>(PREFS, (event) => onPrefs(event.payload)),
+    listen<PetMessage>(SAY, (event) => onSay(event.payload)),
+  ];
   void Promise.all(listeners).then(() => emit(READY));
   return () => {
     for (const listener of listeners) void listener.then((unlisten) => unlisten());

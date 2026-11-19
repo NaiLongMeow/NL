@@ -13,6 +13,9 @@
  * anything, so it only plays: the ball jumps for joy, and an avatar pack
  * bounces with a happy face.
  *
+ * A message the character sends while the main window is not in front
+ * shows in a bubble above it (PetBubble, app/background.ts).
+ *
  * When a Live2D avatar cannot load (no WebGL, a broken model), the pet falls
  * back to the same avatar's light rendition, or to the ball.
  */
@@ -24,8 +27,9 @@ import { avatarFileUrl, checkAvatar, loadAvatars, runtimeFileUrl, type AvatarLis
 import { shouldStartDrag, type Point } from "../drag";
 import { useI18n } from "../i18n/I18n";
 import { Avatar, type AvatarCue } from "../ui/Avatar";
-import { openPetMenu, subscribePet } from "./channel";
+import { openMainWindow, openPetMenu, subscribePet, type PetMessage } from "./channel";
 import { chooseLook, loadPetPrefs, type Look } from "./look";
+import { PetBubble } from "./PetBubble";
 import styles from "./PetWindow.module.css";
 
 /** The ball's share of the window's shorter side. */
@@ -43,10 +47,11 @@ export function PetWindow() {
   const [failed, setFailed] = useState<string | null>(null);
   const [size, setSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const [playing, setPlaying] = useState(false);
+  const [message, setMessage] = useState<PetMessage | null>(null);
   const view = useRef<AvatarView | null>(null);
   const pressedAt = useRef<Point | null>(null);
 
-  useEffect(() => subscribePet(setCue, setPrefs), []);
+  useEffect(() => subscribePet(setCue, setPrefs, setMessage), []);
   useEffect(() => {
     let current = true;
     setFailed(null);
@@ -135,6 +140,17 @@ export function PetWindow() {
         </span>
       ) : (
         <PackView key={`${look.kind}:${look.key}`} look={look} cue={cue} view={view} onFail={setFailed} />
+      )}
+      {message && (
+        <PetBubble
+          key={message.id}
+          text={message.text}
+          onOpen={() => {
+            openMainWindow();
+            setMessage(null);
+          }}
+          onDone={() => setMessage(null)}
+        />
       )}
     </div>
   );

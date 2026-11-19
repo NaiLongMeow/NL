@@ -40,6 +40,9 @@ interface Props {
   onOpenCustomFolder: () => void;
   idleLimit: number;
   onIdleLimit: (minutes: number) => void;
+  /** Whether messages that arrive while NL is in the background may become system notifications. */
+  notifyMessages: boolean;
+  onNotifyMessages: (on: boolean) => void;
   pet: PetPrefs;
   onPet: (prefs: PetPrefs) => void;
   /** The installed avatars, or null outside the desktop app. */
@@ -116,6 +119,8 @@ export function SettingsScreen({
   onOpenCustomFolder,
   idleLimit,
   onIdleLimit,
+  notifyMessages,
+  onNotifyMessages,
   pet,
   onPet,
   avatars,
@@ -220,6 +225,11 @@ export function SettingsScreen({
             options={idleOptions}
             onChange={(next) => onIdleLimit(Number(next))}
           />
+        </Section>
+
+        <Section title={t.settings.notifications.title}>
+          <Switch label={t.settings.notifications.messages} checked={notifyMessages} onChange={onNotifyMessages} />
+          <p className={styles.hint}>{t.settings.notifications.hint}</p>
         </Section>
 
         <PetSection pet={pet} onPet={onPet} avatars={avatars} onReload={onReloadAvatars} onOpenFolder={onOpenAvatarsFolder} />

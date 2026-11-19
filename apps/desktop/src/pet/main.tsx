@@ -16,7 +16,8 @@ import { PetWindow } from "./PetWindow";
 const appearance = loadAppearance();
 applyAppearance(document.documentElement, appearance.theme, resolveMode(appearance.mode, matchMedia("(prefers-color-scheme: dark)").matches));
 
-// Release builds have no context menu on the pet; development builds keep it, for Inspect.
+// Release builds have no webview context menu. On the pet itself a right
+// click opens the pet's own menu instead, in every build (PetWindow).
 if (import.meta.env.PROD) guardContextMenu();
 
 const root = document.getElementById("pet");

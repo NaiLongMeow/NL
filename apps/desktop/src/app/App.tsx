@@ -4,12 +4,14 @@
  * panel, which opens when a tool call is opened and can be pinned.
  *
  * Stage 1 runs on the scripted fake source. The appearance, the interface
- * language, the idle time, and the pet's mode and avatar are real settings,
- * kept on this device. The pet window shows the character in the state of
- * the session open here (pet/channel.ts).
+ * language, the idle time, notifications, and the pet's settings are real
+ * settings, kept on this device. The pet window shows the character in the
+ * state of the session open here (pet/channel.ts), and the character's
+ * messages that arrive while this window is not in front show beside the
+ * pet or as system notifications (background.ts).
  */
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Tooltip } from "radix-ui";
 import { ArchiveScreen } from "../archive/ArchiveScreen";
 import { loadAvatars, openAvatarsFolder, type AvatarList } from "../avatars/avatars";
@@ -19,7 +21,9 @@ import { Header } from "../conversation/Header";
 import { characterState, type SessionKind, type ToolCall, type View } from "../conversation/model";
 import { DetailPanel } from "../detail/DetailPanel";
 import { I18nProvider, useI18n } from "../i18n/I18n";
-import { answerPet, followPet, publishCue, publishPrefs, setPetShown } from "../pet/channel";
+import { answerPet, followPet, petSay, publishCue, publishPrefs, setPetShown } from "../pet/channel";
+import { deliveryFor, watchMessages } from "./background";
+import { loadNotify, notify, saveNotify } from "./notify";
 import { loadPetPrefs, savePetPrefs, type PetPrefs } from "../pet/look";
 import { IDLE_LIMITS, SettingsScreen } from "../settings/SettingsScreen";
 import { Sidebar, type Screen } from "../sidebar/Sidebar";
@@ -56,6 +60,7 @@ function MainWindow() {
   const [custom, setCustom] = useState<CustomThemes | null>(null);
   const [idleLimit, setIdleLimit] = useState(storedIdleLimit);
   const [pet, setPet] = useState(loadPetPrefs);
+  const [notifyMessages, setNotifyMessages] = useState(loadNotify);
   const [avatars, setAvatars] = useState<AvatarList | null>(null);
   const [screen, setScreen] = useState<Screen>("session");
   const [selected, setSelected] = useState("errands");
@@ -116,6 +121,24 @@ function MainWindow() {
     [],
   );
   useEffect(() => savePetPrefs(pet), [pet]);
+
+  // A message that arrives while this window is not in front also shows
+  // beside the pet, or as a system notification (note, section 4.14).
+  const delivery = useRef({ petShown: pet.shown, notifications: notifyMessages });
+  delivery.current = { petShown: pet.shown, notifications: notifyMessages };
+  useEffect(
+    () =>
+      watchMessages(source, (arrival) => {
+        const where = deliveryFor({ focused: document.hasFocus(), ...delivery.current });
+        if (where === "pet") petSay(arrival.id, arrival.text);
+        if (where === "notification") void notify(source.conversation(arrival.session)?.character.name ?? t.app.name, arrival.text);
+      }),
+    [source],
+  );
+  const changeNotifyMessages = (on: boolean) => {
+    saveNotify(on);
+    setNotifyMessages(on);
+  };
   const petCue = conversation ? characterState(conversation) : "idle";
   useEffect(() => publishCue(petCue), [petCue]);
 
@@ -184,6 +207,8 @@ function MainWindow() {
           onOpenCustomFolder={() => void openCustomThemesFolder()}
           idleLimit={idleLimit}
           onIdleLimit={changeIdleLimit}
+          notifyMessages={notifyMessages}
+          onNotifyMessages={changeNotifyMessages}
           pet={pet}
           onPet={changePet}
           avatars={avatars}

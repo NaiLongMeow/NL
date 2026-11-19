@@ -55,6 +55,9 @@ pub fn run() {
     };
     tauri::Builder::default()
         .plugin(webview::navigation_guard(dev_url))
+        // System notifications for messages that arrive while NL is in the
+        // background and the pet is not shown (UI design note, section 4.14).
+        .plugin(tauri_plugin_notification::init())
         .on_menu_event(|app, event| pet::on_menu_event(app, event.id().as_ref()))
         .on_window_event(pet::on_window_event)
         // Avatar files are read on a worker thread, so that a large texture
@@ -120,6 +123,7 @@ pub fn run() {
             avatars::open_avatars_folder,
             pet::pet_menu,
             pet::set_pet_shown,
+            pet::open_main,
         ])
         .run(context)
         .expect("the Tauri application failed to start");

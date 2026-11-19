@@ -1,0 +1,71 @@
+/*
+ * The pet's message bubble: at the top of the pet's window, above the
+ * character, with a tail pointing down at it. It floats over any wallpaper,
+ * so it has the pet bubble's own shadow (section 3: shadows only on
+ * floating layers).
+ */
+
+.bubble {
+  position: absolute;
+  top: var(--nl-space-2);
+  left: var(--nl-space-2);
+  right: var(--nl-space-2);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border-radius: var(--nl-radius-lg);
+  background: var(--nl-color-bubble-character);
+  box-shadow: var(--nl-shadow-pet-bubble);
+  color: var(--nl-color-ink-primary);
+  font-family: var(--nl-font-family-sans);
+  font-size: var(--nl-font-size-sm);
+  line-height: 1.45;
+  cursor: pointer;
+  animation: appear var(--nl-motion-duration-base) var(--nl-motion-easing-out);
+}
+
+/* The tail, under the middle of the bubble, toward the character. */
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom-right-radius: 3px;
+}
+
+.text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* A long message shows its first lines; the rest is in the window. */
+.text[data-long] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+}
+
+.open {
+  display: block;
+  margin-top: var(--nl-space-1);
+  color: var(--nl-color-accent-text);
+  font-weight: 600;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+  }
+}
