@@ -219,7 +219,11 @@ function StatusIcon({ status }: { status: DispatchStatus }) {
     case "queued":
       return <Clock aria-hidden />;
     case "running":
-      return <LoaderCircle className={styles.spin} aria-hidden />;
+      return (
+        <span className={styles.spin}>
+          <LoaderCircle aria-hidden />
+        </span>
+      );
     case "question":
       return <MessageCircleQuestionMark aria-hidden />;
     case "approval":

@@ -42,7 +42,11 @@ const CATEGORY_ICONS: Record<ToolCategory, ReactNode> = {
 };
 
 const STATUS_ICONS: Record<ToolStatus, ReactNode> = {
-  running: <LoaderCircle className={styles.spin} />,
+  running: (
+    <span className={styles.spin}>
+      <LoaderCircle />
+    </span>
+  ),
   done: <Check />,
   failed: <CircleExclamationPoint />,
   cancelled: <Ban />,

@@ -102,7 +102,14 @@
   transform: rotate(90deg);
 }
 
+/*
+ * The loader's wrapper turns, not its icon: the webviews run animations of
+ * SVG elements, an icon's <svg> included, on the page's main thread, and a
+ * turning HTML element on the compositor. In WebView2 two loaders took about
+ * 180 ms of main-thread time a second, and 18 ms turned this way (2026-11-19).
+ */
 .spin {
+  display: inline-flex;
   animation: spin 1s linear infinite;
 }
 

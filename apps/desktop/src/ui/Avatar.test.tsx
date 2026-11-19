@@ -11,7 +11,7 @@ describe("Avatar", () => {
       </>,
     );
     expect(screen.getByRole("img", { name: "Dafeiyu" })).toBeTruthy();
-    const [, unlabeled] = container.querySelectorAll("span");
+    const [, unlabeled] = container.querySelectorAll(":scope > span");
     expect(unlabeled!.getAttribute("aria-hidden")).toBe("true");
     expect(unlabeled!.getAttribute("role")).toBeNull();
   });

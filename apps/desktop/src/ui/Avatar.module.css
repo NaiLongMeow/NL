@@ -5,8 +5,14 @@
  * the motion tokens, which never bounce: the ball squashes, stretches, and
  * wobbles like jelly. The body moves from the bottom of the ball, where it
  * rests; the eyes, cheeks, and glyphs change about their own centers.
- * Lengths are in the ball's own units (the 40-unit view box), so every motion
- * scales with the avatar.
+ *
+ * Every moving part is a layer that covers the whole avatar (Avatar.tsx),
+ * and every animation changes only transform and opacity, so that the
+ * compositor runs them. Lengths are in the ball's own units, the 40-unit
+ * box of its drawing, as percentages of a layer: 2.5% is one unit, so every
+ * motion scales with the avatar. Each layer's transform-origin is the center
+ * of the shape it moves, or the bottom center of the body, in the same
+ * percentages.
  *
  * Idle runs a 12-second routine, in which every layer's keyframes share the
  * same clock: 7% squish blink; 15 to 34.5% look left, then right, leaning
@@ -27,8 +33,15 @@
   border-radius: var(--nl-radius-full);
 }
 
-.avatar svg {
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.art {
   display: block;
+  width: 100%;
+  height: 100%;
   overflow: visible;
 }
 
@@ -45,27 +58,36 @@
   opacity: 0.85;
 }
 
-.cheek {
+.blush {
   fill: var(--nl-character-blush);
+}
+
+.cheek {
   opacity: 0.75;
 }
 
-.open {
+.eye {
   fill: var(--nl-character-eye);
 }
 
-.happy,
-.squint {
+.line {
   fill: none;
   stroke: var(--nl-character-eye);
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.happy,
+.squint {
   opacity: 0;
 }
 
-.sparkle {
+.star {
   fill: var(--nl-character-shine);
+}
+
+.sparkle {
   opacity: 0;
 }
 
@@ -97,26 +119,57 @@
   display: none;
 }
 
-/* Every layer that changes shape does so about its own box. */
+/*
+ * Where each layer changes shape: the bottom center of the body (and, once a
+ * bubble shows, of the body and the bubble together), the centers of the
+ * eyes, the smiles, the cheeks, and the sparkle, and a point low on the
+ * bubble's left.
+ */
 .motion,
 .breath {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
+  transform-origin: 48.25% 95%;
 }
 
-.eyes,
-.open,
-.happy,
-.squint,
-.cheek,
+.avatar[data-cue="approval"] .motion,
+.avatar[data-cue="question"] .motion,
+.avatar[data-cue="device"] .motion {
+  transform-origin: 51.75% 95%;
+}
+
+.eyes {
+  transform-origin: 50% 44.375%;
+}
+
+.openLeft {
+  transform-origin: 36.25% 44.375%;
+}
+
+.openRight {
+  transform-origin: 63.75% 44.375%;
+}
+
+.happyLeft {
+  transform-origin: 36.25% 45.75%;
+}
+
+.happyRight {
+  transform-origin: 63.75% 45.75%;
+}
+
+.cheekLeft {
+  transform-origin: 26% 61.5%;
+}
+
+.cheekRight {
+  transform-origin: 74% 61.5%;
+}
+
 .sparkle {
-  transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: 75% 23.75%;
 }
 
 .bubble {
-  transform-box: fill-box;
-  transform-origin: 20% 90%;
+  transform-origin: 72.7% 31.825%;
 }
 
 /* ---- Idle: the routine ---- */
@@ -196,7 +249,7 @@
 
 .avatar[data-cue="approval"] .gaze {
   animation: none;
-  transform: translate(0.6px, -1px);
+  transform: translate(1.5%, -2.5%);
 }
 
 .avatar[data-cue="approval"] .open {
@@ -214,7 +267,7 @@
 }
 
 .avatar[data-cue="approval"] .bubble {
-  display: inline;
+  display: block;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -230,7 +283,7 @@
 
 .avatar[data-cue="question"] .gaze {
   animation: none;
-  transform: translate(1px, -1.2px);
+  transform: translate(2.5%, -3%);
 }
 
 .avatar[data-cue="question"] .openLeft {
@@ -247,7 +300,7 @@
 }
 
 .avatar[data-cue="question"] .bubble {
-  display: inline;
+  display: block;
   animation: sway 3s ease-in-out infinite;
 }
 
@@ -276,7 +329,7 @@
 }
 
 .avatar[data-cue="device"] .bubble {
-  display: inline;
+  display: block;
   animation: float 3s ease-in-out infinite;
 }
 
@@ -370,7 +423,7 @@
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.1, 0.9);
   }
   44.5% {
-    transform: translateY(-1px) rotate(0deg) skewX(0deg) scale(0.93, 1.08);
+    transform: translateY(-2.5%) rotate(0deg) skewX(0deg) scale(0.93, 1.08);
   }
   46.5% {
     transform: translateY(0) rotate(0deg) skewX(6deg) scale(1.03, 0.97);
@@ -418,11 +471,11 @@
   }
   17%,
   23.5% {
-    transform: translate(-2.2px, 0);
+    transform: translate(-5.5%, 0);
   }
   26.5%,
   32.5% {
-    transform: translate(2.2px, 0);
+    transform: translate(5.5%, 0);
   }
 }
 
@@ -599,11 +652,11 @@
     animation-timing-function: ease-out;
   }
   14% {
-    transform: translateY(-0.6px) rotate(0deg) skewX(0deg) scale(0.9, 1.12);
+    transform: translateY(-1.5%) rotate(0deg) skewX(0deg) scale(0.9, 1.12);
     animation-timing-function: ease-out;
   }
   50% {
-    transform: translateY(-7px) rotate(0deg) skewX(0deg) scale(1, 1);
+    transform: translateY(-17.5%) rotate(0deg) skewX(0deg) scale(1, 1);
     animation-timing-function: ease-in;
   }
   86% {
@@ -637,13 +690,13 @@
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
   }
   8% {
-    transform: translateY(-2px) rotate(0deg) skewX(0deg) scale(0.97, 1.04);
+    transform: translateY(-5%) rotate(0deg) skewX(0deg) scale(0.97, 1.04);
   }
   16% {
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.05, 0.95);
   }
   24% {
-    transform: translateY(-1.6px) rotate(0deg) skewX(0deg) scale(0.98, 1.03);
+    transform: translateY(-4%) rotate(0deg) skewX(0deg) scale(0.98, 1.03);
   }
   32% {
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.04, 0.96);
@@ -686,14 +739,14 @@
     transform: translateY(0) rotate(9deg) skewX(0deg) scale(1, 1);
   }
   46% {
-    transform: translateY(-0.8px) rotate(-2deg) skewX(0deg) scale(0.97, 1.03);
+    transform: translateY(-2%) rotate(-2deg) skewX(0deg) scale(0.97, 1.03);
   }
   52%,
   90% {
     transform: translateY(0) rotate(-9deg) skewX(0deg) scale(1, 1);
   }
   96% {
-    transform: translateY(-0.8px) rotate(2deg) skewX(0deg) scale(0.97, 1.03);
+    transform: translateY(-2%) rotate(2deg) skewX(0deg) scale(0.97, 1.03);
   }
 }
 
@@ -750,7 +803,7 @@
     opacity: 0.7;
   }
   50% {
-    transform: translateY(-1.5px);
+    transform: translateY(-3.75%);
     opacity: 1;
   }
 }
@@ -761,7 +814,7 @@
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
   }
   50% {
-    transform: translateY(0.8px) rotate(0deg) skewX(0deg) scale(1.02, 0.98);
+    transform: translateY(2%) rotate(0deg) skewX(0deg) scale(1.02, 0.98);
   }
 }
 
@@ -774,7 +827,7 @@
     transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.2, 0.8);
   }
   30% {
-    transform: translateY(-3px) rotate(0deg) skewX(0deg) scale(0.88, 1.14);
+    transform: translateY(-7.5%) rotate(0deg) skewX(0deg) scale(0.88, 1.14);
   }
   46% {
     transform: translateY(0) rotate(0deg) skewX(8deg) scale(1.06, 0.95);
