@@ -14,10 +14,14 @@
 //! drawing the caption buttons (titlebar.rs, and caption.rs where Windows
 //! will not color the caption behind them),
 //! and both windows are kept from behaving like a browser (webview.rs). The
-//! main window also lists the user's custom themes (themes.rs).
+//! main window also lists the user's custom themes (themes.rs) and the
+//! avatars they install, whose files both windows load through the
+//! `nlavatar` URI scheme (avatars.rs).
 
+mod avatars;
 #[cfg(windows)]
 mod caption;
+mod folders;
 mod placement;
 mod themes;
 // titlebar.rs is the verified module of the tauri-custom-titlebar recipe,
@@ -50,6 +54,15 @@ pub fn run() {
     };
     tauri::Builder::default()
         .plugin(webview::navigation_guard(dev_url))
+        // Avatar files are read on a worker thread, so that a large texture
+        // never holds up the window that asked for it.
+        .register_asynchronous_uri_scheme_protocol(
+            avatars::SCHEME,
+            |context, request, responder| {
+                let app = context.app_handle().clone();
+                std::thread::spawn(move || responder.respond(avatars::respond(&app, &request)));
+            },
+        )
         .setup(|app| {
             #[cfg(windows)]
             {
@@ -100,6 +113,8 @@ pub fn run() {
             caption::set_caption_dark,
             themes::custom_themes,
             themes::open_custom_themes_folder,
+            avatars::avatars,
+            avatars::open_avatars_folder,
         ])
         .run(context)
         .expect("the Tauri application failed to start");

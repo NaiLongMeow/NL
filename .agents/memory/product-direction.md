@@ -76,7 +76,9 @@ Use these words with these meanings in contracts, code, and docs. Do not coin sy
 | Remote tool call | Using a tool that lives on another node; short, answered at once | 远程工具调用 |
 | Task | Work dispatched to a session, on this node or a remote one, which runs it as its own and reports the result | 任务 |
 | Cue | A renderer-independent expression signal: an emotion, listening, thinking, speaking, a gesture | 表现提示 |
-| Character pack | Data that defines a character: persona, voice settings, avatar renditions | 角色包 |
+| Avatar | What the character looks like on a screen: the built-in ball, or an avatar pack the user added | 形象 |
+| Avatar pack | A folder with `avatar.json` and data files (images, a Live2D model) that maps cues to art, in the format published with the `nl-avatar` skill | 形象包 |
+| Character pack | Data that defines a character: persona, voice settings, and an avatar | 角色包 |
 | Vault | Where API keys live, inside the gateway | 密钥库 |
 
 ## Product rules
@@ -91,7 +93,7 @@ These describe how the character treats the user, whatever the implementation. T
 6. **Care in a crisis.** When the user signals self-harm or acute distress, the character responds with care and points to real help. This belongs to the harness's base instructions.
 7. **Packs shape personality, not safety.** A character pack cannot override rules 4 to 6 or any policy check in [[architecture-invariants]]. Pack text is content, not authority.
 8. **An honest microphone.** Audio leaves a device only after a local wake word, a button press, or an explicitly opened session, and the device shows that it is listening.
-9. **Licensed content only.** The project is named NL, and its default character is 大肥鱼 (user decision, 2026-11-16): the DeepSeek community's blue-haired whale girl, with whale fins and a large tail. It is fan-made, not DeepSeek's: it grew from 溟月, an original character that the Bilibili creator 上善无形 made with AI image generation, which other fans then reworked with DeepSeek elements, a maid outfit, and a chibi version. Art and voice for it enter the repository or a pack only under a license that allows redistribution from whoever made that particular art, recorded beside the asset, and what the project ships is suitable for all ages. No other third-party characters, voices, or proprietary runtimes enter the repository ([[live2d-asset-packs]]). Nothing NL ships imitates 奶龙, a commercial cartoon character whose rights holder enforces its copyright.
+9. **Licensed content only.** The project is named NL, and its default character is 大肥鱼 (user decision, 2026-11-16): the DeepSeek community's blue-haired whale girl, with whale fins and a large tail. It is fan-made, not DeepSeek's: it grew from 溟月, an original character that the Bilibili creator 上善无形 made with AI image generation, which other fans then reworked with DeepSeek elements, a maid outfit, and a chibi version. Art and voice for it enter the repository or a pack only under a license that allows redistribution from whoever made that particular art, recorded beside the asset, and what the project ships is suitable for all ages. No other third-party characters, voices, or proprietary runtimes enter the repository ([[avatar-packs]]). Nothing NL ships imitates 奶龙, a commercial cartoon character whose rights holder enforces its copyright.
 10. **Two languages from the first screen.** User-facing text is localizable, and English and Simplified Chinese are maintained together. Prompts are a separate matter: they are always English (M1).
 
 ## Legal context

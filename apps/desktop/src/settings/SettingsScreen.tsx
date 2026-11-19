@@ -2,23 +2,31 @@
  * Settings (UI design note, section 5, screen 9). Stage 1 builds the parts
  * the user asked to review: appearance (the built-in themes with a preview
  * of each, light or dark, and a custom theme on top, section 11), the
- * interface language, and how long an idle session waits before it archives
- * itself (section 4.11). The other settings arrive with their stages.
+ * interface language, how long an idle session waits before it archives
+ * itself (section 4.11), and the desktop pet's mode and avatar (section 6).
+ * The other settings arrive with their stages.
  */
 
-import { useId, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import { Check, FolderOpen, RotateCcw } from "lucide-react";
 import { ToggleGroup } from "radix-ui";
+import { localizedText } from "@nl/avatar-skill/format";
 import type { Mode } from "@nl/tokens";
 import { THEME_NAMES, type Appearance, type ModeChoice } from "../app/appearance";
 import type { CustomThemes } from "../app/native";
+import { avatarFileUrl, checkAvatar, type AvatarList, type AvatarProblem } from "../avatars/avatars";
 import { useI18n } from "../i18n/I18n";
 import { LOCALE_NAMES, type Locale } from "../i18n/messages";
+import { canShowLive2D, type PetMode, type PetPrefs } from "../pet/look";
+import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import styles from "./SettingsScreen.module.css";
 
 /** The idle times offered before a session archives itself, in minutes. */
 export const IDLE_LIMITS = [10, 30, 60, 120] as const;
+
+/** The command that adds the nl-avatar skill (skills/nl-avatar) to an agent such as Claude Code or Codex. */
+export const SKILL_COMMAND = "npx skills add NaiLongMeow/NL --skill nl-avatar";
 
 interface Props {
   appearance: Appearance;
@@ -31,6 +39,12 @@ interface Props {
   onOpenCustomFolder: () => void;
   idleLimit: number;
   onIdleLimit: (minutes: number) => void;
+  pet: PetPrefs;
+  onPet: (prefs: PetPrefs) => void;
+  /** The installed avatars, or null outside the desktop app. */
+  avatars: AvatarList | null;
+  onReloadAvatars: () => void;
+  onOpenAvatarsFolder: () => void;
 }
 
 /** A row of mutually exclusive choices (Radix ToggleGroup: arrow keys move between them). */
@@ -101,6 +115,11 @@ export function SettingsScreen({
   onOpenCustomFolder,
   idleLimit,
   onIdleLimit,
+  pet,
+  onPet,
+  avatars,
+  onReloadAvatars,
+  onOpenAvatarsFolder,
 }: Props) {
   const { t, locale, setLocale } = useI18n();
   const themeLabel = useId();
@@ -201,7 +220,134 @@ export function SettingsScreen({
             onChange={(next) => onIdleLimit(Number(next))}
           />
         </Section>
+
+        <PetSection pet={pet} onPet={onPet} avatars={avatars} onReload={onReloadAvatars} onOpenFolder={onOpenAvatarsFolder} />
       </div>
     </main>
+  );
+}
+
+/**
+ * The desktop pet (UI design note, section 6): light or Live2D mode, the
+ * avatar for that mode, the avatars folder, and how to have an AI agent
+ * import art with the nl-avatar skill.
+ */
+function PetSection({
+  pet,
+  onPet,
+  avatars,
+  onReload,
+  onOpenFolder,
+}: {
+  pet: PetPrefs;
+  onPet: (prefs: PetPrefs) => void;
+  avatars: AvatarList | null;
+  onReload: () => void;
+  onOpenFolder: () => void;
+}) {
+  const { t, locale } = useI18n();
+  const texts = t.settings.pet;
+  const avatarLabel = useId();
+  const checked = useMemo(() => avatars?.avatars.map(checkAvatar) ?? [], [avatars]);
+  const mode = pet.mode;
+  const chosen = mode === "light" ? pet.light : pet.live2d;
+  const choose = (key: string | null) => onPet(mode === "light" ? { ...pet, light: key } : { ...pet, live2d: key });
+  // Broken avatars show in both lists, so that the user learns what is wrong with them.
+  const listed = checked.filter((avatar) => !avatar.manifest || (mode === "light" ? avatar.manifest.light : avatar.manifest.live2d));
+  const modeOptions: ReadonlyArray<readonly [PetMode, string]> = [
+    ["light", texts.modes.light],
+    ["live2d", texts.modes.live2d],
+  ];
+  const live2d = avatars?.live2d ?? "no-runtime";
+  const problemText = (problem: AvatarProblem) =>
+    problem.kind === "pack"
+      ? texts.problem[problem.problem]
+      : problem.kind === "folder"
+        ? texts.folderProblem(problem.id)
+        : texts.manifestProblem(problem.issue.at || "avatar.json");
+
+  return (
+    <Section title={texts.title}>
+      <h3 className={styles.label}>{texts.mode}</h3>
+      <Choice label={texts.mode} value={mode} options={modeOptions} onChange={(next) => onPet({ ...pet, mode: next })} />
+      <p className={styles.hint}>{mode === "light" ? texts.lightHint : texts.live2dHint}</p>
+      {mode === "live2d" && avatars !== null && live2d !== "ready" && (
+        <p className={styles.notice} data-tone={canShowLive2D(live2d) ? undefined : "warning"}>
+          {texts.live2dStatus[live2d]}
+        </p>
+      )}
+
+      <h3 id={avatarLabel} className={styles.label}>
+        {texts.avatar}
+      </h3>
+      {avatars === null ? (
+        <p className={styles.hint}>{texts.desktopOnly}</p>
+      ) : (
+        <>
+          <div className={styles.avatarList} role="radiogroup" aria-labelledby={avatarLabel}>
+            {mode === "light" && (
+              <label className={styles.avatarItem}>
+                <input type="radio" name="pet-avatar" checked={chosen === null} onChange={() => choose(null)} />
+                <span className={styles.avatarIcon} aria-hidden>
+                  <Avatar size={28} />
+                </span>
+                <span className={styles.avatarText}>
+                  <span className={styles.avatarName}>{texts.ball}</span>
+                  <span className={styles.avatarMeta}>{texts.ballDetail}</span>
+                </span>
+              </label>
+            )}
+            {listed.map((avatar) => {
+              const manifest = avatar.manifest;
+              return (
+                <label key={avatar.key} className={styles.avatarItem} data-problem={avatar.problem ? true : undefined}>
+                  <input
+                    type="radio"
+                    name="pet-avatar"
+                    checked={chosen === avatar.key && manifest !== null}
+                    disabled={manifest === null}
+                    onChange={() => choose(avatar.key)}
+                  />
+                  <span className={styles.avatarIcon} aria-hidden>
+                    {manifest?.icon && <img src={avatarFileUrl(avatar.key, manifest.icon)} alt="" />}
+                  </span>
+                  <span className={styles.avatarText}>
+                    <span className={styles.avatarName}>
+                      {manifest ? localizedText(manifest.name, locale) : avatar.key}
+                      {manifest?.light && <span className={styles.tag}>{texts.renditions.light}</span>}
+                      {manifest?.live2d && <span className={styles.tag}>{texts.renditions.live2d}</span>}
+                      {avatar.development && <span className={styles.tag}>{texts.development}</span>}
+                    </span>
+                    {avatar.problem ? (
+                      <span className={styles.problem} title={avatar.problem.kind === "manifest" ? avatar.problem.issue.message : undefined}>
+                        {problemText(avatar.problem)}
+                      </span>
+                    ) : (
+                      <span className={styles.avatarMeta}>
+                        {manifest?.author ? texts.byline(manifest.author, manifest.license ?? "") : texts.noAuthor}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {listed.length === 0 && <p className={styles.hint}>{mode === "light" ? texts.empty : texts.emptyLive2D}</p>}
+          <div className={styles.customActions}>
+            <Button size="sm" icon={<FolderOpen />} onClick={onOpenFolder}>
+              {texts.folder}
+            </Button>
+            <Button size="sm" variant="ghost" icon={<RotateCcw />} onClick={onReload}>
+              {texts.reload}
+            </Button>
+          </div>
+          <code className={styles.folder}>{avatars.folder}</code>
+
+          <h3 className={styles.label}>{texts.agent}</h3>
+          <p className={styles.hint}>{texts.agentHint}</p>
+          <code className={styles.command}>{SKILL_COMMAND}</code>
+        </>
+      )}
+    </Section>
   );
 }

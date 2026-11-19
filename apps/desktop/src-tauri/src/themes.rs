@@ -132,23 +132,7 @@ pub fn custom_themes(app: tauri::AppHandle) -> Result<CustomThemes, String> {
 /// app's own folder, never one the page passes in.
 #[tauri::command]
 pub fn open_custom_themes_folder(app: tauri::AppHandle) -> Result<(), String> {
-    let dir = folder(&app)?;
-    #[cfg(windows)]
-    let program = "explorer";
-    #[cfg(target_os = "macos")]
-    let program = "open";
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let program = "xdg-open";
-    let mut child = std::process::Command::new(program)
-        .arg(&dir)
-        .spawn()
-        .map_err(|error| error.to_string())?;
-    // Reap the file manager's launcher when it exits, so that it does not
-    // linger as a zombie process on Unix. Explorer's exit code means nothing.
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    Ok(())
+    crate::folders::open(&folder(&app)?)
 }
 
 #[cfg(test)]

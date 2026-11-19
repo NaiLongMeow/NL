@@ -218,3 +218,120 @@
   font-size: var(--nl-type-caption-font-size);
   user-select: text;
 }
+
+/* The pet's avatars: a radio list with each avatar's icon, name, kinds, and author or problem. */
+.avatarList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nl-space-1);
+  align-self: stretch;
+  max-width: 620px;
+}
+
+.avatarItem {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-3);
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border-radius: var(--nl-radius-md);
+  cursor: pointer;
+}
+
+.avatarItem:hover {
+  background: var(--nl-color-state-hover);
+}
+
+.avatarItem:has(input:checked) {
+  background: var(--nl-color-accent-soft);
+}
+
+.avatarItem[data-problem] {
+  color: var(--nl-color-ink-disabled);
+  cursor: default;
+}
+
+.avatarItem[data-problem]:hover {
+  background: none;
+}
+
+.avatarItem input {
+  flex: none;
+  accent-color: var(--nl-color-accent-fill);
+}
+
+.avatarIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: var(--nl-radius-sm);
+}
+
+.avatarIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.avatarText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.avatarName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nl-space-1);
+  font-weight: var(--nl-font-weight-medium);
+}
+
+.avatarMeta {
+  overflow: hidden;
+  color: var(--nl-color-ink-tertiary);
+  font-size: var(--nl-type-caption-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  padding: 0 var(--nl-space-1);
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-color-surface-sunken);
+  color: var(--nl-color-ink-secondary);
+  font-size: var(--nl-type-caption-font-size);
+  font-weight: normal;
+}
+
+/* What keeps Live2D from showing, above the list. */
+.notice {
+  margin: 0;
+  max-width: 620px;
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-sunken);
+  color: var(--nl-color-ink-secondary);
+  font-size: var(--nl-type-caption-font-size);
+  line-height: var(--nl-type-caption-line-height);
+}
+
+.notice[data-tone="warning"] {
+  background: var(--nl-color-warning-soft);
+  color: var(--nl-color-warning-text);
+}
+
+/* The command that adds the skill to an agent, selected as one piece. */
+.command {
+  display: block;
+  max-width: 620px;
+  padding: var(--nl-space-2) var(--nl-space-3);
+  border-radius: var(--nl-radius-md);
+  background: var(--nl-color-surface-sunken);
+  font-family: var(--nl-type-code-font-family);
+  font-size: var(--nl-type-caption-font-size);
+  user-select: all;
+  -webkit-user-select: all;
+}

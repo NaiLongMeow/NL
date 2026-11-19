@@ -4,18 +4,23 @@
  * panel, which opens when a tool call is opened and can be pinned.
  *
  * Stage 1 runs on the scripted fake source. The appearance, the interface
- * language, and the idle time are real settings, kept on this device.
+ * language, the idle time, and the pet's mode and avatar are real settings,
+ * kept on this device. The pet window shows the character in the state of
+ * the session open here (pet/channel.ts).
  */
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Tooltip } from "radix-ui";
 import { ArchiveScreen } from "../archive/ArchiveScreen";
+import { loadAvatars, openAvatarsFolder, type AvatarList } from "../avatars/avatars";
 import { ConversationScreen } from "../conversation/ConversationScreen";
 import { DEFAULT_IDLE_LIMIT, createFakeSource } from "../conversation/fake";
 import { Header } from "../conversation/Header";
-import type { SessionKind, ToolCall, View } from "../conversation/model";
+import { characterState, type SessionKind, type ToolCall, type View } from "../conversation/model";
 import { DetailPanel } from "../detail/DetailPanel";
 import { I18nProvider, useI18n } from "../i18n/I18n";
+import { answerPet, publishCue, publishPrefs } from "../pet/channel";
+import { loadPetPrefs, savePetPrefs, type PetPrefs } from "../pet/look";
 import { IDLE_LIMITS, SettingsScreen } from "../settings/SettingsScreen";
 import { Sidebar, type Screen } from "../sidebar/Sidebar";
 import { applyCustomCss, useAppearance } from "./appearance";
@@ -50,6 +55,8 @@ function MainWindow() {
   const { appearance, mode, setAppearance } = useAppearance();
   const [custom, setCustom] = useState<CustomThemes | null>(null);
   const [idleLimit, setIdleLimit] = useState(storedIdleLimit);
+  const [pet, setPet] = useState(loadPetPrefs);
+  const [avatars, setAvatars] = useState<AvatarList | null>(null);
   const [screen, setScreen] = useState<Screen>("session");
   const [selected, setSelected] = useState("errands");
   const [sidebarOpen, setSidebarOpen] = useState(() => (globalThis.innerWidth ?? MEDIUM_WIDTH) >= MEDIUM_WIDTH);
@@ -94,6 +101,28 @@ function MainWindow() {
   }, [customCss, appearance.theme, mode]);
 
   useEffect(() => source.setIdleLimit(idleLimit), [source, idleLimit]);
+
+  // The pet shows the character in the state of the session open here.
+  useEffect(() => answerPet(), []);
+  const petCue = conversation ? characterState(conversation) : "idle";
+  useEffect(() => publishCue(petCue), [petCue]);
+
+  // An agent may install an avatar at any time, so the list is read again
+  // whenever Settings opens and whenever the window comes back to the front.
+  const reloadAvatars = () => {
+    loadAvatars().then(setAvatars, () => setAvatars(null));
+  };
+  useEffect(() => {
+    if (screen !== "settings") return;
+    reloadAvatars();
+    window.addEventListener("focus", reloadAvatars);
+    return () => window.removeEventListener("focus", reloadAvatars);
+  }, [screen]);
+  const changePet = (next: PetPrefs) => {
+    savePetPrefs(next);
+    setPet(next);
+    publishPrefs(next);
+  };
 
   const openSession = (id: string) => {
     setScreen("session");
@@ -143,6 +172,11 @@ function MainWindow() {
           onOpenCustomFolder={() => void openCustomThemesFolder()}
           idleLimit={idleLimit}
           onIdleLimit={changeIdleLimit}
+          pet={pet}
+          onPet={changePet}
+          avatars={avatars}
+          onReloadAvatars={reloadAvatars}
+          onOpenAvatarsFolder={() => void openAvatarsFolder()}
         />
       );
       break;

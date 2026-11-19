@@ -19,6 +19,9 @@ tauri-build.workspace = true
 # needs. The cost: apps using private APIs are not accepted by the Mac App Store.
 tauri = { workspace = true, features = ["macos-private-api"] }
 serde.workspace = true
+serde_json.workspace = true
+# The file rules of avatar packs and the Live2D runtime (src/avatars.rs).
+nl-assets = { path = "../../../crates/nl-assets" }
 
 [target.'cfg(windows)'.dependencies]
 # The title bar (src/titlebar.rs) calls DWM and Win32 directly. Keep this the
@@ -38,5 +41,3 @@ windows = { version = "0.62", features = [
 # (src/webview.rs). The version wry uses, for the same reason.
 webview2-com = "0.39"
 
-[dev-dependencies]
-serde_json.workspace = true

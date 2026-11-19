@@ -65,7 +65,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
   - Gateway sites: a user site (sign-in, account, devices, usage) and an admin site (keys, accounts, limits) on two ports, sharing design and components with the desktop windows.
   - Device faces: how the cue set looks on a small screen and on LEDs.
 - One design language from a single token source (color, type, spacing, motion) that the web UIs and the Flutter app both build from ([client-stack-decision](../memory/client-stack-decision.md)).
-- The cue vocabulary (P8) and a placeholder rendition of the default character: 大肥鱼 once its art is licensed for the project, a neutral placeholder until then (product rule 9).
+- The cue vocabulary (P8) and the default avatar, a ball, until 大肥鱼's art is licensed for the project (product rule 9). The pet's two modes, light and Live2D, with avatars that users add through the `nl-avatar` skill (user, 2026-11-19; [avatar-packs](../memory/avatar-packs.md)).
 - Every screen implemented as a shell. A screen reads from and acts on an interface with a fake behind it (E2), so that a later stage replaces the fake with the real harness or gateway call without rewriting the screen. Screens are localizable from the start (product rule 10) and have tests that run headless.
 - The needs list: what the screens require from the harness and the gateway. It feeds the design notes of the following stages.
 
@@ -179,10 +179,10 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 **Goal:** The character has an identity the user can change: persona, voice, and look.
 
 **Build:**
-- The avatar formats, chosen with the user when this stage starts (P8).
-- Character packs: persona, voice settings, and avatar renditions in those formats, imported through the validation in `nl-assets` and fetched by every node of the account (T8).
+- Avatars already exist as packs in the `nl-avatar` format (Stage 1, user decision 2026-11-19). A character pack carries one; any further avatar format is chosen with the user (P8).
+- Character packs: persona, voice settings, and an avatar, imported through the validation in `nl-assets` and fetched by every node of the account (T8).
 - Packs shape personality, not safety (product rule 7): the base instructions stay ahead of the persona in the prompt.
-- Renditions sit behind the cue interface (P8). Live2D, if chosen, comes only through runtime packs ([live2d-asset-packs](../memory/live2d-asset-packs.md)).
+- Renditions sit behind the cue interface (P8). No Live2D runtime ships with NL; how released builds get one waits for the user's decision on Live2D's terms ([avatar-packs](../memory/avatar-packs.md)).
 - The character and packs screens wired.
 
 **Exit:**
@@ -340,9 +340,13 @@ Settled by the user on 2026-11-18:
 - **Conversation and tools:** the message and finish tools (M5) and the tool system (M6, [tool-system](../memory/tool-system.md)).
 - **Gateway sites:** a user site and an admin site on two ports ([UI design](../../docs/design/ui.md), section 8).
 
+Settled by the user on 2026-11-19:
+
+- **Avatars:** two pet modes, light and Live2D, with avatars that users add through the `nl-avatar` agent skill ([avatar-packs](../memory/avatar-packs.md)).
+
 Still open:
 
-1. **Avatar formats.** Decided with the user when Stage 6 starts (P8).
+1. **Live2D in released builds.** An app that loads any model is a Live2D "Expandable Application": it needs Live2D's approval and an agreement before release, and as a rule a fully free app is not approved. Until the user decides how to handle this, released builds accept no Live2D runtime ([avatar-packs](../memory/avatar-packs.md); UI design note, open question 13).
 2. **The license for 大肥鱼.** The character is fan-made (it grew from 溟月 by the Bilibili creator 上善无形), so a license that allows redistribution must come from whoever made the art and voice NL ships (product rule 9). Stage 1 uses a neutral placeholder until then.
 3. **The open points in [distributed-design](../memory/distributed-design.md).** They are the agent's assumptions about the distributed core, and the design notes of Stages 3 and 4 settle them with the user.
 

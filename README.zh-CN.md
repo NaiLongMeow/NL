@@ -35,12 +35,13 @@ NL（NaiLongMeow）是一个开源的分布式 agent harness，以陪伴与娱�
 | `proto/` | 各端共用的协议定义 | Protobuf（buf 检查） |
 | `crates/nl-proto` | 协议的 Rust 类型，支持 `no_std` | Rust + prost |
 | `crates/nl-transport` | 连接建立：按顺序尝试直连，最后才走中继 | Rust |
-| `crates/nl-assets` | 角色素材包格式与校验 | Rust |
+| `crates/nl-assets` | 形象包与 Live2D 运行库的文件规则与校验 | Rust |
 | `crates/nl-node` | harness 节点（桌面守护进程与云端共用） | Rust + axum |
 | `crates/nl-gateway` | 云端总网关 | Rust + axum |
 | `apps/desktop` | 桌面端：主窗口与桌宠窗口 | Tauri 2（React + TypeScript、Rust） |
 | `apps/client` | 移动端（Android、iOS） | Flutter |
-| `web/stage` | 角色形象渲染页（桌面端与移动端共用） | TypeScript + Vite |
+| `web/stage` | 形象渲染：轻量（图片）与 Live2D，桌面端与移动端共用 | TypeScript + Vite |
+| `skills/nl-avatar` | 把素材做成形象包的 agent skill，含形象包格式与检查器（[形象](docs/avatars.zh-CN.md)） | TypeScript（Node） |
 | `web/tokens` | Web 端的设计令牌，以及在构建时为各平台生成令牌文件的生成器 | TypeScript |
 | `design/` | 设计令牌：所有界面的颜色、字体、间距与动效的唯一来源 | JSON（W3C 设计令牌格式） |
 | `firmware/esp32` | ESP32-S3 固件 | Rust + ESP-IDF |

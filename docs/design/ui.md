@@ -4,7 +4,9 @@
 
 **Revision of 2026-11-18, after the user reviewed the first screens.** The user replaced one session per topic with short-lived shared and device sessions that archive themselves when idle and can dispatch tasks to each other (4.10 to 4.12, the sidebar in 5), asked for an integrated title bar and for several color themes, with custom themes on the desktop (3, 5, 11), and asked that the desktop window not behave like a browser (5). The details marked as proposals in those sections wait for the user's review.
 
-This note describes how every NL end looks and behaves on screen: the visual language, the conversation screen that all ends share, the screens of each end, and what those screens need from the harness and the gateway. It follows the product rules in [product-direction](../../.agents/memory/product-direction.md) and cites the rules in [architecture-invariants](../../.agents/memory/architecture-invariants.md) by id. It does not fix exact colors, sizes, or durations, which live in the design tokens (section 11), and it says nothing about avatar formats, which are chosen in Stage 6 (P8).
+**Revision of 2026-11-19.** The user chose the default avatar, a jelly-like ball (10), and two pet modes: light, the ball or an avatar made of images, and Live2D, livelier and heavier, with avatars that users add themselves, usually by asking an agent that has the `nl-avatar` skill (5, 6, 10).
+
+This note describes how every NL end looks and behaves on screen: the visual language, the conversation screen that all ends share, the screens of each end, and what those screens need from the harness and the gateway. It follows the product rules in [product-direction](../../.agents/memory/product-direction.md) and cites the rules in [architecture-invariants](../../.agents/memory/architecture-invariants.md) by id. It does not fix exact colors, sizes, or durations, which live in the design tokens (section 11), and it describes avatars only as far as the screens need them: their format is published with the `nl-avatar` agent skill ([format](../../skills/nl-avatar/references/format.md)).
 
 ## 1. Who uses what
 
@@ -190,13 +192,15 @@ The screens:
 6. **Tools.** Toolsets grouped by source: built-in, installed NL toolsets, MCP servers (added by command or URL, shown as `MCP(name)`, with their status), and toolsets offered by other devices. For each toolset and tool: on or off, and ask every time, always allow, or never. Also which of this device's toolsets others may use. The behavior arrives in Stage 5.
 7. **Devices.** Every device of the account with its type, name, online state or last seen time, version, capabilities, and live sessions. Rename, remove (takes effect at once, T2), and add a device. Each enrollment is announced on the other devices (T2), with "Not you? Remove".
 8. **Usage.** Tokens in and out, cache hit rate, requests, and cost where the operator has set prices, per day, per device, and per kind of work (conversation, memory forks, tasks, voice), against the operator's limits (E7).
-9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: the theme, with a preview of each, light, dark, or the system's choice, a custom theme on top (section 11), default view, developer details, memory tips in chat view. Sessions: how long an idle session waits before it archives itself (4.11). Messages sent while the character works: cut in at its next step (the default) or wait until the turn ends. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it, its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
+9. **Settings.** Account: sign out, export all data, delete the account. Languages: the interface language, and the language the character replies in. Appearance: the theme, with a preview of each, light, dark, or the system's choice, a custom theme on top (section 11), default view, developer details, memory tips in chat view. Sessions: how long an idle session waits before it archives itself (4.11). Messages sent while the character works: cut in at its next step (the default) or wait until the turn ends. Notifications and quiet hours; the limit on proactive contact; microphone and voice; the pet: show it; its mode and the avatar chosen for each mode, with the avatars folder, Open folder, Reload, and the command that adds the `nl-avatar` skill to an agent (section 6); its size, start at login, click-through; break reminders; minors' mode, when the operator offers it; about: version, licenses, and the gateway with its operator's terms.
 10. **Detail panel.** A tool call, a task, a memory entry, a summary, or an approval's full arguments.
 
 Every action is reachable from the keyboard, with shortcuts for new session, search, stop (Esc), switch view, and focus the composer.
 
 ## 6. Desktop pet
 
+- **Two modes** *(user, 2026-11-19)*, chosen in Settings. **Light** shows the ball (section 10) or an avatar made of images, such as animated GIFs, numbered frames, or a sprite sheet, and costs little. **Live2D** shows an avatar's Live2D model, which is livelier and costs more memory and graphics power. Each mode remembers its own avatar. When the chosen avatar cannot show, because it is missing or broken or because no Live2D runtime is available (question 13), the pet shows the same avatar's light rendition, then the ball; it never shows nothing.
+- **Avatars** are folders in the app's avatars folder, each with an `avatar.json` that maps the cues (section 10) to its art. Users add them themselves, most easily by asking an agent such as Claude Code or Codex that has the `nl-avatar` skill, which converts the art, checks the result, and installs it ([avatars](../avatars.md)). An avatar is data only (T8); Settings shows who made it and on what terms.
 - The window shows the character and nothing else. Messages appear as bubbles beside it and fade after a time that grows with their length; hovering keeps them. A long message ends with "Open in window".
 - A click opens a one-line input beside the pet. What is sent goes to this device's most recently active session, or a new device session if none is live, so the pet and the main window show the same session.
 - While the character works, a short line beside it says what it is doing, and its cue matches.
@@ -204,6 +208,7 @@ Every action is reachable from the keyboard, with shortcuts for new session, sea
 - The reserved hue shows beside the pet whenever the microphone is open (product rule 8).
 - Drag to move; the position is remembered per screen. Transparent pixels pass clicks through.
 - The right-click menu and the tray menu offer: open the main window, mute the microphone, quiet for an hour, hide the pet, settings, quit.
+- Pointing at the pet, pressing it, and dragging it are cues as well (hover, press, drag), and a Live2D avatar's gaze follows the pointer.
 - Cue states: section 10.
 
 ## 7. Phone
@@ -278,7 +283,9 @@ Each surface renders what it can: an avatar on the pet, in the main window, and 
 | Listening | Wide eyes, small nods, and a steady ring in the reserved hue |
 | Pointed at | Squishes with > < eyes and springs back, wobbling |
 
-Avatars side by side never move in step. With reduced motion the ball keeps still: its eyes, cheeks, and bubbles still show the state, and a still ring in the accent shows that it works. Its eyes double as the small-screen device face (section 9). Its colors are the `character` tokens, the same in every theme. It replaces the orange "NL" disc that `web/stage` draws today. *(user, 2026-11-19)* Other avatars become choices later, as customization: an avatar the user picks, and character packs, such as 大肥鱼's art once it is licensed (product rule 9).
+Avatars side by side never move in step. With reduced motion the ball keeps still: its eyes, cheeks, and bubbles still show the state, and a still ring in the accent shows that it works. Its eyes double as the small-screen device face (section 9). Its colors are the `character` tokens, the same in every theme. Each app draws it itself, so it needs no avatar pack and no renderer.
+
+*(user, 2026-11-19)* Users can choose other avatars (section 6), which `web/stage` draws. An avatar maps each cue to its own art. A state without art of its own falls back along a fixed chain: thinking to working, waiting for approval and waiting for an answer to each other, waiting for a device and offline to sleeping, and every chain ends at idle, which every avatar must have. Character packs (Stage 6) bring an avatar of their own, such as 大肥鱼's art once it is licensed (product rule 9).
 
 ## 11. Design tokens and theming
 
@@ -288,7 +295,7 @@ Avatars side by side never move in step. With reduced motion the ball keeps stil
 - **Themes.** The `theme` group holds each built-in theme in light and dark (`theme.sea.light`, `theme.sea.dark`, …), and the generator refuses a theme or mode whose tokens differ from the first one's; every other group is the same in all themes. The first theme is the default. The tests hold every theme and mode to the contrast rules and keep every accent 30° from the reserved hue. In CSS the default theme applies to the root; `data-theme` on any element picks a theme for it and its descendants and `data-mode` picks light or dark, and without `data-mode` the system's preference applies. The app sets both on the root from the user's choice, and the theme previews in Settings set them on their swatches. Every generated rule has zero specificity (`:where()`), so a custom theme overrides tokens with ordinary selectors; only reduced motion is `!important`, so that a theme cannot turn animation back on.
 - **Custom themes (desktop).** A custom theme is a CSS file in the app's themes folder, applied on top of the chosen built-in theme. It sets `--nl-*` properties: on `:root` for both modes, and on `:root[data-mode="dark"]` for dark only. Settings lists the files, applies one, reloads it after an edit, and opens the folder. The tokens are the supported interface; the app's class names are internal and change between releases. The content-security policy keeps a theme from loading fonts or images from the network, and files over 256 KiB are refused (T6).
 - A character pack colors the character, not the interface: its body, its face, and the LEDs of a device (section 9) use the pack's colors; on a device "accent" means the character's color. A pack's colors are checked for contrast and for distance from the reserved hue, with a fallback.
-- The colors once hard-coded in `apps/desktop/index.html` and the Flutter app's seed color come from the tokens. `web/stage/src/stage.ts` moves to them with the default avatar (section 10).
+- The colors once hard-coded in `apps/desktop/index.html` and the Flutter app's seed color come from the tokens, and so do the ball's (section 10); the orange disc that `web/stage` once drew is gone.
 
 ## 12. How it is built
 
@@ -309,7 +316,7 @@ What the screens need from the harness and the gateway. The design note of the s
 
 **Gateway** (Stage 2 unless noted): sign-in, the sign-up policy, session state; the device list with presence, renaming, removal, enrollment, and enrollment announcements; usage per day, device, and kind of work, with limits; operator calls for keys, accounts, limits, and compliance settings. Stage 4: memory files with source, device, time, and version; editing, deleting, undoing the last write, and export; the summaries folder with metadata (device, time, title, preview).
 
-**Local to each device:** view, theme, and language preferences, custom theme files, window and pet positions.
+**Local to each device:** view, theme, and language preferences, custom theme files, the pet's mode and the avatar chosen for each mode, installed avatars, window and pet positions.
 
 ## 14. Words in the interface
 
@@ -328,6 +335,8 @@ The internal terms in the [vocabulary](../../.agents/memory/product-direction.md
 | Memory | Memory | 记忆 |
 | Task | Task | 任务 |
 | Character pack | Character | 角色 |
+| Avatar: an avatar pack, or the built-in ball | Avatar | 形象 |
+| The pet's two modes | Light, Live2D | 轻量、Live2D |
 | Vault | Keys | 密钥 |
 | Gateway | Gateway | 网关 |
 | Full view and chat view | The "Show work" switch | “显示过程”开关 |
@@ -343,8 +352,11 @@ Notices, forks, and working text have no name in the interface; it describes wha
 5. How the gateway knows the live sessions of every device, for the sidebar (Stage 4).
 6. Whether a message can be addressed to another device, for example from a routine on a server to the phone (Stage 5, proactive contact).
 7. Where MCP servers' own credentials are kept (Stage 5).
-8. Avatar formats (Stage 6, P8).
+8. Settled on 2026-11-19: the pet's two modes and the avatars users add (sections 6 and 10), in the format published with the `nl-avatar` skill. Character packs (Stage 6) build on it.
 9. Whether the user site should also offer chat in a browser. That would make the browser a new kind of node, and a new end is the user's decision.
 10. **For the user:** where a shared session runs (an always-on node such as a server, the node that started it, or the gateway), and how the other devices show it and send to it. Showing a session on a device other than the one that runs it is what the non-goal "a whole interactive session hosted on a remote node" and S2 rule out today, so shared sessions need the user to lift or narrow that non-goal.
 11. How the harness matches tasks to sessions; whether dispatching is a core tool or a toolset (M6); how a result reaches the dispatching session (as a notice, S4) and the user once the dispatcher is archived; and the limits on how many sessions one dispatch may start, and on what they may spend (E7). The Stage 5 design note settles these.
 12. The default idle time before a session archives itself, and whether a task waiting for an offline device keeps its session open indefinitely.
+13. **For the user:** whether and how released builds show Live2D. An app that loads any model is a Live2D "Expandable Application": it needs Live2D's approval and a contract before release, and Live2D does not, as a rule, approve one that is entirely free. The Live2D runtime is never shipped with NL, and until this is settled released builds accept none, so a Live2D avatar shows its light rendition, or the ball.
+14. Whether the app gets an import of its own, for a folder or a zip, beside the agent skill.
+15. Whether the main window's avatars, in the header and beside bubbles, follow the avatar chosen for the pet, and in which mode.

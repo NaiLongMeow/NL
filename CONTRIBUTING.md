@@ -41,7 +41,7 @@ Run the checks for the parts you touched before pushing. CI runs the same comman
 | Rust workspace | `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, `cargo test --workspace --locked` |
 | Firmware (`firmware/esp32`) | `cargo build --release --locked`; `rustfmt --check --edition 2024 firmware/esp32/build.rs firmware/esp32/src/main.rs` from the repository root |
 | Flutter client (`apps/client`) | First `node web/tokens/src/cli.ts` from the repository root, which generates the design tokens; then `dart format --output=none --set-exit-if-changed .`, `flutter analyze --fatal-infos`, `flutter test` |
-| Web packages (`web/`, `apps/desktop`) | `pnpm -r run typecheck`, `pnpm -r run test`, `pnpm -r run build` from the repository root |
+| Web packages and skills (`web/`, `apps/desktop`, `skills/`) | `pnpm -r run typecheck`, `pnpm -r run test`, `pnpm -r run build` from the repository root |
 | Desktop app (`apps/desktop`) | `pnpm tauri build` |
 | Protocol (`proto/`) | `buf lint`, `buf format --diff --exit-code` |
 | Versions (`tooling/`) | `bash tooling/check-version.test.sh`, `bash tooling/check-version.sh` |

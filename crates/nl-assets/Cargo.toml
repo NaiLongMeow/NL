@@ -1,10 +1,12 @@
 [package]
 name = "nl-assets"
-description = "Format and validation of NL character asset packs (Live2D runtime and character packs)"
+description = "File rules and checks of NL asset packs: avatar packs and the Live2D runtime pack"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [dependencies]
+serde.workspace = true
+serde_json.workspace = true
 sha2.workspace = true

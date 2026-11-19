@@ -36,12 +36,13 @@ These decisions are settled, though most are not implemented yet. [docs/architec
 | `proto/` | Protocol definitions shared by every part | Protobuf (checked with buf) |
 | `crates/nl-proto` | Rust types for the protocol, `no_std` capable | Rust + prost |
 | `crates/nl-transport` | Connection setup: tries direct routes in order, relay last | Rust |
-| `crates/nl-assets` | Character asset pack format and validation | Rust |
+| `crates/nl-assets` | File rules and checks of avatar packs and the Live2D runtime | Rust |
 | `crates/nl-node` | Harness node (shared by the desktop daemon and the cloud) | Rust + axum |
 | `crates/nl-gateway` | Cloud gateway | Rust + axum |
 | `apps/desktop` | Desktop app: main window and desktop pet window | Tauri 2 (React + TypeScript, Rust) |
 | `apps/client` | Mobile app (Android, iOS) | Flutter |
-| `web/stage` | Character rendering page (shared by desktop and mobile) | TypeScript + Vite |
+| `web/stage` | Avatar renderer: light (images) and Live2D, shared by desktop and mobile | TypeScript + Vite |
+| `skills/nl-avatar` | Agent skill that turns art into an avatar pack, with the pack format and its checker ([avatars](docs/avatars.md)) | TypeScript (Node) |
 | `web/tokens` | Design tokens for the web code, and the generator that writes every platform's copy during the build | TypeScript |
 | `design/` | The design tokens: the one source of colors, type, spacing, and motion for every UI | JSON (W3C design tokens) |
 | `firmware/esp32` | ESP32-S3 firmware | Rust + ESP-IDF |

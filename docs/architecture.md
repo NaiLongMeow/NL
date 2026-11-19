@@ -36,7 +36,7 @@ NL 是一个开源的分布式 agent harness。它可编程，但核心优化方
 |---|---|
 | `nl-proto` | Protobuf 定义的消息格式，支持 `no_std`，单片机也能使用 |
 | `nl-transport` | 连接建立与传输抽象（见下文“连接建立”） |
-| `nl-assets` | 角色素材包的格式与校验，各端共用同一份实现 |
+| `nl-assets` | 形象包与 Live2D 运行库包的文件规则与校验，各端共用同一份实现 |
 | `nl-node` | harness 节点本体：agent 循环、工具调用、记忆、子代理调度、远程存储服务 |
 
 所有客户端都直接链接这些 crate，同一份逻辑、同一份测试。
@@ -108,20 +108,22 @@ Rust 节点之间候选方案是 iroh（基于 QUIC，内置直连、打洞和�
 
 ## 角色形象与素材包
 
-角色形象由 `web/stage` 渲染页负责：桌面端的主窗口和桌宠窗口直接引用它，移动端通过 `webview_flutter` 嵌入，各端共用同一个渲染页和同一套包格式。
+角色形象由 `web/stage` 渲染页负责：桌面端的桌宠窗口直接引用它，移动端以后通过 `webview_flutter` 嵌入，各端共用同一个渲染页和同一套包格式。内置的默认形象是一个小球，由各端自己绘制。
 
-**Live2D 不进仓库。** Cubism Core 是 Live2D 的专有软件，不能随开源仓库分发，因此 Live2D 的运行库和模型都以独立素材包提供：
+桌宠有两种模式，由用户选择（用户决定，2026-11-19）：**轻量**模式显示小球，或形象包里由图片组成的轻量版本；**Live2D** 模式显示形象包里的 Live2D 模型，更生动也更耗资源。选中的形象无法显示时，退回该形象的轻量版本，再退回小球。
 
-| 包类型 | 内容 | 校验 |
+**形象包**是一个带 `avatar.json` 清单的文件夹，格式随 agent skill `nl-avatar` 发布（[skills/nl-avatar/references/format.md](../skills/nl-avatar/references/format.md)），用户通常让 Claude Code、Codex 等 AI 助手按这个 skill 把自己的素材做成形象包、检查并安装（[docs/avatars.zh-CN.md](avatars.zh-CN.md)）。规则只有一份实现：
+
+| 规则 | 实现 | 使用者 |
 |---|---|---|
-| runtime 包 | Cubism Core、Cubism Web Framework、shader 及其许可文件 | 每个版本的 NL 写死一个运行库摘要，对不上就拒绝加载 |
-| character 包 | 模型、贴图、动作、音频、`character.json` | 只允许数据文件（扩展名白名单），校验文件头、引用完整性和大小上限 |
+| 文件规则：允许的扩展名、文件数与大小上限 | `skills/nl-avatar/scripts/lib/rules.json` | skill 的检查器，以及 `nl-assets`（应用的安全边界） |
+| 清单规则：字段、表现提示的映射、引用的文件与模型名称 | `skills/nl-avatar/scripts/lib/format.ts` | skill 的检查器、主窗口的形象列表、`web/stage` |
 
-- runtime 包与 character 包分开，用户分享角色时不会连带再分发 Cubism Core。
-- 用户导入的包无法向渲染页注入代码：代码只能来自摘要匹配的 runtime 包。
-- `character.json` 记录作者、许可和来源，界面中原样展示。
-- 素材包按内容哈希存放在 `nl-node` 或网关的存储中，各端按需拉取。
-- 没有 runtime 包时，退回其他形象格式或静态图片。
+- 形象包只能包含数据文件，渲染页从不运行包里的任何东西；桌面端的 `nlavatar` 协议只提供形象文件夹里符合文件规则的文件，不跟随链接离开包目录。
+- `avatar.json` 记录作者、许可和来源，界面中原样展示。
+- 以后的角色包（第 6 阶段：人设、语音）可以带一个形象。素材包按内容哈希存放在 `nl-node` 或网关的存储中、各端按需拉取，也属于以后的阶段。
+
+**Live2D 不进仓库，NL 也不分发它的运行库。** Cubism Core 是 Live2D 的专有软件，Cubism Web Framework 用 Live2D 自己的许可，两者都只在运行时从运行库包加载，形象包里也不能有。正式版只接受摘要被该版本写死的运行库，目前一个都没有：能加载任意模型的应用属于 Live2D 的“扩展性应用”，发布前需要 Live2D 批准，原则上不批准完全免费的应用，这件事由用户决定怎么处理。开发版可以用环境变量 `NL_DEV_LIVE2D_RUNTIME` 指定运行库、用 `NL_DEV_AVATARS` 加入本地的测试形象。
 
 ## 测试策略
 
@@ -142,7 +144,6 @@ Rust 节点之间候选方案是 iroh（基于 QUIC，内置直连、打洞和�
 
 ## 待定事项
 
-- 默认的开放形象格式（候选 VRM）。
 - 节点间传输选 iroh 还是 WebRTC。
 - 用最小 demo 验证 Flutter 的 iOS 构建链路在 agent 环境下是否顺畅。
-- Live2D 扩展应用相关的授权条款。
+- 发布 Live2D 模式前，与 Live2D 谈妥扩展性应用的授权，以及用户如何取得运行库。

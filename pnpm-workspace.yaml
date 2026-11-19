@@ -1,5 +1,7 @@
 # JavaScript/TypeScript packages of NL: the avatar stage renderer, the design
-# tokens and their generator, and the desktop app frontend.
+# tokens and their generator, the desktop app frontend, and the agent skills,
+# whose scripts are tested here like any other package.
 packages:
   - "web/*"
   - "apps/desktop"
+  - "skills/*"

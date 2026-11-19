@@ -1,0 +1,26 @@
+/* The pet window shows the character and nothing else: everything but the
+   avatar stays transparent, so the desktop shows through. */
+
+.pet {
+  position: fixed;
+  inset: 0;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The ball stands on the bottom edge, in the middle. */
+.ball {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  display: block;
+  line-height: 0;
+}
+
+/* @nl/stage draws an avatar pack over the whole window. */
+.stage {
+  position: absolute;
+  inset: 0;
+}

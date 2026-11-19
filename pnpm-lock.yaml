@@ -10,6 +10,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@nl/avatar-skill':
+        specifier: workspace:*
+        version: link:../../skills/nl-avatar
       '@nl/stage':
         specifier: workspace:*
         version: link:../../web/stage
@@ -69,8 +72,27 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@26.6.6)(jsdom@31.0.1)(vite@8.3.8(@types/node@26.6.6))
 
-  web/stage:
+  skills/nl-avatar:
     devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(jsdom@31.0.1)(vite@8.3.8(@types/node@26.6.6))
+
+  web/stage:
+    dependencies:
+      '@nl/avatar-skill':
+        specifier: workspace:*
+        version: link:../../skills/nl-avatar
+    devDependencies:
+      jsdom:
+        specifier: ^31.0.1
+        version: 31.0.1
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

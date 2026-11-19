@@ -11,7 +11,9 @@
     "noUnusedParameters": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    // The avatar format (@nl/avatar-skill) reads its file rules from JSON.
+    "resolveJsonModule": true
   },
   "include": ["src", "vite.config.ts"]
 }

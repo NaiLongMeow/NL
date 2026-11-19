@@ -1,8 +1,10 @@
 /**
- * Public API of the stage renderer, used by the desktop app's windows and,
- * through a webview, by the mobile app.
+ * Public API of the stage renderer, which draws avatar packs (the format of
+ * skills/nl-avatar/references/format.md) for the desktop app's windows and,
+ * through a webview, for the mobile app: the light rendition (images) and
+ * the Live2D rendition (with a Live2D runtime loaded at run time).
  */
 
-export { fitModel } from "./framing";
-export type { Framing, Size } from "./framing";
-export { mountStage } from "./stage";
+export type { AvatarView, Expression, Gesture, Pointer, State, Timers } from "./avatar";
+export { IMAGE_ONCE_MS, mountLight, placeFrame, type LightOptions } from "./light";
+export { fitProjection, gestureOffsets, mountLive2D, type Live2DOptions } from "./live2d";
