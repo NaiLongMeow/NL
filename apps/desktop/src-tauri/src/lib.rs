@@ -76,8 +76,12 @@ pub fn run() {
                     &app.get_webview_window("main")
                         .expect("the main window is declared in tauri.conf.json"),
                 )?;
-                // Development builds keep reload and the developer tools.
-                if !cfg!(debug_assertions) {
+                // Every build turns the browser's keys off, unless a
+                // development build asks to keep them (webview.rs).
+                if !webview::keeps_browser_keys(
+                    cfg!(debug_assertions),
+                    std::env::var_os("NL_DEV_BROWSER_KEYS").as_deref(),
+                ) {
                     for window in app.webview_windows().values() {
                         webview::disable_browser_keys(window)?;
                     }

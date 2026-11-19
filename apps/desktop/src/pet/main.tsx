@@ -8,7 +8,7 @@ import "@nl/tokens/tokens.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { applyAppearance, loadAppearance, resolveMode } from "../app/appearance";
-import { guardContextMenu } from "../app/webview";
+import { guardContextMenu, keepsBrowserKeys } from "../app/webview";
 import { I18nProvider } from "../i18n/I18n";
 import { PetWindow } from "./PetWindow";
 
@@ -16,9 +16,10 @@ import { PetWindow } from "./PetWindow";
 const appearance = loadAppearance();
 applyAppearance(document.documentElement, appearance.theme, resolveMode(appearance.mode, matchMedia("(prefers-color-scheme: dark)").matches));
 
-// Release builds have no webview context menu. On the pet itself a right
-// click opens the pet's own menu instead, in every build (PetWindow).
-if (import.meta.env.PROD) guardContextMenu();
+// The webview's context menu stays in text fields and selections, unless a
+// development build keeps the browser's menu and keys (app/webview.ts). On
+// the pet itself a right click always opens the pet's own menu (PetWindow).
+if (!keepsBrowserKeys) guardContextMenu();
 
 const root = document.getElementById("pet");
 if (root) {

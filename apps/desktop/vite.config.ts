@@ -10,6 +10,12 @@ export default defineConfig({
   plugins: [react()],
   // Tauri prints its own logs; keep Vite from clearing them in `tauri dev`.
   clearScreen: false,
+  // NL_DEV_BROWSER_KEYS=1 keeps the browser's context menu in a development
+  // build, as the Rust side keeps its keys (src/app/webview.ts); release
+  // builds ignore it.
+  define: {
+    __NL_DEV_BROWSER_KEYS__: JSON.stringify(process.env.NL_DEV_BROWSER_KEYS === "1"),
+  },
   server: {
     // Must match build.devUrl in tauri.conf.json; fail instead of moving to
     // another port, which Tauri would not find.

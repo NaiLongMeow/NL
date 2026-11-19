@@ -62,6 +62,12 @@ NL（NaiLongMeow）是一个开源的分布式 agent harness，以陪伴与娱�
 | 桌面端 | 以上 Rust 与前端环境；Windows 需 WebView2（Windows 10/11 自带） | `apps/desktop` 下 `pnpm tauri dev`、`pnpm tauri build` |
 | 固件 | `cargo install espup ldproxy espflash`，然后 `espup install --targets esp32s3` | `cargo build --release`、`cargo run --release`（烧录并打开串口） |
 
+桌面端的开发版会读取下面这些环境变量（发布版忽略它们）：
+
+- `NL_DEV_BROWSER_KEYS=1`：保留 webview 的刷新（F5）、开发者工具（F12）和右键菜单；不设置时，所有版本都会关掉它们。
+- `NL_DEV_AVATARS`：额外加入的形象文件夹，多个文件夹的分隔方式与 `PATH` 相同（见[形象](docs/avatars.zh-CN.md)）。
+- `NL_DEV_LIVE2D_RUNTIME`：Live2D Cubism 运行库所在的文件夹，NL 不随附这个运行库。
+
 固件编译的几点注意：
 
 - `espup install` 会查询 GitHub API，匿名访问容易被限流；遇到限流时设置 `GITHUB_TOKEN` 后重试（例如 `GITHUB_TOKEN=$(gh auth token) espup install --targets esp32s3`）。

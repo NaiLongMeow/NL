@@ -5,12 +5,15 @@
 //!   a message must open in the system browser; it must never replace the
 //!   app inside its own window, where the page's state would be lost and a
 //!   remote page would sit in a window the user trusts.
-//! - Release builds on Windows turn WebView2's browser accelerator keys off:
+//! - Every build on Windows turns WebView2's browser accelerator keys off:
 //!   F5 and Ctrl+R (reload, which drops the window's state), Ctrl+P (print),
 //!   Ctrl+F (find), the zoom keys, Alt+Left and Alt+Right (history), and F12
 //!   and Ctrl+Shift+I. Keys the page handles itself still reach it, and text
-//!   editing keys (copy, paste, undo) keep working. Development builds keep
-//!   reload and the developer tools.
+//!   editing keys (copy, paste, undo) keep working. *(user, 2026-11-19)* A
+//!   development build behaves the same, so that what a developer tries is
+//!   what users get, unless it starts with `NL_DEV_BROWSER_KEYS=1`, which
+//!   keeps reload, the developer tools, and the browser's context menu
+//!   (`keeps_browser_keys`; the page reads the same variable).
 //!
 //! What else a browser would do is already off or handled elsewhere: Tauri
 //! turns off swipe navigation and pinch zoom by default, wry refuses requests
@@ -43,6 +46,13 @@ pub fn navigation_guard<R: Runtime>(dev_url: Option<Url>) -> TauriPlugin<R> {
         .build()
 }
 
+/// Whether this build keeps the browser's keys and context menu: only a
+/// development build started with `NL_DEV_BROWSER_KEYS=1` (the variable's
+/// value is passed in, so that tests need not touch the environment).
+pub fn keeps_browser_keys(debug_build: bool, variable: Option<&std::ffi::OsStr>) -> bool {
+    debug_build && variable.is_some_and(|value| value == "1")
+}
+
 /// Turns WebView2's browser accelerator keys off in `window` (see the module
 /// comment). Tauri 2.12 does not expose this setting, although wry has it
 /// (`with_browser_accelerator_keys`), so it is set on the WebView2 settings
@@ -73,6 +83,15 @@ pub fn disable_browser_keys<R: Runtime>(window: &tauri::WebviewWindow<R>) -> tau
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_development_build_asked_to_keeps_the_browser_keys() {
+        let one = std::ffi::OsStr::new("1");
+        assert!(keeps_browser_keys(true, Some(one)));
+        assert!(!keeps_browser_keys(true, None));
+        assert!(!keeps_browser_keys(true, Some(std::ffi::OsStr::new("0"))));
+        assert!(!keeps_browser_keys(false, Some(one)));
+    }
 
     fn url(text: &str) -> Url {
         Url::parse(text).unwrap()

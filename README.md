@@ -63,6 +63,12 @@ These decisions are settled, though most are not implemented yet. [docs/architec
 | Desktop app | The Rust and web setups above; WebView2 on Windows (included in Windows 10/11) | `pnpm tauri dev`, `pnpm tauri build` in `apps/desktop` |
 | Firmware | `cargo install espup ldproxy espflash`, then `espup install --targets esp32s3` | `cargo build --release`, `cargo run --release` (flashes the board and opens the serial monitor) |
 
+Notes on the desktop app, whose development builds read these variables (release builds ignore them):
+
+- `NL_DEV_BROWSER_KEYS=1` keeps the webview's reload (F5), developer tools (F12), and context menu, which every build turns off otherwise.
+- `NL_DEV_AVATARS` adds avatar folders, separated like `PATH`, to the installed ones ([avatars](docs/avatars.md)).
+- `NL_DEV_LIVE2D_RUNTIME` points at a folder with a Live2D Cubism runtime, which NL does not ship.
+
 Notes on building the firmware:
 
 - `espup install` queries the GitHub API and is easily rate-limited when anonymous; if that happens, set `GITHUB_TOKEN` and retry (for example `GITHUB_TOKEN=$(gh auth token) espup install --targets esp32s3`).
