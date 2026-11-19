@@ -6,9 +6,9 @@
 - [Reference designs](memory/reference-designs.md) -- learn the gateway from sub2api and the harness from other harnesses, but write everything in Rust
 - [Stack choice criteria](memory/tech-choice-criteria.md) -- weigh agent-operable toolchains and capability over human maintenance cost
 - [Client stack decision](memory/client-stack-decision.md) -- why mobile is Flutter and desktop is one Tauri app (main + pet windows), React for the desktop and gateway sites, and what was rejected
-- [Avatar packs](memory/avatar-packs.md) -- the pet's light and Live2D modes, the avatar format whose one implementation in skills/nl-avatar is shared with nl-assets, data-only packs, and why no Live2D runtime ships (Live2D's Expandable Application terms)
+- [Avatar packs](memory/avatar-packs.md) -- the pet's light and Live2D modes, the avatar format whose one implementation in skills/nl-avatar is shared with nl-assets, code avatars and the four parts of their sandbox (and its one known gap), and why no Live2D runtime ships (Live2D's Expandable Application terms)
 - [Flutter pub lockfile](memory/flutter-pub-lockfile.md) -- keep pubspec.lock on pub.dev URLs; pub mirrors rewrite it and break --enforce-lockfile in CI
-- [Desktop app checks](memory/desktop-app-checks.md) -- how to verify the real Tauri app on Windows: drive its page over WebView2 remote debugging, the title bar script, caption pixel sampling, release-only browser keys
+- [Desktop app checks](memory/desktop-app-checks.md) -- how to verify the real Tauri app on Windows: drive its page over WebView2 remote debugging, the title bar script, caption pixel sampling, browser keys, testing a page's content-security policy, self-tested network sinks, out-of-process frames
 - [Generated files](memory/generated-files.md) -- generators run as a build step and their outputs are gitignored, never committed (user, 2026-11-18)
 - [Main branch rulesets](memory/main-branch-rulesets.md) -- main is protected by rulesets (PR + `CI OK` required, admin bypass); renaming the `CI OK` job blocks PRs
 - [Docs languages](memory/docs-languages.md) -- human docs are English-first with `*.zh-CN.md` translations kept in sync; CoC texts are official Contributor Covenant 3.0

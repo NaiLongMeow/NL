@@ -264,7 +264,8 @@ function PetSection({
   const chosen = mode === "light" ? pet.light : pet.live2d;
   const choose = (key: string | null) => onPet(mode === "light" ? { ...pet, light: key } : { ...pet, live2d: key });
   // Broken avatars show in both lists, so that the user learns what is wrong with them.
-  const listed = checked.filter((avatar) => !avatar.manifest || (mode === "light" ? avatar.manifest.light : avatar.manifest.live2d));
+  // Light mode shows an avatar's code or its images (pet/look.ts).
+  const listed = checked.filter((avatar) => !avatar.manifest || (mode === "light" ? avatar.manifest.code || avatar.manifest.light : avatar.manifest.live2d));
   const modeOptions: ReadonlyArray<readonly [PetMode, string]> = [
     ["light", texts.modes.light],
     ["live2d", texts.modes.live2d],
@@ -326,6 +327,7 @@ function PetSection({
                   <span className={styles.avatarText}>
                     <span className={styles.avatarName}>
                       {manifest ? localizedText(manifest.name, locale) : avatar.key}
+                      {manifest?.code && <span className={styles.tag}>{texts.renditions.code}</span>}
                       {manifest?.light && <span className={styles.tag}>{texts.renditions.light}</span>}
                       {manifest?.live2d && <span className={styles.tag}>{texts.renditions.live2d}</span>}
                       {avatar.development && <span className={styles.tag}>{texts.development}</span>}

@@ -5,8 +5,9 @@ import { DEFAULT_PET, PET_KEY, chooseLook, loadPetPrefs, parsePetPrefs, savePetP
 
 const light = { size: [64, 64] as [number, number], animations: { idle: { image: "idle.gif" } }, states: { idle: "idle" } };
 const live2d = { model: "m.model3.json" };
+const code = { entry: "code/index.html" };
 
-function avatar(key: string, renditions: Partial<Pick<AvatarManifest, "light" | "live2d">>): CheckedAvatar {
+function avatar(key: string, renditions: Partial<Pick<AvatarManifest, "light" | "live2d" | "code">>): CheckedAvatar {
   return { key, development: false, problem: null, manifest: { nlAvatar: 1, id: key, name: key, ...renditions } };
 }
 
@@ -31,6 +32,25 @@ describe("chooseLook", () => {
     expect(chooseLook({ ...DEFAULT_PET, light: "gone" }, avatars, "ready")).toEqual({ kind: "ball" });
     const broken: CheckedAvatar = { key: "cat", development: false, manifest: null, problem: { kind: "pack", problem: "no-manifest" } };
     expect(chooseLook({ ...DEFAULT_PET, light: "cat" }, [broken], "ready")).toEqual({ kind: "ball" });
+  });
+
+  it("shows a code avatar in light mode, before the same pack's images", () => {
+    const packs = [avatar("orb", { code }), avatar("slime", { code, light, live2d })];
+    expect(chooseLook({ ...DEFAULT_PET, light: "orb" }, packs, "ready")).toEqual({ kind: "code", key: "orb", rendition: code });
+    expect(chooseLook({ ...DEFAULT_PET, light: "slime" }, packs, "ready")).toEqual({ kind: "code", key: "slime", rendition: code });
+    // Live2D mode shows Live2D when it can, and otherwise the avatar's light-mode look.
+    expect(chooseLook({ ...DEFAULT_PET, mode: "live2d", live2d: "slime" }, packs, "ready").kind).toBe("live2d");
+    expect(chooseLook({ ...DEFAULT_PET, mode: "live2d", live2d: "slime" }, packs, "no-runtime").kind).toBe("code");
+  });
+
+  it("passes over looks that failed to load, down to the ball", () => {
+    const packs = [avatar("orb", { code }), avatar("slime", { code, light, live2d })];
+    const slime = { ...DEFAULT_PET, mode: "live2d" as const, live2d: "slime" };
+    expect(chooseLook(slime, packs, "ready", new Set(["live2d:slime"])).kind).toBe("code");
+    expect(chooseLook(slime, packs, "ready", new Set(["live2d:slime", "code:slime"]))).toEqual({ kind: "light", key: "slime", rendition: light });
+    expect(chooseLook({ ...DEFAULT_PET, light: "orb" }, packs, "ready", new Set(["code:orb"]))).toEqual({ kind: "ball" });
+    // Another pack's failure is not this one's.
+    expect(chooseLook({ ...DEFAULT_PET, light: "orb" }, packs, "ready", new Set(["code:slime"])).kind).toBe("code");
   });
 });
 

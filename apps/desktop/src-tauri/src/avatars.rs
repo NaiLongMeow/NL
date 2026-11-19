@@ -12,9 +12,30 @@
 //!
 //! Packs are untrusted input (T8): only files the shared rules allow are
 //! listed or served (`nl_assets::is_allowed_file`), links are never
-//! followed out of a pack, and nothing in a pack is ever run. The Live2D
-//! runtime, which is code, is served only when it is one this build accepts
-//! (see [`runtime`]).
+//! followed out of a pack, and nothing in a pack runs with the app's rights.
+//! *(user, 2026-11-19)* A code rendition's page and scripts do run, but only
+//! in a sandbox built from four parts, each covering what the others cannot:
+//!
+//! - the pet page shows the page in a frame with `sandbox="allow-scripts"`
+//!   (web/stage/src/code.ts), which gives it an opaque origin: no storage,
+//!   no cookies, no reach into the pet page, and no request it makes counts
+//!   as coming from the app;
+//! - every pack file is served with a content-security policy that repeats
+//!   that sandbox and lets the page load nothing but its own pack's files
+//!   ([`pack_policy`]), so it reaches neither the network nor Tauri's IPC;
+//! - the windows' own policy (tauri.conf.json) lets frames show only pack
+//!   files, so the page cannot navigate itself to anywhere else;
+//! - [`sandbox_guard`] takes WebRTC, which no content-security policy covers,
+//!   away from every frame with an opaque origin.
+//!
+//! One gap remains that none of them closes: a frame the page points at an
+//! address it may not load is blocked before any request is sent, but
+//! WebView2 first resolves the name and opens a connection to it, as Chrome
+//! and Edge do. Closing that takes the network layer (UI design note, open
+//! question 17).
+//!
+//! The Live2D runtime, which is code that does run with the app's rights, is
+//! served only when it is one this build accepts (see [`runtime`]).
 //!
 //! Development builds also read two environment variables, for testing with
 //! art that must stay out of the repository and the store:
@@ -332,9 +353,59 @@ fn content_type(path: &str) -> &'static str {
         Some("wav") => "audio/wav",
         Some("mp3") => "audio/mpeg",
         Some("txt" | "md" | "frag" | "vert") => "text/plain; charset=utf-8",
-        Some("js") => "text/javascript; charset=utf-8",
+        Some("js" | "mjs") => "text/javascript; charset=utf-8",
+        Some("html") => "text/html; charset=utf-8",
+        Some("css") => "text/css; charset=utf-8",
+        // WebAssembly.instantiateStreaming accepts only this type.
+        Some("wasm") => "application/wasm",
+        Some("svg") => "image/svg+xml",
         _ => "application/octet-stream",
     }
+}
+
+/// The content-security policy every file of the pack known by `key` is
+/// served with. Only documents and workers obey one, so in practice it rules
+/// a code rendition's page and whatever that page loads:
+///
+/// - `sandbox allow-scripts` gives the page an opaque origin even when it is
+///   opened some other way than in the pet's sandboxed frame.
+/// - Every kind of load reaches only this pack's own folder, in both forms
+///   its URLs take (`http://nlavatar.localhost/…` on Windows and Android,
+///   `nlavatar://localhost/…` elsewhere), plus what the page makes itself:
+///   `data:` and `blob:` URLs, inline scripts and styles, `eval`, and
+///   WebAssembly. Allowing those costs nothing, since the page may already
+///   run any script it carries; what the sandbox guards is where it reaches,
+///   and that is nowhere: not the network, not other packs, not the Live2D
+///   runtime, and not Tauri's IPC (`http://ipc.localhost`).
+/// - Nested frames from any URL, plugins, form submission, and `<base>` are
+///   refused (`default-src 'none'` covers frames and plugins).
+///
+/// Two things no policy here can cover are handled elsewhere: the frame
+/// navigating itself (the windows' `frame-src` in tauri.conf.json) and
+/// WebRTC ([`sandbox_guard`]).
+pub fn pack_policy(key: &str) -> String {
+    let own = format!("http://nlavatar.localhost/a/{key}/ nlavatar://localhost/a/{key}/");
+    format!(
+        "sandbox allow-scripts; default-src 'none'; \
+         script-src {own} 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; \
+         style-src {own} 'unsafe-inline'; img-src {own} data: blob:; \
+         media-src {own} data: blob:; font-src {own} data:; \
+         connect-src {own} data: blob:; worker-src {own} blob:; \
+         base-uri 'none'; form-action 'none'"
+    )
+}
+
+/// A plugin that runs `sandbox-frames.js` at the start of every document in
+/// every frame of every window. It takes WebRTC away from frames with an
+/// opaque origin, which is what a code avatar's frame and every frame it
+/// makes have: no content-security policy covers WebRTC (Chromium and WebKit
+/// ignore the proposed `webrtc` directive), so without this a code avatar
+/// could reach the network through a peer connection. The app's own pages
+/// never have an opaque origin and keep it.
+pub fn sandbox_guard<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("nl-avatar-sandbox")
+        .js_init_script_on_all_frames(include_str!("sandbox-frames.js"))
+        .build()
 }
 
 /// Reads `path` inside `root`, refusing anything that resolves outside it
@@ -373,26 +444,34 @@ pub fn respond(app: &tauri::AppHandle, request: &Request<Vec<u8>>) -> Response<V
     let Some(target) = parse_target(request.uri().path()) else {
         return status(StatusCode::NOT_FOUND);
     };
-    let (root, path) = match target {
+    let (root, path, policy) = match target {
         Target::Avatar { key, path } => match pack_folder(app, &key) {
-            Some(root) => (root, path),
+            Some(root) => (root, path, Some(pack_policy(&key))),
             None => return status(StatusCode::NOT_FOUND),
         },
         Target::Runtime { path } => match runtime(app) {
-            (Live2D::Ready | Live2D::Development, Some(root)) => (root, path),
+            (Live2D::Ready | Live2D::Development, Some(root)) => (root, path, None),
             _ => return status(StatusCode::FORBIDDEN),
         },
     };
     match read_inside(&root, &path) {
-        Ok(bytes) => Response::builder()
-            .header(header::CONTENT_TYPE, content_type(&path))
-            // The windows load these files from another origin (the app's own
-            // pages are on tauri.localhost or the development server), so
-            // fetch() and WebGL textures need CORS to read them.
-            .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-            .header(header::CACHE_CONTROL, "no-cache")
-            .body(bytes)
-            .expect("a response with valid headers"),
+        Ok(bytes) => {
+            let mut response = Response::builder()
+                .header(header::CONTENT_TYPE, content_type(&path))
+                // A file is only ever what its extension says: an image that
+                // holds HTML is never run as a page.
+                .header(header::X_CONTENT_TYPE_OPTIONS, "nosniff")
+                // The windows load these files from another origin (the app's
+                // own pages are on tauri.localhost or the development server,
+                // and a code avatar's page has an opaque origin), so fetch(),
+                // module scripts, and WebGL textures need CORS to read them.
+                .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .header(header::CACHE_CONTROL, "no-cache");
+            if let Some(policy) = policy {
+                response = response.header(header::CONTENT_SECURITY_POLICY, policy);
+            }
+            response.body(bytes).expect("a response with valid headers")
+        }
         Err(_) => status(StatusCode::NOT_FOUND),
     }
 }
@@ -431,7 +510,7 @@ mod tests {
         let store = TempFolder::new("list");
         store.write("mochi/avatar.json", br#"{"nlAvatar":1,"id":"mochi"}"#);
         store.write("mochi/idle.gif", b"GIF89a");
-        store.write("mochi/tools/run.js", b"alert(1)");
+        store.write("mochi/tools/run.exe", b"MZ");
         store.write("empty/readme.txt", b"no manifest");
         store.write(".mochi.installing-1/avatar.json", b"{}");
         store.write("loose.png", b"not in a folder");
@@ -452,7 +531,7 @@ mod tests {
                     key: "mochi".into(),
                     manifest: Some(r#"{"nlAvatar":1,"id":"mochi"}"#.into()),
                     files: vec!["avatar.json".into(), "idle.gif".into()],
-                    skipped: vec!["tools/run.js".into()],
+                    skipped: vec!["tools/run.exe".into()],
                     problem: None,
                     development: false,
                 },
@@ -532,10 +611,18 @@ mod tests {
                 path: "shaders/vertshadersrc.vert".into()
             })
         );
+        // A code rendition's page and scripts are pack files like any other.
+        assert_eq!(
+            parse_target("/a/orb/code/orb.mjs"),
+            Some(Target::Avatar {
+                key: "orb".into(),
+                path: "code/orb.mjs".into()
+            })
+        );
         for refused in [
             "/a/mochi/../secret.png",
             "/a/mochi/%2E%2E/secret.png",
-            "/a/mochi/run.js",
+            "/a/mochi/run.exe",
             "/a/Mochi/idle.png",
             "/a/mochi",
             "/runtime/../avatars/mochi/a.png",
@@ -584,6 +671,49 @@ mod tests {
             content_type("live2dcubismcore.min.js"),
             "text/javascript; charset=utf-8"
         );
+        assert_eq!(
+            content_type("code/orb.mjs"),
+            "text/javascript; charset=utf-8"
+        );
+        assert_eq!(content_type("code/index.HTML"), "text/html; charset=utf-8");
+        assert_eq!(content_type("code/orb.css"), "text/css; charset=utf-8");
+        assert_eq!(content_type("code/core.wasm"), "application/wasm");
+        assert_eq!(content_type("code/eye.svg"), "image/svg+xml");
+    }
+
+    #[test]
+    fn a_packs_files_may_reach_only_that_pack() {
+        let policy = pack_policy("orb");
+        assert!(policy.starts_with("sandbox allow-scripts; default-src 'none';"));
+        let own = [
+            "http://nlavatar.localhost/a/orb/",
+            "nlavatar://localhost/a/orb/",
+        ];
+        // A directive left out falls back to `default-src 'none'`, which is
+        // stricter, so only the sources of those present need checking.
+        for directive in policy.split(';').map(str::trim) {
+            let mut words = directive.split_whitespace();
+            let name = words.next().expect("a directive has a name");
+            if name == "sandbox" {
+                assert_eq!(words.collect::<Vec<_>>(), ["allow-scripts"]);
+                continue;
+            }
+            for source in words {
+                // Keywords ('none', 'unsafe-inline', …) and what the page
+                // makes itself are fine; every place named is this pack.
+                assert!(
+                    source.starts_with('\'')
+                        || source == "data:"
+                        || source == "blob:"
+                        || own.contains(&source),
+                    "{name} allows {source}"
+                );
+            }
+        }
+        assert!(policy.contains("connect-src http://nlavatar.localhost/a/orb/ "));
+        for absent in ["ipc", "*", "runtime"] {
+            assert!(!policy.contains(absent), "{absent}");
+        }
     }
 
     #[test]

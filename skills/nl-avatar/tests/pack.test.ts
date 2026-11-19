@@ -74,9 +74,9 @@ describe("checkFolder", () => {
   });
 
   it("leaves out files the format does not allow", () => {
-    const folder = lightPack({}, { "readme.html": "<p>hi</p>", "source.psd": "psd" });
+    const folder = lightPack({}, { "setup.exe": "MZ", "source.psd": "psd" });
     expect(codes(folder)).toEqual([
-      ["warning", "readme.html", "file-not-allowed"],
+      ["warning", "setup.exe", "file-not-allowed"],
       ["warning", "source.psd", "file-not-allowed"],
     ]);
   });

@@ -8,10 +8,12 @@ An avatar is what NL's character looks like on the desktop pet. NL comes with on
 
 Settings > Desktop pet has two modes:
 
-- **Light** shows the ball or an avatar made of images: animated GIF, APNG, or WebP files, numbered frames, or sprite sheets. It uses very little.
+- **Light** shows the ball or an avatar of your own: one made of images (animated GIF, APNG, or WebP files, numbered frames, or sprite sheets), which uses very little, or one made of code, which uses what its code needs.
 - **Live2D** shows an avatar with a Live2D model (Cubism 3 or later). It is livelier and uses more memory and graphics power.
 
-Each mode remembers its own avatar. When the chosen avatar cannot show, the pet shows the same avatar's light form, or the ball; it never shows nothing.
+Each mode remembers its own avatar. When the chosen avatar cannot show, the pet shows the same avatar's light-mode look, or the ball; it never shows nothing.
+
+An avatar made of code is a small web page that draws the character any way it likes (vector graphics, canvas, WebGL) and follows what the character is doing: idle, working, waiting for you, happy, and so on. It is the freest kind of avatar: it can do what the others do, and more. An agent with the `nl-avatar` skill can write one for you or adapt one you have.
 
 ## Adding an avatar
 
@@ -35,8 +37,12 @@ or copy [skills/nl-avatar](../skills/nl-avatar) into your agent's skills folder 
 
 ## What an avatar may contain
 
-Data only: images, JSON, Live2D model files (`.moc3`), sounds, and text. NL never runs anything from an avatar. Use art you have the right to use, and say who made it and on what terms in `avatar.json`; NL shows both.
+Images, JSON, Live2D model files (`.moc3`), sounds, and text; and for an avatar made of code, its page with scripts, styles, WebAssembly, and SVG. Nothing else is installed, executables least of all.
+
+NL runs an avatar's code only in a sandbox. It can draw in the pet's window and load its own files, and nothing more: it cannot read your files, other avatars, or NL's data, keep anything between runs, use NL's functions, or send or receive anything over the network. One thing this sandbox does not stop: by pointing a frame at a web address, it can make your computer look up that address and open a connection to it, without sending anything over it, which a hostile avatar could use to signal that it is running. Install avatars made of code only from people you trust.
+
+Use art and code you have the right to use, and say who made it and on what terms in `avatar.json`; NL shows both.
 
 ## Live2D
 
-Live2D models need the Live2D Cubism runtime, which Live2D's license does not let NL ship. Live2D's terms for apps that load any model ("Expandable Applications") need Live2D's approval before release, so released versions of NL do not show Live2D yet; until they do, a Live2D avatar's light form, or the ball, shows instead. Developers can try Live2D in a development build by pointing `NL_DEV_LIVE2D_RUNTIME` at a runtime folder.
+Live2D models need the Live2D Cubism runtime, which Live2D's license does not let NL ship. Live2D's terms for apps that load any model ("Expandable Applications") need Live2D's approval before release, so released versions of NL do not show Live2D yet; until they do, the same avatar's light-mode look, or the ball, shows instead. Developers can try Live2D in a development build by pointing `NL_DEV_LIVE2D_RUNTIME` at a runtime folder.

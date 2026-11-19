@@ -80,7 +80,7 @@ Use these words with these meanings in contracts, code, and docs. Do not coin sy
 | Task | Work dispatched to a session, on this node or a remote one, which runs it as its own and reports the result | 任务 |
 | Cue | A renderer-independent expression signal: an emotion, listening, thinking, speaking, a gesture | 表现提示 |
 | Avatar | What the character looks like on a screen: the built-in ball, or an avatar pack the user added | 形象 |
-| Avatar pack | A folder with `avatar.json` and data files (images, a Live2D model) that maps cues to art, in the format published with the `nl-avatar` skill | 形象包 |
+| Avatar pack | A folder with `avatar.json` and the files it names (images, a Live2D model, or a page with scripts that runs sandboxed) that maps cues to art, in the format published with the `nl-avatar` skill | 形象包 |
 | Character pack | Data that defines a character: persona, voice settings, and an avatar | 角色包 |
 | Vault | Where API keys live, inside the gateway | 密钥库 |
 

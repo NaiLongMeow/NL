@@ -1,9 +1,10 @@
 //! Asset packs: the avatar packs that give the character a look, and the
 //! Live2D runtime that Live2D avatars need.
 //!
-//! An **avatar pack** is a folder of data files with an `avatar.json`
-//! manifest: images for the light rendition, a Live2D model for the Live2D
-//! rendition, or both. Its format is published with the `nl-avatar` agent
+//! An **avatar pack** is a folder with an `avatar.json` manifest: images for
+//! the light rendition, a Live2D model for the Live2D rendition, a page with
+//! its scripts for the code rendition, or more than one of these. Its format
+//! is published with the `nl-avatar` agent
 //! skill (skills/nl-avatar/references/format.md), which agents use to turn a
 //! user's art into a pack. The file rules, which extensions a pack may hold
 //! and how large it may grow, live in one file,
@@ -11,13 +12,20 @@
 //! and by this crate ([`rules`]), so that a pack the checker accepts is a pack
 //! the app accepts. The manifest itself is checked by the same JavaScript
 //! code in the skill, the main window, and the stage renderer; this crate
-//! enforces what keeps the app safe: only data files, only inside the pack.
+//! enforces what keeps the app safe: only the allowed kinds of file, only
+//! inside the pack.
 //!
-//! A **runtime pack** holds executable code (Cubism Core, the Cubism Web
-//! Framework, shaders), which no avatar pack may contain. NL never ships it
+//! *(user, 2026-11-19)* A code rendition's page and scripts are code, but they
+//! run only in a sandboxed frame with an opaque origin, under a
+//! content-security policy that reaches nothing but the pack's own files
+//! (apps/desktop/src-tauri/src/avatars.rs). Nothing from an avatar pack runs
+//! with the app's own rights.
+//!
+//! A **runtime pack** holds the code that does run with the app's rights
+//! (Cubism Core, the Cubism Web Framework, shaders). NL never ships it
 //! (Cubism Core is proprietary), and a release accepts only a runtime whose
-//! [`runtime_digest`] it pins, so no code can reach the renderer unless the
-//! release vouches for it.
+//! [`runtime_digest`] it pins, so no such code reaches the renderer unless
+//! the release vouches for it.
 //!
 //! Every client runs these same checks: the desktop app, the Flutter apps,
 //! and `nl-node` when it stores packs for other devices.
@@ -35,9 +43,10 @@ use sha2::{Digest, Sha256};
 pub struct Rules {
     /// The manifest's file name at the root of an avatar pack.
     pub manifest: String,
-    /// Extensions a pack may hold, lowercase, without the dot. Anything a
-    /// webview would run (`.js`, `.html`, `.svg`, `.wasm`) is absent on
-    /// purpose: code may only come from a digest-pinned runtime pack.
+    /// Extensions a pack may hold, lowercase, without the dot. Code (`.html`,
+    /// `.js`, `.mjs`, `.css`, `.wasm`, `.svg`) is there for a code
+    /// rendition, which runs only in a sandboxed frame; executables and
+    /// anything else are not.
     pub extensions: Vec<String>,
     /// Extensions of the images a light rendition may use.
     pub image_extensions: Vec<String>,
@@ -388,7 +397,11 @@ mod tests {
         for ext in ["json", "moc3", "png", "gif", "webp"] {
             assert!(rules.extensions.iter().any(|e| e == ext), "{ext}");
         }
-        for ext in ["js", "html", "svg", "wasm"] {
+        // A code rendition's page and what it loads (user, 2026-11-19).
+        for ext in ["html", "js", "mjs", "css", "wasm", "svg"] {
+            assert!(rules.extensions.iter().any(|e| e == ext), "{ext}");
+        }
+        for ext in ["exe", "dll", "bat", "sh", "py", "psd"] {
             assert!(!rules.extensions.iter().any(|e| e == ext), "{ext}");
         }
         assert!(
@@ -422,12 +435,27 @@ mod tests {
     }
 
     #[test]
-    fn code_and_active_content_are_refused() {
+    fn a_code_renditions_files_are_accepted() {
+        let files = [
+            file("avatar.json", 256),
+            file("code/index.html", 512),
+            file("code/orb.js", 2048),
+            file("code/orb.mjs", 2048),
+            file("code/orb.css", 256),
+            file("code/core.wasm", 1 << 16),
+            file("code/eye.svg", 256),
+        ];
+        assert_eq!(validate_pack(&files, PackLimits::default()), Ok(()));
+    }
+
+    #[test]
+    fn executables_and_other_files_are_refused() {
         for path in [
-            "stage.js",
-            "index.html",
-            "logo.svg",
-            "core.wasm",
+            "run.exe",
+            "hook.dll",
+            "setup.bat",
+            "build.sh",
+            "tool.py",
             "Makefile",
             ".hidden",
         ] {
@@ -509,7 +537,7 @@ mod tests {
         folder.write("avatar.json", b"{}");
         folder.write("idle/02.png", b"png");
         folder.write("idle/01.png", b"png!");
-        folder.write("tools/run.js", b"alert(1)");
+        folder.write("tools/run.exe", b"MZ");
         folder.write("draft.psd", b"psd");
         let scan = scan_dir(&folder.0, is_allowed_file, 100).unwrap();
         assert_eq!(
@@ -535,7 +563,7 @@ mod tests {
             skipped,
             vec![
                 ("draft.psd".to_string(), Skipped::NotAllowed),
-                ("tools/run.js".to_string(), Skipped::NotAllowed),
+                ("tools/run.exe".to_string(), Skipped::NotAllowed),
             ]
         );
         assert!(!scan.truncated);

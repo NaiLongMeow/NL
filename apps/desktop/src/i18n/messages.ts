@@ -268,7 +268,7 @@ export const en = {
       show: "Show the desktop pet",
       mode: "Mode",
       modes: { light: "Light", live2d: "Live2D" },
-      lightHint: "The ball, or an avatar made of images. It uses very little.",
+      lightHint: "The ball, or an avatar of your own: one made of images uses very little; one made of code uses what its code needs.",
       live2dHint: "An avatar with a Live2D model: livelier, and it uses more memory and graphics power.",
       live2dStatus: {
         development: "Live2D runs from the development runtime (NL_DEV_LIVE2D_RUNTIME).",
@@ -281,7 +281,7 @@ export const en = {
       ballDetail: "Built in",
       byline: (author: string, license: string) => (license ? `${author} · ${license}` : author),
       noAuthor: "Author not given",
-      renditions: { light: "Light", live2d: "Live2D" },
+      renditions: { light: "Light", live2d: "Live2D", code: "Code" },
       development: "Development",
       problem: {
         "no-manifest": "No avatar.json",
@@ -575,7 +575,7 @@ export const zhCN: Messages = {
       show: "显示桌宠",
       mode: "模式",
       modes: { light: "轻量", live2d: "Live2D" },
-      lightHint: "小球，或由图片做成的形象，几乎不占资源。",
+      lightHint: "小球，或你导入的形象：图片形象几乎不占资源，代码形象的占用取决于它的代码。",
       live2dHint: "带 Live2D 模型的形象，更生动，也更占内存和显卡。",
       live2dStatus: {
         development: "Live2D 由开发用的运行库（NL_DEV_LIVE2D_RUNTIME）显示。",
@@ -587,7 +587,7 @@ export const zhCN: Messages = {
       ballDetail: "内置",
       byline: (author: string, license: string) => (license ? `${author} · ${license}` : author),
       noAuthor: "作者未注明",
-      renditions: { light: "轻量", live2d: "Live2D" },
+      renditions: { light: "轻量", live2d: "Live2D", code: "代码" },
       development: "开发",
       problem: {
         "no-manifest": "没有 avatar.json",

@@ -1,15 +1,16 @@
 # NL avatar pack format, version 1
 
-An **avatar pack** gives NL's character a look of the user's choosing. It is a folder with an `avatar.json` manifest at its root and the files the manifest names. It has one or both of two renditions:
+An **avatar pack** gives NL's character a look of the user's choosing. It is a folder with an `avatar.json` manifest at its root and the files the manifest names. It has one or more of three renditions:
 
 - **light**: images (still or animated GIF, APNG, WebP, or frames and sprite sheets). Cheap to run; shown in the pet's light mode.
 - **live2d**: a Live2D model (Cubism 3 or later: `.model3.json`, `.moc3`, textures, and the model's own expression, motion, physics, and pose files). Heavier; shown in the pet's Live2D mode.
+- **code**: a web page of the pack's own, with its scripts, styles, images, and WebAssembly, which draws the character however it likes: vector graphics, canvas, WebGL, or anything else a page can do. Shown in the pet's light mode, before the pack's light rendition; what it costs depends on its code.
 
-NL never runs anything from a pack: a pack holds data only. The checker (`node scripts/avatar.ts check <folder>`) applies every rule below; `scripts/lib/format.ts` is the same rules as code.
+Only a code rendition's page runs, and only in a sandbox that reaches nothing but the pack's own files ("The code rendition", below); everything else in a pack is data. The checker (`node scripts/avatar.ts check <folder>`) applies every rule below; `scripts/lib/format.ts` is the same rules as code. It checks a page's place in the pack, not what its code does.
 
 ## Files
 
-- Allowed extensions: `json`, `moc3`, `png`, `jpg`, `jpeg`, `webp`, `gif`, `wav`, `mp3`, `txt`, `md`. Anything else (scripts, HTML, SVG, PSD, Cubism Editor files) is left out when the pack is installed. Rename a license file such as `LICENSE` to `LICENSE.txt` to keep it.
+- Allowed extensions: `json`, `moc3`, `png`, `jpg`, `jpeg`, `webp`, `gif`, `wav`, `mp3`, `txt`, `md`, and for a code rendition `html`, `js`, `mjs`, `css`, `wasm`, `svg`. Anything else (executables, PSD, Cubism Editor files) is left out when the pack is installed. Rename a license file such as `LICENSE` to `LICENSE.txt` to keep it.
 - At most 4000 files and 400 MiB in total; `avatar.json` at most 256 KiB.
 - Paths in the manifest are relative to `avatar.json`, use forward slashes, and match the file names exactly, letter case included. No `..`, no leading `/`, no drive letters. Two files whose names differ only in case are refused.
 - Symbolic links are left out.
@@ -26,7 +27,8 @@ NL never runs anything from a pack: a pack holds data only. The checker (`node s
   "source": "https://example.com/mochi",
   "icon": "icon.png",
   "light": { },
-  "live2d": { }
+  "live2d": { },
+  "code": { }
 }
 ```
 
@@ -39,7 +41,7 @@ NL never runs anything from a pack: a pack holds data only. The checker (`node s
 | `license` | no, but warned | Under what terms it may be used, as known: `CC BY 4.0`, `personal use, with the author's permission`, `unknown, personal use`. NL shows it. |
 | `source` | no | Where it came from: a URL or a short note. |
 | `icon` | no | A small image for lists, preferably square. |
-| `light`, `live2d` | at least one | The renditions, below. |
+| `light`, `live2d`, `code` | at least one | The renditions, below. |
 
 Unknown keys are ignored with a warning.
 
@@ -148,6 +150,41 @@ NL animates the standard controls itself: it blinks (with the parameters of the 
 
 Do not map outfit, watermark, or signature switches to cues, and do not use a pose to hide an author's watermark or signature.
 
+## The code rendition
+
+```json
+"code": { "entry": "code/index.html" }
+```
+
+| Key | Required | Meaning |
+|---|---|---|
+| `entry` | yes | The page NL opens: an `.html` file in the pack. It loads the pack's other files by relative paths. |
+
+NL shows the page in a frame that fills the pet's window. The frame is transparent wherever the page draws nothing, so leave `color-scheme` unset (or `normal` or `light`) and do not paint a background: a page with another color scheme gets an opaque one. The frame takes no pointer events; NL keeps dragging, the pet's menu, and double click, and passes the pointer on as cues.
+
+**Messages.** Once the page listens, it says so to `parent`, which is NL:
+
+```js
+addEventListener("message", (event) => {
+  const cue = event.data;
+  if (!cue || cue.nlAvatar !== 1) return;
+  if (cue.type === "cues") draw(cue.state, cue.expression, cue.pointer, cue.look);
+  if (cue.type === "gesture") play(cue.gesture);
+});
+parent.postMessage({ nlAvatar: 1, type: "ready" }, "*");
+```
+
+NL then sends the cues as they are, at once and whenever one changes, and each gesture once:
+
+- `{ "nlAvatar": 1, "type": "cues", "state", "expression", "pointer", "look" }`: `state` and `expression` are names from Cues above (`neutral` when there is no expression); `pointer` is `hover`, `press`, `drag`, or `null`; `look` is where the pointer is, `{ "x", "y" }` from -1 (left, bottom) to 1 (right, top) of the window, or `null` when it has left. The page applies the fallbacks it wants; NL sends the state as it is.
+- `{ "nlAvatar": 1, "type": "gesture", "gesture" }`: play it once.
+
+Ignore any other message. Until the page says it is ready, NL keeps the frame hidden; a page that has not said so within 10 seconds counts as broken, and NL shows the pack's light rendition, or its built-in ball. A page that starts again and says it is ready again hears the cues again.
+
+**The sandbox.** The frame has `sandbox="allow-scripts"` and nothing more, so the page has an opaque origin, and NL serves every pack file with a content-security policy that lets the page load only its own pack's files. The page may run scripts (inline, `eval`, workers, WebAssembly), use styles, images, fonts, video, canvas, and WebGL, read its own files with `fetch`, and make `data:` and `blob:` URLs. It cannot reach the network, other packs, or NL's own files and interfaces; keep storage (local storage, IndexedDB, cookies); open windows, dialogs, or forms; navigate the window; load other pages in frames; use WebRTC; or ask for permissions such as the camera or microphone. Like any web page under such a policy, it can still make the system look up a host name and open a connection to an address without sending anything over it (by pointing a frame at it): it cannot send or receive data, but it can signal. Install code avatars only from people you trust.
+
+**Cost.** The page costs what its code costs, on top of the pet. Draw only when something changes, stop animating when the page is hidden (`document.hidden`), and keep the idle state cheap: the pet is on screen all day.
+
 ## Installing
 
 NL looks for packs in the `avatars` folder of its local data folder, one folder per pack, named after its `id`:
@@ -158,6 +195,6 @@ NL looks for packs in the `avatars` folder of its local data folder, one folder 
 | macOS | `~/Library/Application Support/dev.nailongmeow.nl/avatars` |
 | Linux | `$XDG_DATA_HOME/dev.nailongmeow.nl/avatars`, or `~/.local/share/dev.nailongmeow.nl/avatars` |
 
-`node scripts/avatar.ts install <folder>` checks the pack and copies its allowed files there. NL also shows this folder under Settings > Pet, with Open folder and Reload. The user then picks the avatar there: light avatars in light mode, Live2D avatars in Live2D mode.
+`node scripts/avatar.ts install <folder>` checks the pack and copies its allowed files there. NL also shows this folder under Settings > Pet, with Open folder and Reload. The user then picks the avatar there: avatars with a code or light rendition in light mode (code first), Live2D avatars in Live2D mode.
 
 Live2D mode also needs the Live2D Cubism runtime, which NL does not ship and a pack cannot contain (see the skill's notes on Live2D).

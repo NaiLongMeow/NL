@@ -55,6 +55,9 @@ pub fn run() {
     };
     tauri::Builder::default()
         .plugin(webview::navigation_guard(dev_url))
+        // Code avatars run sandboxed; this is the part of the sandbox that
+        // takes WebRTC away from their frames (avatars.rs).
+        .plugin(avatars::sandbox_guard())
         // System notifications for messages that arrive while NL is in the
         // background and the pet is not shown (UI design note, section 4.14).
         .plugin(tauri_plugin_notification::init())

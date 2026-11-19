@@ -163,6 +163,8 @@ const both = entry(
   { development: true },
 );
 
+const coded = entry("orb", { nlAvatar: 1, id: "orb", name: "Orb", author: "Jane", license: "MIT", code: { entry: "code/index.html" } }, ["code/index.html"]);
+
 const broken = entry("broken", { nlAvatar: 1, id: "broken", name: "Broken", light: { size: [64, 64], animations: {}, states: {} } }, []);
 const misnamed = entry("old-name", { nlAvatar: 1, id: "new-name", name: "Misnamed", author: "a", license: "b", light: { size: [64, 64], animations: { idle: { image: "a.png" } }, states: { idle: "idle" } } }, ["a.png"]);
 const empty = entry("empty", "", [], { manifest: null, files: [], problem: "no-manifest" });
@@ -189,6 +191,17 @@ describe("SettingsScreen's pet section", () => {
     await user.click(within(list).getByRole("radio", { name: /Mochi/ }));
     expect(onPet).toHaveBeenLastCalledWith({ ...DEFAULT_PET, light: "mochi" });
     expect(screen.getByText(/dev\.nailongmeow\.nl\\avatars$/)).toBeTruthy();
+  });
+
+  it("lists code avatars in light mode, tagged as code, and not in Live2D mode", async () => {
+    const user = userEvent.setup();
+    render(<Settings onPet={vi.fn()} avatars={{ folder, avatars: [coded, both], live2d: "ready" }} />);
+    const list = () => screen.getByRole("radiogroup", { name: en.settings.pet.avatar });
+    const orb = within(list()).getByRole("radio", { name: /Orb/ }).closest("label");
+    expect(orb?.textContent).toContain(en.settings.pet.renditions.code);
+    expect(orb?.textContent).not.toContain(en.settings.pet.renditions.light);
+    await user.click(within(screen.getByRole("radiogroup", { name: en.settings.pet.mode })).getByRole("radio", { name: "Live2D" }));
+    expect(within(list()).queryByRole("radio", { name: /Orb/ })).toBeNull();
   });
 
   it("lists Live2D avatars in Live2D mode and says when this build cannot show them", async () => {

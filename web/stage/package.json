@@ -2,7 +2,7 @@
   "name": "@nl/stage",
   "version": "0.1.0",
   "private": true,
-  "description": "Avatar renderer shared by the desktop app windows and the mobile app: light (images) and Live2D renditions of avatar packs",
+  "description": "Avatar renderer shared by the desktop app windows and the mobile app: the light (images), Live2D, and code renditions of avatar packs",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

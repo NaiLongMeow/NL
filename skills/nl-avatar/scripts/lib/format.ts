@@ -4,7 +4,8 @@
  *
  * An avatar pack is a folder with an `avatar.json` manifest and the files it
  * names: images for the light rendition, a Live2D model for the Live2D
- * rendition, or both. This module checks a manifest against the list of
+ * rendition, a page with its scripts for the code rendition, or more than
+ * one of these. This module checks a manifest against the list of
  * files in its pack, and a Live2D model's `.model3.json` against the same
  * list. It reads no files itself and depends on nothing but the language, so
  * that three places run the very same rules: the skill's command-line
@@ -137,6 +138,41 @@ export interface AvatarManifest {
   icon?: string;
   light?: LightRendition;
   live2d?: Live2DRendition;
+  code?: CodeRendition;
+}
+
+/**
+ * The code rendition (format.md, "The code rendition"): a page with its
+ * scripts, styles, images, and WebAssembly, which NL runs in a sandboxed
+ * frame that reaches nothing but the pack's own files (user decision,
+ * 2026-11-19). It draws what it likes and hears the cues as messages.
+ */
+export interface CodeRendition {
+  /** The page NL opens: an .html file in the pack. */
+  entry: string;
+}
+
+/**
+ * What NL sends a code rendition's page with `postMessage`: the cues as
+ * they are now, whenever one changes, and each gesture once. `look` is where
+ * the pointer is, from -1 (left, bottom) to 1 (right, top) of the window, or
+ * null when it has left.
+ */
+export type CodeMessage =
+  | {
+      nlAvatar: 1;
+      type: "cues";
+      state: State;
+      expression: Expression;
+      pointer: Pointer | null;
+      look: { x: number; y: number } | null;
+    }
+  | { nlAvatar: 1; type: "gesture"; gesture: Gesture };
+
+/** What a code rendition's page may send NL: that it is listening, so NL sends the cues as they are. NL ignores anything else. */
+export interface CodeReady {
+  nlAvatar: 1;
+  type: "ready";
 }
 
 /** One animation of the light rendition: exactly one of `frames`, `sheet`, or `image`. */
@@ -354,7 +390,7 @@ function checkText(object: Record<string, unknown>, key: string, at: string, max
 }
 
 /** A file the manifest names: it must be in the pack, with its exact case, and of an allowed kind. */
-function checkFile(value: unknown, at: string, files: ReadonlySet<string>, report: Report, kind: "image" | "model"): value is string {
+function checkFile(value: unknown, at: string, files: ReadonlySet<string>, report: Report, kind: "image" | "model" | "page"): value is string {
   if (typeof value !== "string" || value.length === 0) {
     report.error(at, "invalid", "Must be the path of a file in the pack, relative to avatar.json, with forward slashes.");
     return false;
@@ -369,6 +405,10 @@ function checkFile(value: unknown, at: string, files: ReadonlySet<string>, repor
   }
   if (kind === "model" && !value.toLowerCase().endsWith(".model3.json")) {
     report.error(at, "wrong-file-type", `"${value}" must be a Live2D model file ending in .model3.json.`);
+    return false;
+  }
+  if (kind === "page" && extensionOf(value) !== "html") {
+    report.error(at, "wrong-file-type", `"${value}" must be a page ending in .html.`);
     return false;
   }
   if (!files.has(value)) {
@@ -391,7 +431,7 @@ function checkFile(value: unknown, at: string, files: ReadonlySet<string>, repor
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ANIMATION_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const LANGUAGE_TAG = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
-const TOP_KEYS = ["nlAvatar", "id", "name", "author", "license", "source", "icon", "light", "live2d"] as const;
+const TOP_KEYS = ["nlAvatar", "id", "name", "author", "license", "source", "icon", "light", "live2d", "code"] as const;
 
 /**
  * Checks a parsed `avatar.json` against the pack's file list (paths relative
@@ -431,11 +471,12 @@ export function checkManifest(value: unknown, files: ReadonlySet<string>): { man
   }
   if (value.icon !== undefined) checkFile(value.icon, "icon", files, report, "image");
 
-  if (value.light === undefined && value.live2d === undefined) {
-    report.error("", "missing", `A pack needs "light", "live2d", or both.`);
+  if (value.light === undefined && value.live2d === undefined && value.code === undefined) {
+    report.error("", "missing", `A pack needs at least one rendition: "light", "live2d", or "code".`);
   }
   if (value.light !== undefined) checkLight(value.light, files, report);
   if (value.live2d !== undefined) checkLive2D(value.live2d, files, report);
+  if (value.code !== undefined) checkCode(value.code, files, report);
 
   return { manifest: report.failed ? null : (value as unknown as AvatarManifest), issues: report.issues };
 }
@@ -613,6 +654,22 @@ function checkAnimation(value: unknown, at: string, files: ReadonlySet<string>, 
 
 // ---------------------------------------------------------------------------
 // The Live2D rendition.
+
+// ---------------------------------------------------------------------------
+// The code rendition.
+
+const CODE_KEYS = ["entry"] as const;
+
+function checkCode(value: unknown, files: ReadonlySet<string>, report: Report) {
+  const at = "code";
+  if (!isObject(value)) {
+    report.error(at, "invalid", `"code" must be an object.`);
+    return;
+  }
+  checkKeys(value, CODE_KEYS, at, report);
+  if (value.entry === undefined) report.error(join(at, "entry"), "missing", `"code.entry" is required: the page NL opens, an .html file in the pack.`);
+  else checkFile(value.entry, join(at, "entry"), files, report, "page");
+}
 
 const LIVE2D_KEYS = ["model", "framing", "parameters", "base", "states", "expressions", "gestures", "pointer"] as const;
 const POSE_KEYS = ["expression", "motion", "params"] as const;

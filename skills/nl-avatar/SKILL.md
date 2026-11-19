@@ -1,11 +1,11 @@
 ---
 name: nl-avatar
-description: Turns a user's character art into an avatar pack for NL (NaiLongMeow), the AI companion with a desktop pet, then checks it and installs it. Handles animated GIF, APNG, or WebP files, folders of PNG frames, sprite sheets, PNGtuber images, and Live2D models (.model3.json with .moc3). Use when the user wants to import, add, convert, or set up an avatar, a desktop pet look, or a Live2D model for NL, or asks why NL refuses one.
+description: Turns a user's character art into an avatar pack for NL (NaiLongMeow), the AI companion with a desktop pet, then checks it and installs it. Handles animated GIF, APNG, or WebP files, folders of PNG frames, sprite sheets, PNGtuber images, Live2D models (.model3.json with .moc3), and characters made of code (an HTML page with canvas, SVG, or WebGL drawing). Use when the user wants to import, add, convert, or set up an avatar, a desktop pet look, a Live2D model, or a coded character for NL, or asks why NL refuses one.
 ---
 
 # NL avatar packs
 
-An avatar pack is a folder with an `avatar.json` and the art it names. NL shows it as the desktop pet: the **light** rendition (images, cheap) in light mode, the **live2d** rendition (a Live2D model, heavier) in Live2D mode. The format is in [references/format.md](references/format.md); read it before writing a manifest.
+An avatar pack is a folder with an `avatar.json` and the art it names. NL shows it as the desktop pet: the **code** rendition (a page of the pack's own that draws the character, run in a sandbox) or else the **light** rendition (images, cheap) in light mode, and the **live2d** rendition (a Live2D model, heavier) in Live2D mode. The format is in [references/format.md](references/format.md); read it before writing a manifest.
 
 The scripts need Node 22.18 or later (`node --version`); they use only Node's built-in modules. With an older Node, run them through `npx -y node@22 scripts/avatar.ts …` or ask the user to update Node. Paths below are relative to this skill's folder.
 
@@ -13,7 +13,7 @@ The scripts need Node 22.18 or later (`node --version`); they use only Node's bu
 
 1. **Find the art.** Ask for the folder or files if the user has not said where they are. Never change the user's originals: build the pack in a new folder, such as `<original>-nl`, copying the files you need.
 2. **Inventory it.** `node scripts/avatar.ts inspect <folder>` lists every image with its size and frame count, and every Live2D model with its expressions, motion groups, parameters (id, display name), hit areas, and moc3 version. Base the manifest on these facts, not on guesses from file names.
-3. **Decide the renditions.** Images make a `light` rendition; a `.model3.json` with its `.moc3` makes a `live2d` rendition. One pack may have both, when the user has both kinds of art for the same character.
+3. **Decide the renditions.** Images make a `light` rendition; a `.model3.json` with its `.moc3` makes a `live2d` rendition; a page that draws the character makes a `code` rendition. One pack may have several, when the user has more than one kind of art for the same character; a code rendition with a light one beside it still shows something if its page breaks.
 4. **Write `avatar.json`** at the pack's root, following references/format.md:
    - `id` from the character's name (`mochi`, `sea-slime`); `name` in the user's language, both languages if you know them.
    - `author`, `license`, `source`: what the user tells you or what the art's own readme or license file says. Ask when you do not know. Never invent them; write `unknown, personal use` rather than guess.
@@ -31,10 +31,12 @@ The scripts need Node 22.18 or later (`node --version`); they use only Node's bu
 - **A Live2D model folder**: `model` is its `.model3.json`. Map expressions by what they show; names are often numbered or Japanese or Chinese (`02 smile`, `照れ`, `脸红`), so translate them, and say in your answer which ones you mapped and which you left out. Add `params` offsets only for parameter ids the inventory lists. Leave out expressions that switch outfits, watermarks, signatures, or other parts on and off.
 - **A pack made for another app** (a `character.json`, `model.json`, or similar at the root): read it for the author, license, framing, and expression mapping, and carry over what fits this format. Do not copy its code.
 - **Cubism 2 models** (`.moc` with `model.json`): NL cannot load them; the user must export the model again from Cubism Editor as Cubism 3 or later.
+- **A character made of code** (an HTML page drawing with canvas, SVG, or WebGL, or a script the user wrote or asked you to write): a `code` rendition whose `entry` is the page. Make it follow the message protocol in references/format.md: say it is ready, draw each state and expression it can, play gestures, and look toward `look` if it has eyes. Put every library, font, and image it uses into the pack and load them by relative paths: the sandbox reaches nothing outside the pack, so links to CDNs or web fonts fail. Leave the background transparent and the `color-scheme` unset. Draw only when something changes, so the pet stays cheap at rest.
 
 ## Rules
 
-- A pack holds data only. Never add scripts, HTML, or SVG, and never change the model's own files beyond copying them.
+- Only a code rendition holds code: its page and what the page loads. Never add scripts to a light or Live2D rendition, never change a Live2D model's own files beyond copying them, and never write code that tries to get out of the sandbox (the network, other packs, storage, NL's interfaces).
+- Code has authors and licenses just as art does: use only code the user wrote, code you wrote for them, or code whose license allows it, and record that in `author`, `license`, and `source`.
 - Use only art the user has the right to use, and record what they told you about it in `author`, `license`, and `source`. Do not remove or hide an author's watermark or signature.
 - Keep the user's art on their computer: do not upload it anywhere.
 - Report what you did: the renditions, which cues you mapped to what, what you left out and why, and the checker's warnings.

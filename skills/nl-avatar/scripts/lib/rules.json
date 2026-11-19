@@ -1,7 +1,7 @@
 {
-  "$comment": "The file rules of NL avatar packs. The skill's checker (pack.ts) and the app (crates/nl-assets) both read this file, so that a pack the checker accepts is a pack the app accepts. Only data files are allowed: anything a webview would run (.js, .html, .svg, .wasm) is absent on purpose.",
+  "$comment": "The file rules of NL avatar packs. The skill's checker (pack.ts) and the app (crates/nl-assets) both read this file, so that a pack the checker accepts is a pack the app accepts. Code (.html, .js, .mjs, .css, .wasm, .svg) is allowed for a code rendition's page (user decision, 2026-11-19): NL runs it only in a sandboxed frame that reaches nothing but the pack's own files, and never anywhere else.",
   "manifest": "avatar.json",
-  "extensions": ["json", "moc3", "png", "jpg", "jpeg", "webp", "gif", "wav", "mp3", "txt", "md"],
+  "extensions": ["json", "moc3", "png", "jpg", "jpeg", "webp", "gif", "wav", "mp3", "txt", "md", "html", "js", "mjs", "css", "wasm", "svg"],
   "imageExtensions": ["png", "jpg", "jpeg", "webp", "gif"],
   "maxTotalBytes": 419430400,
   "maxFiles": 4000,

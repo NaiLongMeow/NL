@@ -253,10 +253,14 @@ describe("cues", () => {
 });
 
 describe("paths and names", () => {
-  it("allows data files at safe paths only", () => {
+  it("allows the kinds of file the format names, at safe paths only", () => {
     expect(isAllowedFile("idle/01.PNG")).toBe(true);
     expect(isAllowedFile("model/x.moc3")).toBe(true);
-    for (const path of ["stage.js", "a.svg", "page.html", "core.wasm", "LICENSE", ".hidden", "../a.png", "a\\b.png", "C:/a.png", "a//b.png"]) {
+    // A code rendition's page and what it loads, which NL runs only in a sandbox (user, 2026-11-19).
+    for (const path of ["code/index.html", "code/orb.js", "code/orb.mjs", "code/orb.css", "code/core.wasm", "code/eye.svg"]) {
+      expect(isAllowedFile(path), path).toBe(true);
+    }
+    for (const path of ["run.exe", "tool.py", "LICENSE", ".hidden", "../a.png", "a\\b.png", "C:/a.png", "a//b.png", "../code/a.js"]) {
       expect(isAllowedFile(path), path).toBe(false);
     }
   });
@@ -276,5 +280,25 @@ describe("paths and names", () => {
     expect(localizedText(name, "zh-TW")).toBe("麻糬");
     expect(localizedText(name, "fr")).toBe("Mochi");
     expect(localizedText("Mochi", "zh-CN")).toBe("Mochi");
+  });
+});
+
+describe("the code rendition", () => {
+  const files = new Set(["code/index.html", "code/orb.js", "icon.png"]);
+  const base = { nlAvatar: 1, id: "orb", name: "Orb", author: "Jane", license: "MIT" };
+
+  it("needs a page that is in the pack", () => {
+    expect(checkManifest({ ...base, code: { entry: "code/index.html" } }, files)).toMatchObject({ issues: [], manifest: { code: { entry: "code/index.html" } } });
+    expect(errors(checkManifest({ ...base, code: {} }, files).issues)).toEqual([["code.entry", "missing"]]);
+    expect(errors(checkManifest({ ...base, code: { entry: "code/orb.js" } }, files).issues)).toEqual([["code.entry", "wrong-file-type"]]);
+    expect(errors(checkManifest({ ...base, code: { entry: "code/other.html" } }, files).issues)).toEqual([["code.entry", "missing-file"]]);
+    expect(errors(checkManifest({ ...base, code: { entry: "../index.html" } }, files).issues)).toEqual([["code.entry", "invalid"]]);
+    expect(errors(checkManifest({ ...base, code: "code/index.html" }, files).issues)).toEqual([["code", "invalid"]]);
+  });
+
+  it("is a rendition on its own, and a pack needs at least one", () => {
+    expect(errors(checkManifest(base, files).issues)).toEqual([["", "missing"]]);
+    const issues = checkManifest({ ...base, code: { entry: "code/index.html", size: [1, 1] } }, files).issues;
+    expect(issues.map((issue) => [issue.level, issue.at, issue.code])).toEqual([["warning", "code.size", "unknown-key"]]);
   });
 });
