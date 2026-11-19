@@ -1,18 +1,26 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { createFakeSource } from "../conversation/fake";
+import { sessionMenu } from "../conversation/sessionMenu";
 import { I18nProvider } from "../i18n/I18n";
 import { en } from "../i18n/messages";
 import { Sidebar } from "./Sidebar";
 
-function renderSidebar(source = createFakeSource("en"), onSelect = vi.fn(), onScreen = vi.fn()) {
+function renderSidebar(source = createFakeSource("en"), onSelect = vi.fn(), onScreen = vi.fn(), onSettings = vi.fn()) {
   render(
     <I18nProvider initial="en">
-      <Sidebar source={source} selected="errands" screen="session" onSelect={onSelect} onScreen={onScreen} />
+      <Sidebar
+        source={source}
+        selected="errands"
+        screen="session"
+        onSelect={onSelect}
+        onScreen={onScreen}
+        menuFor={(id) => sessionMenu(source, en, id, { open: onSelect, settings: onSettings })}
+      />
     </I18nProvider>,
   );
-  return { onSelect, onScreen };
+  return { onSelect, onScreen, onSettings };
 }
 
 describe("Sidebar", () => {
@@ -68,5 +76,43 @@ describe("Sidebar", () => {
     renderSidebar(source);
     expect(screen.queryByRole("button", { name: /^Presentation day/ })).toBeNull();
     expect(screen.getByRole("button", { name: new RegExp(`^${en.sidebar.archive}`) }).textContent).toBe(`${en.sidebar.archive}6`);
+  });
+
+  it("gives each session a menu of its actions (note, section 4.15)", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    const { onSelect, onSettings } = renderSidebar(source);
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Presentation day/ }));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      en.menu.branch,
+      en.menu.carryOn,
+      en.menu.summarize,
+      en.menu.settings,
+      en.menu.archive,
+    ]);
+    await user.click(within(menu).getByRole("menuitem", { name: en.menu.branch }));
+    const branch = onSelect.mock.calls.at(-1)?.[0] as string;
+    expect(source.conversation(branch)?.origin).toMatchObject({ kind: "branch", session: { id: "presentation" } });
+    expect(screen.getByRole("button", { name: /^Presentation day \(branch\)/ })).toBeTruthy();
+
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Presentation day(?! \()/ }));
+    await user.click(await screen.findByRole("menuitem", { name: en.menu.settings }));
+    expect(onSettings).toHaveBeenCalledWith("presentation");
+  });
+
+  it("does not summarize a session while its turn runs, and archives one from its menu", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    renderSidebar(source);
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Weekend hike/ }));
+    const summarize = await screen.findByRole("menuitem", { name: en.menu.summarize });
+    expect(summarize.getAttribute("aria-disabled")).toBe("true");
+    await user.keyboard("{Escape}");
+
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Presentation day/ }));
+    await user.click(await screen.findByRole("menuitem", { name: en.menu.archive }));
+    expect(screen.queryByRole("button", { name: /^Presentation day/ })).toBeNull();
+    expect(source.archive()[0]).toMatchObject({ id: "presentation", reason: "ended" });
   });
 });

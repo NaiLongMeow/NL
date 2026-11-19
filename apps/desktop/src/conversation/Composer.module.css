@@ -20,6 +20,40 @@
   border-color: var(--nl-color-line-strong);
 }
 
+/* The block the next message quotes (section 4.15). */
+.quote {
+  display: flex;
+  align-items: center;
+  gap: var(--nl-space-2);
+  margin-right: calc(-1 * var(--nl-space-1));
+  padding: var(--nl-space-1) var(--nl-space-1) var(--nl-space-1) var(--nl-space-2);
+  border-left: 2px solid var(--nl-color-line-strong);
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-color-state-hover);
+  color: var(--nl-color-ink-secondary);
+  font-size: var(--nl-type-caption-font-size);
+  cursor: default;
+}
+
+.quote > svg {
+  flex: none;
+  width: var(--nl-size-icon-sm);
+  height: var(--nl-size-icon-sm);
+}
+
+.quoteText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quoteText strong {
+  color: var(--nl-color-ink-primary);
+  font-weight: var(--nl-font-weight-medium);
+}
+
 .input {
   width: 100%;
   min-height: 26px;

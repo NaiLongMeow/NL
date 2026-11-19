@@ -9,6 +9,10 @@
  * state of the session open here (pet/channel.ts), and the character's
  * messages that arrive while this window is not in front show beside the
  * pet or as system notifications (background.ts).
+ *
+ * A session's actions (UI design note, section 4.15) are the same in its
+ * row in the sidebar, its entry in the archive, and the header's menu
+ * (conversation/sessionMenu.tsx).
  */
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -19,6 +23,8 @@ import { ConversationScreen } from "../conversation/ConversationScreen";
 import { DEFAULT_IDLE_LIMIT, createFakeSource } from "../conversation/fake";
 import { Header } from "../conversation/Header";
 import { characterState, type SessionKind, type ToolCall, type View } from "../conversation/model";
+import { SessionSettings } from "../conversation/SessionSettings";
+import { sessionMenu } from "../conversation/sessionMenu";
 import { DetailPanel } from "../detail/DetailPanel";
 import { I18nProvider, useI18n } from "../i18n/I18n";
 import { answerPet, followPet, petSay, publishCue, publishPrefs, setPetShown } from "../pet/channel";
@@ -69,6 +75,8 @@ function MainWindow() {
   const [view, setView] = useState<View>("full");
   const [developerDetails, setDeveloperDetails] = useState(false);
   const [detail, setDetail] = useState<{ open: boolean; pinned: boolean; call?: ToolCall }>({ open: false, pinned: false });
+  // The session whose settings dialog is open.
+  const [settingsFor, setSettingsFor] = useState<string>();
   const conversation = useSyncExternalStore(source.subscribe, () => source.conversation(selected));
   const devices = useSyncExternalStore(source.subscribe, source.devices);
   const self = devices.find((device) => device.self);
@@ -165,6 +173,9 @@ function MainWindow() {
     if (!detail.pinned) setDetail({ ...detail, open: false, call: undefined });
   };
   const newSession = (kind: SessionKind) => openSession(source.start(kind));
+
+  const menuFor = (id: string) => sessionMenu(source, t, id, { open: openSession, settings: setSettingsFor });
+  const settingsSession = settingsFor === undefined ? undefined : source.conversation(settingsFor);
   const changeIdleLimit = (minutes: number) => {
     globalThis.localStorage?.setItem(IDLE_LIMIT_KEY, String(minutes));
     setIdleLimit(minutes);
@@ -194,7 +205,7 @@ function MainWindow() {
       );
       break;
     case "archive":
-      main = <ArchiveScreen source={source} onOpenSession={openSession} />;
+      main = <ArchiveScreen source={source} onOpenSession={openSession} menuFor={menuFor} />;
       break;
     case "settings":
       main = (
@@ -242,6 +253,7 @@ function MainWindow() {
             developerDetails={developerDetails}
             onDeveloperDetailsChange={setDeveloperDetails}
             onOpenSession={openSession}
+            menu={menuFor(conversation.id)}
           />
         ) : (
           screen !== "session" && <ScreenTitle>{screenTitles[screen]}</ScreenTitle>
@@ -255,6 +267,7 @@ function MainWindow() {
             screen={screen}
             onSelect={openSession}
             onScreen={(next) => setScreen(next)}
+            menuFor={menuFor}
           />
         )}
         {main}
@@ -268,6 +281,18 @@ function MainWindow() {
           />
         )}
       </div>
+      {settingsFor !== undefined && settingsSession && !settingsSession.archived && (
+        <SessionSettings
+          key={settingsFor}
+          conversation={settingsSession}
+          onClose={() => setSettingsFor(undefined)}
+          onSave={(title, acceptsTasks) => {
+            source.rename(settingsFor, title);
+            source.setAcceptsTasks(settingsFor, acceptsTasks);
+            setSettingsFor(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }

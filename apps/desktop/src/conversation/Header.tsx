@@ -2,19 +2,22 @@
  * A session's header, shown in the window's title bar (UI design note,
  * sections 4.9 and 5): the character with its "AI" tag (product rule 5) and
  * current cue, the session's title, its kind (shared, or the device it
- * belongs to), the session a dispatched task came from, the Accept tasks and
- * Show work switches, End session, and a menu.
+ * belongs to), the session a dispatched task came from or the one it
+ * branched or carried on from, the Accept tasks and Show work switches, End
+ * session, and a menu with the session's actions (section 4.15), Export as
+ * JSONL, and developer details.
  *
  * The title bar is a drag region, so every control here is a button or a
  * switch, which the title bar's CSS marks as not draggable.
  */
 
-import { CircleStop, CornerDownRight, Ellipsis, Laptop, Users } from "lucide-react";
+import { Code, CircleStop, CornerDownRight, Download, Ellipsis, GitBranch, Laptop, MessageSquarePlus, Users } from "lucide-react";
 import { DropdownMenu, Tooltip } from "radix-ui";
 import type { ReactNode } from "react";
 import { useI18n } from "../i18n/I18n";
 import { Avatar } from "../ui/Avatar";
 import { IconButton } from "../ui/Button";
+import { DropdownEntries, menuStyles, type MenuEntry } from "../ui/Menu";
 import { Switch } from "../ui/Switch";
 import { characterState, type Conversation, type View } from "./model";
 import type { SessionSource } from "./source";
@@ -28,6 +31,8 @@ interface Props {
   developerDetails: boolean;
   onDeveloperDetailsChange: (on: boolean) => void;
   onOpenSession: (id: string) => void;
+  /** The session's actions, the same as its menu in the sidebar (section 4.15). */
+  menu: readonly MenuEntry[];
 }
 
 /** A small label with a tooltip that says what it means. */
@@ -49,9 +54,10 @@ function Chip({ icon, hint, children }: { icon: ReactNode; hint: string; childre
   );
 }
 
-export function Header({ source, conversation, view, onViewChange, developerDetails, onDeveloperDetailsChange, onOpenSession }: Props) {
+export function Header({ source, conversation, view, onViewChange, developerDetails, onDeveloperDetailsChange, onOpenSession, menu }: Props) {
   const { t } = useI18n();
   const live = !conversation.archived;
+  const { origin } = conversation;
   return (
     <div className={styles.header}>
       <div className={styles.identity}>
@@ -74,6 +80,12 @@ export function Header({ source, conversation, view, onViewChange, developerDeta
           <button type="button" className={styles.from} onClick={() => onOpenSession(conversation.from!.id)}>
             <CornerDownRight aria-hidden />
             <span>{t.header.from(conversation.from.title)}</span>
+          </button>
+        )}
+        {origin && (
+          <button type="button" className={styles.from} onClick={() => onOpenSession(origin.session.id)}>
+            {origin.kind === "branch" ? <GitBranch aria-hidden /> : <MessageSquarePlus aria-hidden />}
+            <span>{origin.kind === "branch" ? t.header.branchOf(origin.session.title) : t.header.carriedFrom(origin.session.title)}</span>
           </button>
         )}
       </div>
@@ -100,18 +112,21 @@ export function Header({ source, conversation, view, onViewChange, developerDeta
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
-            <DropdownMenu.Content className={styles.menu} align="end" sideOffset={6}>
-              <DropdownMenu.Item className={styles.item}>{t.header.rename}</DropdownMenu.Item>
-              <DropdownMenu.Item className={styles.item}>{t.header.compactNow}</DropdownMenu.Item>
-              <DropdownMenu.Item className={styles.item}>{t.header.exportJsonl}</DropdownMenu.Item>
-              <DropdownMenu.Separator className={styles.separator} />
+            <DropdownMenu.Content className={menuStyles.menu} align="end" sideOffset={6}>
+              <DropdownEntries entries={menu} />
+              {menu.length > 0 && <DropdownMenu.Separator className={menuStyles.separator} />}
+              <DropdownMenu.Item className={menuStyles.item}>
+                <Download />
+                <span>{t.header.exportJsonl}</span>
+              </DropdownMenu.Item>
               <DropdownMenu.CheckboxItem
-                className={styles.item}
+                className={menuStyles.item}
                 checked={developerDetails}
                 onCheckedChange={onDeveloperDetailsChange}
               >
-                {t.header.developerDetails}
-                <DropdownMenu.ItemIndicator className={styles.check}>✓</DropdownMenu.ItemIndicator>
+                <Code />
+                <span>{t.header.developerDetails}</span>
+                <DropdownMenu.ItemIndicator className={menuStyles.check}>✓</DropdownMenu.ItemIndicator>
               </DropdownMenu.CheckboxItem>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>

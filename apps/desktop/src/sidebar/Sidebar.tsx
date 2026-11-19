@@ -12,7 +12,7 @@
  * Each row shows the title and one status line: what the session is doing,
  * that it waits for approval, for an answer, or for its device, or that it
  * is idle, with the archive countdown, and for a dispatched task, where it
- * came from.
+ * came from. A row's menu holds the session's actions (section 4.15).
  */
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "../i18n/I18n";
 import type { Device, SessionSource, SessionSummary } from "../conversation/source";
+import { ContextMenu, type MenuEntry } from "../ui/Menu";
 import styles from "./Sidebar.module.css";
 
 /** The screens of the main window besides a session (section 5). */
@@ -46,6 +47,8 @@ interface Props {
   screen: Screen;
   onSelect: (id: string) => void;
   onScreen: (screen: Screen) => void;
+  /** A session's actions, for its row's menu. */
+  menuFor: (id: string) => readonly MenuEntry[];
 }
 
 const DEVICE_ICONS: Record<Device["type"], ReactNode> = {
@@ -55,7 +58,7 @@ const DEVICE_ICONS: Record<Device["type"], ReactNode> = {
   speaker: <Speaker aria-hidden />,
 };
 
-export function Sidebar({ source, selected, screen, onSelect, onScreen }: Props) {
+export function Sidebar({ source, selected, screen, onSelect, onScreen, menuFor }: Props) {
   const { t } = useI18n();
   const devices = useSyncExternalStore(source.subscribe, source.devices);
   const list = useSyncExternalStore(source.subscribe, source.list);
@@ -100,7 +103,9 @@ export function Sidebar({ source, selected, screen, onSelect, onScreen }: Props)
             <ul>
               {shared.map((item) => (
                 <li key={item.id}>
-                  <Row item={item} current={current(item.id)} onSelect={onSelect} />
+                  <ContextMenu entries={menuFor(item.id)}>
+                    <Row item={item} current={current(item.id)} onSelect={onSelect} />
+                  </ContextMenu>
                 </li>
               ))}
             </ul>
@@ -120,7 +125,9 @@ export function Sidebar({ source, selected, screen, onSelect, onScreen }: Props)
                 <ul>
                   {sessions.map((item) => (
                     <li key={item.id}>
-                      <Row item={item} current={current(item.id)} onSelect={onSelect} />
+                      <ContextMenu entries={menuFor(item.id)}>
+                        <Row item={item} current={current(item.id)} onSelect={onSelect} />
+                      </ContextMenu>
                     </li>
                   ))}
                 </ul>

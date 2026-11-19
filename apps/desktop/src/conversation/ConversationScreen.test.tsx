@@ -9,6 +9,7 @@ import { QuestionCard } from "./Cards";
 import { ConversationScreen } from "./ConversationScreen";
 import { createFakeSource } from "./fake";
 import { Header } from "./Header";
+import { sessionMenu } from "./sessionMenu";
 import type { View } from "./model";
 import type { SessionSource } from "./source";
 
@@ -39,6 +40,7 @@ function Session({ id = "hike", initialView = "full", source: given, onOpenSessi
               developerDetails={false}
               onDeveloperDetailsChange={() => {}}
               onOpenSession={onOpenSession}
+              menu={sessionMenu(source, en, id, { open: onOpenSession, settings: () => {} })}
             />
           )}
         </header>
@@ -275,5 +277,113 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: en.composer.send })).toBeTruthy();
     await user.keyboard("{Escape}");
     expect(stop).toHaveBeenCalledWith("downloads");
+  });
+});
+
+describe("menus on blocks (note, sections 4.15 and 4.16)", () => {
+  const box = () => screen.getByRole("textbox", { name: en.composer.placeholder("Dafeiyu") });
+  const menuOf = async (element: HTMLElement) => {
+    fireEvent.contextMenu(element);
+    return screen.findByRole("menu");
+  };
+  const items = (menu: HTMLElement) => within(menu).getAllByRole("menuitem").map((item) => item.textContent);
+  // The last message is also in the live region for screen readers; the bubble comes first.
+  const bubble = (text: string | RegExp) => screen.getAllByText(text)[0]!;
+
+  it("copies a block's text, or only the part of it the user selected", async () => {
+    const user = userEvent.setup();
+    render(<Session id="presentation" />);
+    const bubble = screen.getByText("So the preparation paid off. Want to treat yourself tonight?");
+    const menu = await menuOf(bubble);
+    expect(items(menu)).toEqual([en.menu.copy, en.menu.quote, en.menu.rewind]);
+    await user.click(within(menu).getByRole("menuitem", { name: en.menu.copy }));
+    expect(await navigator.clipboard.readText()).toBe("So the preparation paid off. Want to treat yourself tonight?");
+
+    const range = document.createRange();
+    range.setStart(bubble.firstChild!, 3);
+    range.setEnd(bubble.firstChild!, 18);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    await user.click(within(await menuOf(bubble)).getByRole("menuitem", { name: en.menu.copy }));
+    expect(await navigator.clipboard.readText()).toBe("the preparation");
+  });
+
+  it("quotes a block above the composer and sends the quote with the next message", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    const send = vi.spyOn(source, "send");
+    render(<Session id="presentation" source={source} />);
+    const menu = await menuOf(bubble("Maybe the ramen place you mentioned last week?"));
+    await user.click(within(menu).getByRole("menuitem", { name: en.menu.quote }));
+    expect(screen.getByText(en.composer.quoting("Dafeiyu"))).toBeTruthy();
+    expect(document.activeElement).toBe(box());
+    await user.keyboard("Yes!{Enter}");
+    const quote = { from: "character", text: "Maybe the ramen place you mentioned last week?" };
+    expect(send).toHaveBeenCalledWith("presentation", "Yes!", quote);
+    expect(screen.queryByText(en.composer.quoting("Dafeiyu"))).toBeNull();
+    // The bubble shows what it quoted, above its text.
+    const sent = screen.getByText("Yes!");
+    expect(sent.textContent).toContain("Maybe the ramen place");
+
+    await user.click(within(await menuOf(screen.getByText("The one about the budget. But I had the numbers ready."))).getByRole("menuitem", { name: en.menu.quote }));
+    expect(screen.getByText(en.composer.quoting(en.blocks.you))).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: en.composer.removeQuote }));
+    expect(screen.queryByText(en.composer.quoting(en.blocks.you))).toBeNull();
+  });
+
+  it("edits the user's message in place, and keeps the earlier version to show again", async () => {
+    const user = userEvent.setup();
+    const source = createFakeSource("en");
+    const edit = vi.spyOn(source, "edit");
+    render(<Session id="presentation" source={source} />);
+    const original = "Tired but relieved. The Q&A went better than I expected.";
+    const menu = await menuOf(screen.getByText(original));
+    expect(items(menu)).toEqual([en.menu.copy, en.menu.quote, en.menu.edit, en.menu.rewind]);
+    await user.click(within(menu).getByRole("menuitem", { name: en.menu.edit }));
+    const editor = screen.getByRole("textbox", { name: en.menu.edit });
+    expect((editor as HTMLTextAreaElement).value).toBe(original);
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("textbox", { name: en.menu.edit })).toBeNull();
+    expect(edit).not.toHaveBeenCalled();
+
+    await user.click(within(await menuOf(screen.getByText(original))).getByRole("menuitem", { name: en.menu.edit }));
+    await user.clear(screen.getByRole("textbox", { name: en.menu.edit }));
+    await user.keyboard("Mostly relieved.{Enter}");
+    expect(edit).toHaveBeenCalledWith("presentation", "c3", "Mostly relieved.");
+    expect(screen.queryByText(original)).toBeNull();
+    expect(screen.getByText("Mostly relieved.")).toBeTruthy();
+    const versions = screen.getByRole("group", { name: en.blocks.versions(2, 2) });
+    await user.click(within(versions).getByRole("button", { name: en.blocks.previousVersion }));
+    expect(screen.getByText(original)).toBeTruthy();
+    expect(screen.getByRole("group", { name: en.blocks.versions(1, 2) })).toBeTruthy();
+  });
+
+  it("rewinds to before a tool call's step, then restores what came after", async () => {
+    const user = userEvent.setup();
+    render(<Session />);
+    const menu = await menuOf(screen.getByRole("button", { name: /Used 3 tools/ }));
+    expect(items(menu)).toEqual([en.menu.copy, en.menu.rewind]);
+    await user.click(within(menu).getByRole("menuitem", { name: en.menu.rewind }));
+    expect(screen.queryByText(/Saturday looks great/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /Used 3 tools/ })).toBeNull();
+    expect(screen.getByText(en.blocks.rewound)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: en.blocks.restore }));
+    expect(screen.getByText(/Saturday looks great/)).toBeTruthy();
+    expect(screen.queryByText(en.blocks.rewound)).toBeNull();
+  });
+
+  it("offers only Copy in an archived session", async () => {
+    render(<Session id="gift" />);
+    const menu = await menuOf(bubble(/A birthday gift for Mom/));
+    expect(items(menu)).toEqual([en.menu.copy]);
+  });
+
+  it("puts the session's actions in the header's menu, with export and developer details", async () => {
+    const user = userEvent.setup();
+    render(<Session id="presentation" />);
+    await user.click(screen.getByRole("button", { name: en.header.more }));
+    const menu = await screen.findByRole("menu");
+    expect(items(menu)).toEqual([en.menu.branch, en.menu.carryOn, en.menu.summarize, en.menu.settings, en.menu.archive, en.header.exportJsonl]);
+    expect(within(menu).getByRole("menuitemcheckbox", { name: en.header.developerDetails })).toBeTruthy();
   });
 });

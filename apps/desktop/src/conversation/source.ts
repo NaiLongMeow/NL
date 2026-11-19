@@ -9,7 +9,7 @@
  * without changing the screens.
  */
 
-import type { Conversation, QuestionAnswer, SessionKind, SessionLink } from "./model";
+import type { Conversation, QuestionAnswer, Quote, SessionKind, SessionLink } from "./model";
 
 /** A device of the account, as the sidebar groups sessions by it (note, section 5). */
 export interface Device {
@@ -71,11 +71,12 @@ export interface SessionSource {
   /** Calls `listener` after any change; returns a function that stops the calls. */
   subscribe(listener: () => void): () => void;
   /**
-   * Sends the user's message. During a turn it cuts in at the turn's next
-   * step (the default the user chose, note section 4.8). While a question
-   * waits, the message is its answer, in the user's own words.
+   * Sends the user's message, quoting a block when `quote` is given (note,
+   * section 4.15). During a turn it cuts in at the turn's next step (the
+   * default the user chose, note section 4.8). While a question waits, the
+   * message is its answer, in the user's own words.
    */
-  send(id: string, text: string): void;
+  send(id: string, text: string, quote?: Quote): void;
   /** Stops the running turn (P7). */
   stop(id: string): void;
   /** Answers an approval request (T7). */
@@ -91,8 +92,33 @@ export interface SessionSource {
   end(id: string): void;
   /** Starts a session; returns its id. */
   start(kind: SessionKind): string;
-  /** Starts a session from an archived session's summary (S5); returns its id. */
-  carryOn(archivedId: string): string;
+  /**
+   * Starts a session from a summary of session `id` (note, section 4.15):
+   * an archived session's summary from the archive (S5), or, for a live
+   * session, one made now. The session itself stays as it is. Returns the
+   * new session's id.
+   */
+  carryOn(id: string): string;
+  /**
+   * Starts a session that holds session `id`'s conversation as it is now,
+   * on the same device; returns its id (note, section 4.15).
+   */
+  branch(id: string): string;
+  /** Summarizes the session now (S5); nothing happens while a turn runs. */
+  compact(id: string): void;
+  rename(id: string, title: string): void;
+  /**
+   * Returns the session to the checkpoint before the block `blockId`, which
+   * is the one before the block's step (note, section 4.16). A running turn
+   * stops first. Nothing is removed from the record.
+   */
+  rewind(id: string, blockId: string): void;
+  /** Sends `text` in place of the user's message `blockId`: a rewind to before it, then a send. */
+  edit(id: string, blockId: string, text: string): void;
+  /** Shows way `index` (from 0) of the ways the conversation went from the checkpoint `fork` ("" for the start). */
+  showVersion(id: string, fork: string, index: number): void;
+  /** Brings a rewound session back to the newest point after its checkpoint. */
+  restore(id: string): void;
   /** How long an idle session waits before it archives itself, in minutes (note, section 4.11). */
   setIdleLimit(minutes: number): void;
 }

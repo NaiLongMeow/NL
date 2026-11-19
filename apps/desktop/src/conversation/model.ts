@@ -8,6 +8,11 @@
  * and markers. Screens only render blocks; a `SessionSource` (source.ts)
  * supplies them. In Stage 1 the source is a scripted fake; Stage 3 builds
  * blocks from the harness's events.
+ *
+ * The blocks are the path from the session's first checkpoint to its head
+ * (sections 4.15 and 4.16): a rewind leaves later blocks out of the list but
+ * keeps them in the record, a versions row marks where the path forks, and
+ * a rewound marker ends the list while later blocks wait to be restored.
  */
 
 export type ToolStatus = "running" | "done" | "failed" | "cancelled" | "waiting" | "offline";
@@ -83,6 +88,12 @@ export interface QuestionRequest {
   answer?: QuestionAnswer;
 }
 
+/** A block quoted in the user's message (note, section 4.15): who wrote it and its text. */
+export interface Quote {
+  from: "user" | "character";
+  text: string;
+}
+
 /** The two kinds of session (note, section 4.10). */
 export type SessionKind = "shared" | "device";
 
@@ -116,10 +127,11 @@ export interface DispatchedTask {
 }
 
 export type Block =
-  | { kind: "user"; id: string; text: string; time: string; pending?: boolean }
+  | { kind: "user"; id: string; text: string; time: string; pending?: boolean; quote?: Quote }
   | { kind: "message"; id: string; text: string; time: string; streaming?: boolean }
   | { kind: "working"; id: string; text: string }
   | { kind: "thinking"; id: string; seconds: number }
+  /** A tool call; the block's id is the call's id. */
   | { kind: "tool"; id: string; call: ToolCall }
   | { kind: "approval"; id: string; request: ApprovalRequest }
   | { kind: "question"; id: string; question: QuestionRequest }
@@ -131,7 +143,16 @@ export type Block =
   | { kind: "error"; id: string; reason: string }
   | { kind: "break"; id: string }
   /** The session was ended by the user, or archived itself after being idle (note, section 4.11). */
-  | { kind: "archived"; id: string; reason: "ended" | "idle"; idleMinutes?: number };
+  | { kind: "archived"; id: string; reason: "ended" | "idle"; idleMinutes?: number }
+  /**
+   * The path went more than one way from the checkpoint `fork` ("" before
+   * the first block), and this is way `index` of `count`, counted from 0 in
+   * the order they began (note, section 4.16). It stands before the first
+   * block of that way.
+   */
+  | { kind: "versions"; id: string; fork: string; index: number; count: number }
+  /** The session was rewound here, and what came after waits to be restored (note, section 4.16). */
+  | { kind: "rewound"; id: string };
 
 /** Three or more tool calls in a row fold into one group (note, section 4.4). */
 export type ShownBlock = Block | { kind: "tools"; id: string; calls: ToolCall[] };
@@ -154,6 +175,8 @@ export interface Conversation {
   device?: string;
   /** The session a dispatched task came from, for a session the harness started for it. */
   from?: SessionLink;
+  /** The session this one branched from, or carried on from a summary of (note, section 4.15). */
+  origin?: { kind: "branch" | "carry"; session: SessionLink };
   /** Other sessions may dispatch tasks to this one (note, section 4.10). */
   acceptsTasks: boolean;
   /** Ended or archived: the conversation is read-only and can be carried on. */
@@ -180,12 +203,14 @@ const CHAT_VIEW_KINDS: ReadonlySet<Block["kind"]> = new Set([
   "error",
   "break",
   "archived",
+  "versions",
+  "rewound",
 ]);
 
 /**
  * The blocks to render for a view. Chat view keeps what a chat app shows:
  * both sides' messages, approvals, questions, dispatched and received tasks,
- * and a few tips. Full view shows everything, with runs of three or more tool calls
+ * a few tips, and the rows that say where the path forks or was rewound. Full view shows everything, with runs of three or more tool calls
  * folded into a group.
  */
 export function shownBlocks(blocks: readonly Block[], view: View): ShownBlock[] {

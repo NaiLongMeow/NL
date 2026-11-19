@@ -7,14 +7,16 @@
  * and Esc stops too (P7); a message sent then cuts in at the turn's next
  * step. While the character waits for the answer to a question, what the
  * user sends is the answer (section 4.13), and the box says so. A small ring
- * shows how full the context is.
+ * shows how full the context is. A quoted block (section 4.15) shows above
+ * the text until the message is sent or the user removes it.
  */
 
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowUp, Mic, Paperclip, Square } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ArrowUp, Mic, Paperclip, Square, TextQuote, X } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import { useI18n } from "../i18n/I18n";
 import { IconButton } from "../ui/Button";
+import type { Quote } from "./model";
 import styles from "./Composer.module.css";
 
 interface Props {
@@ -23,6 +25,9 @@ interface Props {
   /** A question waits for its answer. */
   answering?: boolean;
   contextUsed: number;
+  /** The block the next message quotes. */
+  quote?: Quote;
+  onClearQuote?: () => void;
   onSend: (text: string) => void;
   onStop: () => void;
 }
@@ -32,7 +37,7 @@ const NEAR_LIMIT = 0.85;
 /** The tallest the box grows, in pixels, before it scrolls. */
 const MAX_HEIGHT = 240;
 
-export function Composer({ character, running, answering = false, contextUsed, onSend, onStop }: Props) {
+export function Composer({ character, running, answering = false, contextUsed, quote, onClearQuote, onSend, onStop }: Props) {
   const { t } = useI18n();
   const [text, setText] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
@@ -44,7 +49,15 @@ export function Composer({ character, running, answering = false, contextUsed, o
     if (!element) return;
     element.style.height = "auto";
     element.style.height = `${Math.min(element.scrollHeight, MAX_HEIGHT)}px`;
+    // Scrolling only past the tallest size: a fraction of a pixel left over at
+    // some display scales would otherwise show a scrollbar on a short text.
+    element.style.overflowY = element.scrollHeight > MAX_HEIGHT ? "auto" : "hidden";
   }, [text]);
+
+  // Quoting a block is a step towards writing about it.
+  useEffect(() => {
+    if (quote) box.current?.focus();
+  }, [quote]);
 
   const send = () => {
     if (empty) return;
@@ -72,6 +85,17 @@ export function Composer({ character, running, answering = false, contextUsed, o
   return (
     <div className={styles.dock}>
       <div className={styles.composer} onClick={() => box.current?.focus()}>
+        {quote && (
+          <div className={styles.quote}>
+            <TextQuote aria-hidden />
+            <span className={styles.quoteText}>
+              <strong>{t.composer.quoting(quote.from === "user" ? t.blocks.you : character)}</strong> {quote.text}
+            </span>
+            <IconButton label={t.composer.removeQuote} size="sm" onClick={onClearQuote}>
+              <X />
+            </IconButton>
+          </div>
+        )}
         <textarea
           ref={box}
           className={styles.input}

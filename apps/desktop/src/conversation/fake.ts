@@ -17,12 +17,28 @@
  * - "presentation", a plain chat that does not accept tasks;
  * - an archive of earlier sessions to carry on from.
  *
+ * Each live session keeps an append-only record (record.ts), so that
+ * rewinding, editing, versions, branches, and carrying on behave as the
+ * note describes (4.15, 4.16): nothing the user does removes a line.
+ *
  * Nothing here talks to a model. Stage 3 replaces this with a source built
  * on the harness's events, behind the same interface (source.ts).
  */
 
 import type { Locale } from "../i18n/messages";
 import { characterState, pendingQuestion, type Block, type Conversation, type DispatchedTask, type QuestionAnswer, type SessionKind, type SessionLink, type ToolCall } from "./model";
+import {
+  appendBlock,
+  checkpointBefore,
+  childrenOf,
+  headOf,
+  moveHead,
+  newestBelow,
+  pathTo,
+  recordOf,
+  viewOf,
+  type SessionRecord,
+} from "./record";
 import type { ArchivedSession, Device, SessionSource, SessionStatus, SessionSummary } from "./source";
 
 /** Texts of the fake data, which plays the part of model output and of names the user chose. */
@@ -37,6 +53,7 @@ const text = {
     thinking: "Thinking…",
     reply: "This is a preview on scripted data. Real sessions arrive in Stage 3.",
     newSession: "New session",
+    branchTitle: (title: string) => `${title} (branch)`,
     justNow: "Just now",
     endedSummary: "Summary saved.",
 
@@ -154,6 +171,7 @@ const text = {
     thinking: "思考中…",
     reply: "这是用脚本数据做的预览，真正的会话在第 3 阶段接入。",
     newSession: "新会话",
+    branchTitle: (title: string) => `${title}（分支）`,
     justNow: "刚刚",
     endedSummary: "摘要已保存。",
 
@@ -283,13 +301,38 @@ function devices(t: Texts): Device[] {
   ];
 }
 
-/** A live session of the fake, with what the sidebar needs besides its conversation. */
-interface Live {
+/** A scripted session as it starts, with what the sidebar needs besides its conversation. */
+interface Scripted {
   conversation: Conversation;
   /** The device of a device session, by node id. */
   deviceId?: string;
   /** Minutes the session has been idle so far, for its archive countdown. */
   idleFor: number;
+  /** Blocks that share a step, such as a response with its tool calls; every other block is a step of its own. */
+  steps?: string[][];
+}
+
+/** A live session of the fake. */
+interface Live {
+  /** The conversation without its blocks, which come from the record. */
+  meta: Omit<Conversation, "blocks">;
+  /** The session's append-only record (record.ts). */
+  record: SessionRecord;
+  /**
+   * Blocks that changed after they were appended: an approval or a question
+   * answered, a call cancelled, a message that cut in taken up. A real record
+   * appends such changes as events that the view folds into the block; the
+   * fake keeps the folded block.
+   */
+  folded: Map<string, Block>;
+  /** The device of a device session, by node id. */
+  deviceId?: string;
+  /** Minutes the session has been idle so far, for its archive countdown. */
+  idleFor: number;
+  /** The canned reply on its way, which stopping and rewinding cancel. */
+  reply?: ReturnType<typeof setTimeout>;
+  /** What the screens read: rebuilt, as a new object, whenever the session changes. */
+  conversation: Conversation;
 }
 
 function session(
@@ -300,7 +343,7 @@ function session(
   return { acceptsTasks: true, contextUsed: 0.08, character: { name: t.character }, ...conversation };
 }
 
-function scripted(t: Texts): Live[] {
+function scripted(t: Texts): Scripted[] {
   const errands: SessionLink = { id: "errands", title: t.errandsTitle };
   const dispatched: DispatchedTask[] = [
     {
@@ -448,6 +491,10 @@ function scripted(t: Texts): Live[] {
   return [
     {
       idleFor: 4,
+      steps: [
+        ["e-th", "e-w", "e-d"],
+        ["e-m1", "e-m2"],
+      ],
       conversation: session(
         {
           id: "errands",
@@ -468,6 +515,7 @@ function scripted(t: Texts): Live[] {
     },
     {
       idleFor: 1,
+      steps: [["b-t1", "b-t2"]],
       conversation: session(
         {
           id: "bills",
@@ -511,6 +559,12 @@ function scripted(t: Texts): Live[] {
     {
       deviceId: "laptop",
       idleFor: 0,
+      // One response searched and read three things at once; the next sent two messages.
+      steps: [
+        ["th1", "w1", "t1", "t2", "t3"],
+        ["m1", "m2"],
+        ["w2", "t5", "a1"],
+      ],
       conversation: session(
         {
           id: "hike",
@@ -527,6 +581,7 @@ function scripted(t: Texts): Live[] {
     {
       deviceId: "laptop",
       idleFor: 0,
+      steps: [["dl-w", "dl-t1"]],
       conversation: session(
         {
           id: "downloads",
@@ -744,13 +799,6 @@ function statusOf(live: Live, idleLimit: number): SessionStatus {
   }
 }
 
-/** The blocks with the question `questionId` answered. */
-function answered(blocks: readonly Block[], questionId: string, answer: QuestionAnswer): Block[] {
-  return blocks.map((block) =>
-    block.kind === "question" && block.question.id === questionId ? { ...block, question: { ...block.question, answer } } : block,
-  );
-}
-
 /** The words of an answer, as the character's reply repeats them. */
 function answerText(answer: QuestionAnswer): string {
   if ("skipped" in answer) return "";
@@ -760,7 +808,8 @@ function answerText(answer: QuestionAnswer): string {
 export function createFakeSource(locale: Locale): SessionSource {
   const t = text[locale];
   const deviceList = devices(t);
-  const live = new Map(scripted(t).map((item) => [item.conversation.id, item]));
+  const self = deviceList.find((device) => device.self)!;
+  const live = new Map<string, Live>();
   let archive = archived(t);
   const ended = new Map<string, Conversation>();
   let idleLimit = DEFAULT_IDLE_LIMIT;
@@ -768,15 +817,34 @@ export function createFakeSource(locale: Locale): SessionSource {
   let counter = 0;
   const nextId = (prefix: string) => `${prefix}-${++counter}`;
 
+  const snapshot = (item: Live): Conversation => ({
+    ...item.meta,
+    blocks: viewOf(item.record, (block) => item.folded.get(block.id) ?? block),
+  });
+  const add = (conversation: Conversation, extra: Omit<Scripted, "conversation">, record?: SessionRecord) => {
+    const { blocks, ...meta } = conversation;
+    const item: Live = {
+      meta,
+      record: record ?? recordOf(blocks, extra.steps),
+      folded: new Map(),
+      deviceId: extra.deviceId,
+      idleFor: extra.idleFor,
+      conversation,
+    };
+    item.conversation = snapshot(item);
+    live.set(meta.id, item);
+  };
+  for (const { conversation, ...extra } of scripted(t)) add(conversation, extra);
+
   const summarize = (): SessionSummary[] =>
     [...live.values()].map((item) => ({
-      id: item.conversation.id,
-      title: item.conversation.title,
-      kind: item.conversation.kind,
+      id: item.meta.id,
+      title: item.meta.title,
+      kind: item.meta.kind,
       deviceId: item.deviceId,
       status: statusOf(item, idleLimit),
-      acceptsTasks: item.conversation.acceptsTasks,
-      from: item.conversation.from,
+      acceptsTasks: item.meta.acceptsTasks,
+      from: item.meta.from,
     }));
   let list = summarize();
   const archivedConversations = new Map<string, Conversation>();
@@ -785,29 +853,52 @@ export function createFakeSource(locale: Locale): SessionSource {
     list = summarize();
     for (const listener of listeners) listener();
   };
-  const update = (id: string, change: (item: Live) => Live) => {
-    const current = live.get(id);
-    if (!current) return;
-    live.set(id, change(current));
+  /** Rebuilds what the screens read after `item` changed, and tells them. */
+  const refresh = (item: Live) => {
+    item.conversation = snapshot(item);
     changed();
   };
-  const updateConversation = (id: string, change: (conversation: Conversation) => Conversation) =>
-    update(id, (item) => ({ ...item, idleFor: 0, conversation: change(item.conversation) }));
+
+  /** The blocks on the path to the head, as they are now. */
+  const pathBlocks = (item: Live): Block[] =>
+    pathTo(item.record, headOf(item.record)).map((line) => item.folded.get(line.id) ?? line.block);
+  const fold = (item: Live, test: (block: Block) => boolean, change: (block: Block) => Block) => {
+    for (const block of pathBlocks(item)) if (test(block)) item.folded.set(block.id, change(block));
+  };
+  const append = (item: Live, block: Block) => {
+    item.record = appendBlock(item.record, block);
+    item.idleFor = 0;
+  };
 
   const now = () => new Date().toTimeString().slice(0, 5);
-  const reply = (id: string, message: string) => {
-    setTimeout(() => {
-      updateConversation(id, (conversation) => ({
-        ...conversation,
-        activity: undefined,
-        blocks: [
-          ...conversation.blocks.map((block) => (block.kind === "user" && block.pending ? { ...block, pending: false } : block)),
-          { kind: "message", id: nextId("m"), text: message, time: now() },
-        ],
-      }));
+  const reply = (item: Live, message: string) => {
+    if (item.reply !== undefined) clearTimeout(item.reply);
+    item.reply = setTimeout(() => {
+      item.reply = undefined;
+      fold(
+        item,
+        (block) => block.kind === "user" && block.pending === true,
+        (block) => ({ ...block, pending: false }),
+      );
+      append(item, { kind: "message", id: nextId("m"), text: message, time: now() });
+      item.meta = { ...item.meta, activity: undefined };
+      refresh(item);
     }, FAKE_REPLY_DELAY_MS);
   };
-  const self = deviceList.find((device) => device.self)!;
+  /** Stops the running turn (P7): the reply on its way is dropped, and running calls are cancelled. */
+  const stopTurn = (item: Live) => {
+    if (item.reply !== undefined) clearTimeout(item.reply);
+    item.reply = undefined;
+    fold(
+      item,
+      (block) => block.kind === "tool" && (block.call.status === "running" || block.call.status === "waiting"),
+      (block) => (block.kind === "tool" ? { ...block, call: { ...block.call, status: "cancelled" } } : block),
+    );
+    item.meta = { ...item.meta, waitsForDevice: false, activity: undefined };
+  };
+  const thinking = (item: Live) => {
+    item.meta = { ...item.meta, activity: { text: t.thinking } };
+  };
 
   return {
     devices: () => deviceList,
@@ -833,76 +924,87 @@ export function createFakeSource(locale: Locale): SessionSource {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    send(id, message) {
-      const current = live.get(id)?.conversation;
-      const question = current && pendingQuestion(current);
+    send(id, message, quote) {
+      const item = live.get(id);
+      if (!item) return;
+      const question = pendingQuestion(item.conversation);
+      const user: Block = { kind: "user", id: nextId("u"), text: message, time: now(), ...(quote ? { quote } : {}) };
       if (question) {
         // The message is the answer, in the user's own words; the turn goes on.
-        updateConversation(id, (conversation) => ({
-          ...conversation,
-          blocks: [
-            ...answered(conversation.blocks, question.id, { choices: [], other: message }),
-            { kind: "user", id: nextId("u"), text: message, time: now() },
-          ],
-          activity: { text: t.thinking },
-        }));
-        reply(id, t.photosAnswered(message));
+        fold(
+          item,
+          (block) => block.kind === "question" && block.question.id === question.id,
+          (block) => (block.kind === "question" ? { ...block, question: { ...block.question, answer: { choices: [], other: message } } } : block),
+        );
+        append(item, user);
+        thinking(item);
+        refresh(item);
+        reply(item, t.photosAnswered(message));
         return;
       }
-      const running = current?.activity !== undefined;
-      updateConversation(id, (conversation) => ({
-        ...conversation,
-        // During a turn the message waits for the next step (it cuts in).
-        blocks: [...conversation.blocks, { kind: "user", id: nextId("u"), text: message, time: now(), pending: running }],
-        activity: conversation.activity ?? { text: t.thinking },
-      }));
-      if (!running) reply(id, t.reply);
+      const running = item.meta.activity !== undefined;
+      // During a turn the message waits for the next step (it cuts in).
+      append(item, { ...user, pending: running });
+      if (!running) thinking(item);
+      refresh(item);
+      if (!running) reply(item, t.reply);
     },
     stop(id) {
-      update(id, (item) => ({
-        ...item,
-        conversation: {
-          ...item.conversation,
-          waitsForDevice: false,
-          activity: undefined,
-          blocks: item.conversation.blocks.map((block) =>
-            block.kind === "tool" && (block.call.status === "running" || block.call.status === "waiting")
-              ? { ...block, call: { ...block.call, status: "cancelled" } }
-              : block,
-          ),
-        },
-      }));
+      const item = live.get(id);
+      if (!item) return;
+      stopTurn(item);
+      refresh(item);
     },
     answer(id, approvalId, decision) {
-      updateConversation(id, (conversation) => ({
-        ...conversation,
-        blocks: conversation.blocks.map((block) =>
-          block.kind === "approval" && block.request.id === approvalId ? { ...block, request: { ...block.request, decision } } : block,
-        ),
-        activity: { text: t.thinking },
-      }));
-      reply(id, decision === "allowed" ? t.allowedReply : t.deniedReply);
+      const item = live.get(id);
+      if (!item) return;
+      fold(
+        item,
+        (block) => block.kind === "approval" && block.request.id === approvalId,
+        (block) => (block.kind === "approval" ? { ...block, request: { ...block.request, decision } } : block),
+      );
+      item.idleFor = 0;
+      thinking(item);
+      refresh(item);
+      reply(item, decision === "allowed" ? t.allowedReply : t.deniedReply);
     },
     answerQuestion(id, questionId, answer) {
-      updateConversation(id, (conversation) => ({
-        ...conversation,
-        blocks: answered(conversation.blocks, questionId, answer),
-        activity: { text: t.thinking },
-      }));
-      reply(id, "skipped" in answer ? t.photosSkipped : t.photosAnswered(answerText(answer)));
+      const item = live.get(id);
+      if (!item) return;
+      fold(
+        item,
+        (block) => block.kind === "question" && block.question.id === questionId,
+        (block) => (block.kind === "question" ? { ...block, question: { ...block.question, answer } } : block),
+      );
+      item.idleFor = 0;
+      thinking(item);
+      refresh(item);
+      reply(item, "skipped" in answer ? t.photosSkipped : t.photosAnswered(answerText(answer)));
     },
     setAcceptsTasks(id, accepts) {
-      update(id, (item) => ({ ...item, conversation: { ...item.conversation, acceptsTasks: accepts } }));
+      const item = live.get(id);
+      if (!item) return;
+      item.meta = { ...item.meta, acceptsTasks: accepts };
+      refresh(item);
+    },
+    rename(id, title) {
+      const item = live.get(id);
+      const name = title.trim();
+      if (!item || !name) return;
+      item.meta = { ...item.meta, title: name };
+      refresh(item);
     },
     end(id) {
       const item = live.get(id);
       if (!item) return;
-      const lastMessage = [...item.conversation.blocks].reverse().find((block) => block.kind === "message");
+      if (item.reply !== undefined) clearTimeout(item.reply);
+      const blocks = pathBlocks(item);
+      const lastMessage = [...blocks].reverse().find((block) => block.kind === "message");
       const closed: Conversation = {
-        ...item.conversation,
+        ...item.meta,
         archived: true,
         activity: undefined,
-        blocks: [...item.conversation.blocks, { kind: "archived", id: nextId("a"), reason: "ended" }],
+        blocks: [...blocks, { kind: "archived", id: nextId("a"), reason: "ended" }],
       };
       live.delete(id);
       ended.set(id, closed);
@@ -922,37 +1024,112 @@ export function createFakeSource(locale: Locale): SessionSource {
     },
     start(kind: SessionKind) {
       const id = nextId("new");
-      live.set(id, {
-        deviceId: kind === "device" ? self.id : undefined,
-        idleFor: 0,
-        conversation: session(
-          { id, title: t.newSession, kind, device: kind === "device" ? self.name : undefined, blocks: [], contextUsed: 0 },
-          t,
-        ),
-      });
+      add(
+        session({ id, title: t.newSession, kind, device: kind === "device" ? self.name : undefined, blocks: [], contextUsed: 0 }, t),
+        { deviceId: kind === "device" ? self.id : undefined, idleFor: 0 },
+      );
       changed();
       return id;
     },
-    carryOn(archivedId) {
-      const entry = archive.find((candidate) => candidate.id === archivedId);
-      const id = nextId("carry");
-      live.set(id, {
-        deviceId: entry?.kind === "device" ? self.id : undefined,
-        idleFor: 0,
-        conversation: session(
+    carryOn(id) {
+      const item = live.get(id);
+      const entry = archive.find((candidate) => candidate.id === id);
+      const from = item?.meta ?? entry;
+      const newId = nextId("carry");
+      const kind = from?.kind ?? "shared";
+      // A live session's summary is made now (a fork that leaves the session as it is); an archived one's is in the archive.
+      add(
+        session(
           {
-            id,
-            title: entry?.title ?? t.newSession,
-            kind: entry?.kind ?? "shared",
-            device: entry?.kind === "device" ? self.name : undefined,
+            id: newId,
+            title: from?.title ?? t.newSession,
+            kind,
+            device: kind === "device" ? self.name : undefined,
+            origin: from ? { kind: "carry", session: { id, title: from.title, ...(item ? {} : { archived: true }) } } : undefined,
             blocks: [{ kind: "summarized", id: nextId("s") }],
             contextUsed: 0.04,
           },
           t,
         ),
-      });
+        { deviceId: kind === "device" ? self.id : undefined, idleFor: 0 },
+      );
       changed();
-      return id;
+      return newId;
+    },
+    branch(id) {
+      const item = live.get(id);
+      if (!item) return id;
+      // A turn that runs or waits (for an approval, an answer, or its device) has not finished its
+      // step, so the branch starts at the checkpoint before that step.
+      const head = headOf(item.record);
+      const unfinished = characterState(item.conversation) !== "idle";
+      const at = unfinished && head !== null ? (checkpointBefore(item.record, head) ?? null) : head;
+      let record: SessionRecord = [];
+      for (const line of pathTo(item.record, at)) record = appendBlock(record, item.folded.get(line.id) ?? line.block, line.step);
+      const newId = nextId("branch");
+      add(
+        {
+          ...item.meta,
+          id: newId,
+          title: t.branchTitle(item.meta.title),
+          from: undefined,
+          origin: { kind: "branch", session: { id, title: item.meta.title } },
+          activity: undefined,
+          waitsForDevice: false,
+          blocks: [],
+        },
+        { deviceId: item.deviceId, idleFor: 0 },
+        record,
+      );
+      changed();
+      return newId;
+    },
+    compact(id) {
+      const item = live.get(id);
+      if (!item || characterState(item.conversation) !== "idle") return;
+      append(item, { kind: "summarized", id: nextId("s") });
+      item.meta = { ...item.meta, contextUsed: 0.05 };
+      refresh(item);
+    },
+    rewind(id, blockId) {
+      const item = live.get(id);
+      const to = item && checkpointBefore(item.record, blockId);
+      if (!item || to === undefined) return;
+      stopTurn(item);
+      item.record = moveHead(item.record, to, nextId("head"));
+      item.idleFor = 0;
+      refresh(item);
+    },
+    edit(id, blockId, message) {
+      const item = live.get(id);
+      const to = item && checkpointBefore(item.record, blockId);
+      if (!item || to === undefined) return;
+      stopTurn(item);
+      const old = pathBlocks(item).find((block) => block.id === blockId);
+      const quote = old?.kind === "user" ? old.quote : undefined;
+      // The new message follows the old one's checkpoint: a second way from there, which becomes the head.
+      item.record = appendBlock(item.record, { kind: "user", id: nextId("u"), text: message, time: now(), ...(quote ? { quote } : {}) }, undefined, to);
+      item.idleFor = 0;
+      thinking(item);
+      refresh(item);
+      reply(item, t.reply);
+    },
+    showVersion(id, fork, index) {
+      const item = live.get(id);
+      const way = item && childrenOf(item.record, fork === "" ? null : fork)[index];
+      if (!item || !way) return;
+      stopTurn(item);
+      item.record = moveHead(item.record, newestBelow(item.record, way.id), nextId("head"));
+      refresh(item);
+    },
+    restore(id) {
+      const item = live.get(id);
+      if (!item) return;
+      const head = headOf(item.record);
+      const newest = newestBelow(item.record, head);
+      if (newest === head) return;
+      item.record = moveHead(item.record, newest, nextId("head"));
+      refresh(item);
     },
     setIdleLimit(minutes) {
       idleLimit = minutes;
