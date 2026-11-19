@@ -48,7 +48,9 @@ pub fn navigation_guard<R: Runtime>(dev_url: Option<Url>) -> TauriPlugin<R> {
 
 /// Whether this build keeps the browser's keys and context menu: only a
 /// development build started with `NL_DEV_BROWSER_KEYS=1` (the variable's
-/// value is passed in, so that tests need not touch the environment).
+/// value is passed in, so that tests need not touch the environment). Only
+/// Windows has the keys to turn off (`disable_browser_keys`).
+#[cfg(windows)]
 pub fn keeps_browser_keys(debug_build: bool, variable: Option<&std::ffi::OsStr>) -> bool {
     debug_build && variable.is_some_and(|value| value == "1")
 }
@@ -84,6 +86,7 @@ pub fn disable_browser_keys<R: Runtime>(window: &tauri::WebviewWindow<R>) -> tau
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
     #[test]
     fn only_a_development_build_asked_to_keeps_the_browser_keys() {
         let one = std::ffi::OsStr::new("1");
