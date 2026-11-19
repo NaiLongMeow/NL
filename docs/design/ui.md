@@ -6,6 +6,8 @@
 
 **Revision of 2026-11-19.** The user chose the default avatar, a jelly-like ball (10), and two pet modes: light, the ball or an avatar made of images, and Live2D, livelier and heavier, with avatars that users add themselves, usually by asking an agent that has the `nl-avatar` skill (5, 6, 10).
 
+**Second revision of 2026-11-19.** The user asked for a menu on each kind of control: on a session, Summarize now, Archive, Settings, Branch, and Carry on (话题续聊) in a new session from a summary; on a block, Quote and Copy, and Edit on the user's own messages, which rewinds. Every step of the loop is a checkpoint that a session can rewind to, as in pi, and the session's JSONL is only ever appended to (4.15, 4.16).
+
 This note describes how every NL end looks and behaves on screen: the visual language, the conversation screen that all ends share, the screens of each end, and what those screens need from the harness and the gateway. It follows the product rules in [product-direction](../../.agents/memory/product-direction.md) and cites the rules in [architecture-invariants](../../.agents/memory/architecture-invariants.md) by id. It does not fix exact colors, sizes, or durations, which live in the design tokens (section 11), and it describes avatars only as far as the screens need them: their format is published with the `nl-avatar` agent skill ([format](../../skills/nl-avatar/references/format.md)).
 
 ## 1. Who uses what
@@ -62,7 +64,7 @@ Each device remembers the choice. Defaults *(user, 2026-11-18)*: full view in th
 
 | Block | Full view | Chat view |
 |---|---|---|
-| User message | Bubble on the right, neutral | Same |
+| User message | Bubble on the right, neutral; a quote it carries shows above its text (4.15) | Same |
 | Message (the message tool) | Bubble on the left with the avatar, tinted with the pack's accent; streams | Same |
 | Working text | Full-width text, slightly muted | Hidden |
 | Thinking | One collapsed line, "Thought for 12 s" | Hidden |
@@ -75,6 +77,8 @@ Each device remembers the choice. Defaults *(user, 2026-11-18)*: full view in th
 | Memory written | Thin marker "Remembered: …" with View and Undo | Gray tip, on by default (a setting) |
 | Notice received | Thin marker: "Memory from Phone: …", "Digest from another session" | Hidden |
 | Compact | Divider "Earlier part summarized · View summary" | Hidden |
+| Versions | Thin row "‹ 2 / 2 ›" where the conversation went two ways from one checkpoint; it switches between them (4.16) | Same |
+| Rewound | Marker at the end, "Rewound here", with Restore (4.16) | Same |
 | Error | Row with the reason and Retry | Gray tip with Retry |
 | Break reminder, crisis help | System card | Same |
 | Session archived | Divider "Ended · summary saved" or "Idle for 30 min · archived", with Carry on | Same |
@@ -122,6 +126,7 @@ In chat view, while a turn runs and no message is streaming, a line under the la
 
 - Multi-line; grows with its content. Enter sends and Shift+Enter starts a new line. Enter never sends while an input method is composing (Chinese, Japanese).
 - Attach by pasting, dragging, or the attach button; attachments show as chips above the text.
+- A quote (4.15) shows above the text too: who wrote the quoted block, its first line, and a button that removes it.
 - A microphone button; where voice works, hold to talk. The reserved hue shows while it listens.
 - `/` opens the commands: new session, compact now, end session, open memory, switch view.
 - While the character replies, the send button becomes Stop, and Esc stops too (P7). The user can still type and send *(user, 2026-11-18)*. By default a message sent during a turn cuts in: it shows as pending and is inserted at the turn's next step, as most harnesses do. A setting switches to queueing instead: the message waits until the turn ends and then starts the next turn.
@@ -129,8 +134,8 @@ In chat view, while a turn runs and no message is streaming, a line under the la
 
 ### 4.9 Header, scrolling, and screen readers
 
-- The header holds the character's name with an "AI" tag (product rule 5) and a small avatar showing the current cue, the session's title, its kind (shared, or the device it belongs to), the session a dispatched task came from, the Accept tasks switch (4.10), the view switch, End session, and a menu: rename, compact now, export as JSONL, developer details. On the desktop the header sits in the title bar (section 5).
-- End session takes effect at once (product rule 4): the turn stops, and the session is closed, summarized, and archived. Tasks it dispatched keep running (4.12).
+- The header holds the character's name with an "AI" tag (product rule 5) and a small avatar showing the current cue, the session's title, its kind (shared, or the device it belongs to), the session a dispatched task came from, the Accept tasks switch (4.10), the view switch, End session, and a menu with the session's actions (4.15), Export as JSONL, and developer details. On the desktop the header sits in the title bar (section 5).
+- End session takes effect at once (product rule 4): the turn stops, and the session is closed, summarized, and archived. Tasks it dispatched keep running (4.12). Archive in a session's menu (4.15) does the same.
 - The view stays at the bottom while content streams, unless the user has scrolled up; then a "New messages" button appears. Long transcripts are virtualized.
 - Screen readers announce each finished message through a polite live region, not every streamed token.
 
@@ -176,6 +181,37 @@ The archive lists the summaries (the compacts folder, S3), newest first, with th
 - Notifications go through each system's own notification service. They are on by default, and the user can turn them off in Settings, for instance not to be disturbed; the pet's bubbles still show. A notification has the character's name as its title and the start of the message as its text.
 - Proposal: only the messages of this device's own sessions and of shared sessions count, so that another device's session reaches the user through that device and nothing is announced twice.
 
+### 4.15 Menus
+
+*(user, 2026-11-19: each kind of control has its own right-click menu)* A right click, the menu key, or Shift+F10 on a session or a block opens that thing's menu; on the phone a long press opens the same actions as a sheet (section 7). The menus are Radix context menus (section 12), usable from the keyboard and with a screen reader, and they take the place of the browser's menu (section 5).
+
+**A session**, from its sidebar row and from the header's menu (4.9):
+
+- **Branch** *(user)*: starts a new session of the same kind, on the same device, that holds this session's conversation as it is now, so that one line of thought can go two ways. Its record starts with a copy of this session's (4.16), so its first request repeats a prompt the provider has just seen and hits the prefix cache. The two sessions then go on separately.
+- **Carry on** *(user: 话题续聊)*: starts a new session from a summary of this one, with the summary at its top and a link back, so that the topic goes on with a short context. A live session is summarized now, as a fork (M4); an archived one uses its summary from the archive (S5). The old session stays as it is: a live one goes on, and archives itself when idle.
+- **Summarize now** *(user)*: compacts the session at once (S5); a divider marks the place (4.2). Unavailable while a turn runs.
+- **Settings** *(user)*: a dialog with the session's title and its Accept tasks switch (4.10). Renaming lives here.
+- **Archive** *(user)*: the same as End session (4.9).
+
+An archived session, in the archive or open read-only, offers Carry on only.
+
+**A block**:
+
+- **Copy** *(user)*: the selected text within the block, or the whole block when nothing in it is selected. A tool row copies its input and output.
+- **Quote** *(user)*, on messages, the user's messages, and working text: puts the block above the composer as a quote (4.8). The message sent next carries it: its bubble shows the quote above the text, and the model receives it as quoted text before the message.
+- **Edit** *(user)*, on the user's own messages: the bubble becomes an editor in place, with Cancel and Send. Send rewinds to before the message and sends the new text from there (4.16); the earlier version stays and can be shown again.
+- **Rewind to before this** *(user)*, on messages, the user's messages, working text, thinking, and tool rows: returns the session to the checkpoint before the block (4.16).
+
+Rewinding and editing stop a running turn first (P7). In an archived session, blocks offer Copy only. Cards (approvals, questions, dispatch, received tasks) and markers keep their own buttons and have no menu.
+
+### 4.16 Checkpoints and rewinding
+
+*(user, 2026-11-19)* Every step of the loop is a checkpoint, as in pi: the user's message, and each response of the model together with the results of its tool calls. The user can rewind to before any of them, a tool call included, rather than only to before their own messages, which is all Claude Code and Codex allow. The prompt at a checkpoint is one that was sent before, so a rewind soon after hits the provider's prefix cache (M2). The session's JSONL is only ever appended to: a rewind adds a line and removes none (S2).
+
+- **Rewound.** The conversation ends at the checkpoint, and what came after leaves the view but stays in the record. A marker at the end says "Rewound here. What came after is kept, and what tools did is not undone", with Restore, which returns to where the session was. What the user sends next continues from the checkpoint. Only steps are checkpoints, so a block in the middle of a step, such as the second of two tool calls one response made, rewinds to before its whole step.
+- **Versions.** Where the conversation went two ways from one checkpoint, a thin row before the first block that differs reads "‹ 2 / 2 ›" and switches between the ways, in both views. Switching moves the session the way a rewind does, and adds a line too.
+- **The world is not rewound.** Files written, messages sent to others, things bought, devices moved, memory written, and tasks dispatched stay as they are, and dispatched tasks keep running in their own sessions (4.12). Proposal: when the steps left behind changed something, the harness appends a notice after the checkpoint that lists those calls, so that the model does not act on a world it no longer remembers (open question 16).
+
 ## 5. Desktop main window
 
 The layout is a title bar, a sidebar, the open session, and a detail panel that opens when needed and can be pinned.
@@ -187,9 +223,9 @@ The **sidebar** *(user, 2026-11-18)* holds search, the live sessions, and, at th
 - **Shared:** the account's shared sessions.
 - **Devices:** this device first, then the others, each with its sessions; the sessions of an offline device are dimmed.
 
-Each row shows the title and one status line: what the session is doing, that it waits for approval, for an answer (4.13), or for its device, or that it is idle, with the archive countdown. A session running a dispatched task names the session it came from.
+Each row shows the title and one status line: what the session is doing, that it waits for approval, for an answer (4.13), or for its device, or that it is idle, with the archive countdown. A session running a dispatched task names the session it came from. A row's menu holds the session's actions (4.15).
 
-**A window, not a browser.** *(user, 2026-11-18: mind the webview's F5 and F12)* The webview's browser keys are off: F5 and Ctrl+R (reload, which would drop the window's state), Ctrl+P (print), Ctrl+F (find), Ctrl+plus and Ctrl+minus (zoom), Alt+Left and Alt+Right (history), and F12 and Ctrl+Shift+I (developer tools, which release builds do not include anyway). Keys the app uses itself still reach it. The browser's context menu appears only in text fields and on selected text. The webview never leaves the app's own pages; links in messages will open in the system browser. Swiping back and pinch zoom stay off, as Tauri sets them. *(user, 2026-11-19: F5, F12, and the right-click menu still worked in the development build)* Development builds behave the same, so that what a developer tries is what users get; one started with `NL_DEV_BROWSER_KEYS=1` keeps reload, the developer tools, and the browser's menu, for debugging.
+**A window, not a browser.** *(user, 2026-11-18: mind the webview's F5 and F12)* The webview's browser keys are off: F5 and Ctrl+R (reload, which would drop the window's state), Ctrl+P (print), Ctrl+F (find), Ctrl+plus and Ctrl+minus (zoom), Alt+Left and Alt+Right (history), and F12 and Ctrl+Shift+I (developer tools, which release builds do not include anyway). Keys the app uses itself still reach it. The browser's context menu appears only in text fields and on selected text outside the app's own menus; sessions and blocks have menus of their own (4.15), whose Copy takes the selected text. The webview never leaves the app's own pages; links in messages will open in the system browser. Swiping back and pinch zoom stay off, as Tauri sets them. *(user, 2026-11-19: F5, F12, and the right-click menu still worked in the development build)* Development builds behave the same, so that what a developer tries is what users get; one started with `NL_DEV_BROWSER_KEYS=1` keeps reload, the developer tools, and the browser's menu, for debugging.
 
 The screens:
 
@@ -228,6 +264,7 @@ Every action is reachable from the keyboard, with shortcuts for new session, sea
 - **Call.** The character full screen; captions of what it says (its messages); a live transcript of what the user says; the reserved hue and "Listening" while the microphone is open; mute, end call, and switch to text. Speaking or tapping interrupts. The behavior belongs to the voice track (V1); Stage 1 builds the shell.
 - **Notifications** carry only messages, approvals, and enrollment alerts. Messages that arrive while the app is in the background become notifications unless the floating pet shows them (4.14); notifications are on by default and can be turned off. They respect quiet hours and can hide their content on the lock screen. The app never sends a notification it made up, such as "Your character misses you".
 - **Device setup.** Put the device in pairing mode (its face shows it); find it over Bluetooth; choose a Wi-Fi network; the device joins the account and gets a name; it greets the user. Errors: not found, wrong Wi-Fi password, joining failed. Stage 1 uses a fake Bluetooth layer.
+- A long press on a session or a block opens its actions (4.15) as a bottom sheet.
 - The phone is a node like any other, but the system may stop its background work. When it hands work to another device (S8), the tool row or task card says where the work runs.
 
 ## 8. Gateway sites
@@ -318,9 +355,9 @@ Avatars side by side never move in step. With reduced motion the ball keeps stil
 
 What the screens need from the harness and the gateway. The design note of the stage named settles each item.
 
-**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; question asked (its text, options, and whether several may be picked), answered, and skipped; user message queued and accepted; context usage; compact started and finished; session idle (with the time it archives), ended, and archived. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: tasks dispatched (each task's title and target session, and whether the session is new), a task's status changing, a task received, a task's result reported.
+**Harness events** (Stage 3 unless noted): turn started and ended (done, stopped, failed); working text and thinking deltas; tool call started (id, tool, display summary), input deltas, progress, result, failure, cancellation; message started, deltas, and finished, with its expression and attachments; finish accepted or refused; approval requested and resolved; question asked (its text, options, and whether several may be picked), answered, and skipped; user message queued and accepted; context usage; compact started and finished; the session moved to another checkpoint: a rewind, an edit, or another version shown (4.16); session idle (with the time it archives), ended, and archived. Stage 4: memory written (path, summary, source, device), notice received, organizing started and finished. Stage 5: tasks dispatched (each task's title and target session, and whether the session is new), a task's status changing, a task received, a task's result reported.
 
-**Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends, or answering the question that waits; stop; answer an approval; answer or skip a question; start a shared or a device session; end a session; compact now; set whether a session accepts tasks; set the idle time; carry on from a summary; list the live sessions of every device, with their kind, device, status, and idle deadline; list the archive; open an archived session read-only; route the pet's input to this device's current session.
+**Harness commands:** send a user message with attachments, cutting in at the next step or queued until the turn ends, or answering the question that waits; stop; answer an approval; answer or skip a question; start a shared or a device session; end a session; compact now; rename a session; set whether a session accepts tasks; set the idle time; carry on from a summary, an archived session's or one made now from a live session, and branch a session (4.15); send a message with a quote; rewind to before a block, edit a user message (a rewind and a send), and show another version where the conversation forks (4.16); list the live sessions of every device, with their kind, device, status, and idle deadline; list the archive; open an archived session read-only; route the pet's input to this device's current session.
 
 **Tool display metadata**, from the toolset manifest ([tool-system](../../.agents/memory/tool-system.md)), with defaults for raw MCP tools: display name, key argument, localized description and activity text, category, the risk hints that decide approvals, and an optional dedicated rendering. A remote tool's display name comes from its node's toolset, as in `Remote(desktop3).Files.Read`.
 
@@ -340,6 +377,10 @@ The internal terms in the [vocabulary](../../.agents/memory/product-direction.md
 | The question tool's call | Question; the character "asks" | 提问；“想问你” |
 | Compact | Summary | 摘要 |
 | The compacts folder | Archive | 归档 |
+| Starting a session from a summary | Carry on | 话题续聊 *(user, 2026-11-19)* |
+| Returning to a checkpoint | Rewind | 回退 |
+| A new session that starts as a copy of another | Branch | 分支 |
+| The ways a conversation went from one checkpoint | Version | 版本 |
 | Node | Device | 设备 |
 | Message | Message | 消息 |
 | Memory | Memory | 记忆 |
@@ -351,7 +392,7 @@ The internal terms in the [vocabulary](../../.agents/memory/product-direction.md
 | Gateway | Gateway | 网关 |
 | Full view and chat view | The "Show work" switch | “显示过程”开关 |
 
-Notices, forks, and working text have no name in the interface; it describes what they did.
+Notices, forks, checkpoints, and working text have no name in the interface; it describes what they did.
 
 ## 15. Open questions
 
@@ -370,3 +411,4 @@ Notices, forks, and working text have no name in the interface; it describes wha
 13. **For the user:** whether and how released builds show Live2D. An app that loads any model is a Live2D "Expandable Application": it needs Live2D's approval and a contract before release, and Live2D does not, as a rule, approve one that is entirely free. The Live2D runtime is never shipped with NL, and until this is settled released builds accept none, so a Live2D avatar shows its light rendition, or the ball.
 14. Whether the app gets an import of its own, for a folder or a zip, beside the agent skill.
 15. Whether the main window's avatars, in the header and beside bubbles, follow the avatar chosen for the pet, and in which mode.
+16. What a rewind does about what it leaves behind (4.16): the notice to the model proposed there, whether some changes, such as those NL's own file tools made, should be undone as well, and whether notices that arrived after the checkpoint (urgent memory, digests, S4) are appended again after a rewind (Stage 3 and Stage 4 design notes).

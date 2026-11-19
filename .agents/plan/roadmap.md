@@ -106,7 +106,7 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 
 **Build:**
 - The harness core as one crate that depends on no particular runtime or operating system (E1, P2, P6): the turn loop, event-driven and interruptible (P7), able to call tools from the start, with only built-in tools for now.
-- The prompt layout (M1 to M3) and the session record as local JSONL with its history flag (S2, S9); replay from the record (E3).
+- The prompt layout (M1 to M3) and the session record as local, append-only JSONL with its history flag (S2, S9); a checkpoint at every step, with rewinding, editing, versions, and branches over the record (M2; user, 2026-11-19; [distributed-design](../memory/distributed-design.md)); replay from the record (E3).
 - The DeepSeek adapter, which reaches the provider through the gateway's proxy, and a scripted fake (E2, E5). The spike "provider cache" runs first.
 - Compaction at the compaction threshold, as a fork (M4, S5), and the output threshold below it (M7).
 - The message and finish tools (M5): messages stream into bubbles from the tool's arguments, working text goes only to the full view, and a turn ends only through finish.
@@ -120,7 +120,8 @@ Each stage ends in something a person can use and CI can check. Nothing here nee
 - [ ] It works against the real DeepSeek API through the gateway (manual, recorded).
 - [ ] After a restart a session resumes from its JSONL (automated, scripted model).
 - [ ] The command-line shell holds a conversation through a test gateway and a fake provider (automated, end to end).
-- [ ] The prefix holds: each request of a session equals the previous one plus what was appended, and a fork's request equals its parent's plus one message (automated).
+- [ ] The prefix holds: each request of a session equals the previous one plus what was appended, or, after a rewind, the request made at that checkpoint plus what was appended; a fork's request equals its parent's plus one message (automated).
+- [ ] A rewind to before any block, a tool call's included, continues from the prompt that was sent at that checkpoint, and afterwards the JSONL still holds every line it held before; edits, versions, and branches survive a restart (automated).
 - [ ] A session that passes the compaction threshold compacts and goes on (automated).
 - [ ] A tool output that would pass the output threshold is cut and marked, the model can read the rest from the session's output file, and the session can still take several steps before it compacts; the JSONL holds only what the model saw (automated).
 - [ ] Stopping a streaming reply takes effect within the interrupt budget (automated).
@@ -343,6 +344,7 @@ Settled by the user on 2026-11-18:
 Settled by the user on 2026-11-19:
 
 - **Avatars:** two pet modes, light and Live2D, with avatars that users add through the `nl-avatar` agent skill ([avatar-packs](../memory/avatar-packs.md)).
+- **Checkpoints:** every step of the loop is a checkpoint that a session can rewind to, and the session JSONL is only ever appended to (S2, M2; [distributed-design](../memory/distributed-design.md)).
 
 Still open:
 
