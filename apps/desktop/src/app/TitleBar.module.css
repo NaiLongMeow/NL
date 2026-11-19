@@ -22,6 +22,20 @@
   user-select: none;
 }
 
+/*
+ * Only the bar and its controls make the drag region. app-region is
+ * inherited, so every box inside the bar would otherwise add a drag
+ * rectangle of its own, and a box that moves, such as a layer of the
+ * animated avatar, would change the region on every frame. WebView2 keeps
+ * the region as child windows that it repositions on the app's main thread,
+ * so a region that changes every frame froze the whole app (2026-11-19).
+ * `initial` is the value that adds nothing; Chromium computes `none` as
+ * `no-drag`, which would punch a moving hole instead.
+ */
+.titlebar * {
+  app-region: initial;
+}
+
 /* Controls take clicks; the rest of the bar drags the window. */
 .titlebar :is(button, input, select, textarea, a, label, [role="button"], [role="switch"], [role="note"], [tabindex]) {
   app-region: no-drag;
