@@ -37,6 +37,18 @@ describe("Avatar", () => {
     ]);
   });
 
+  it("plays a jump for joy only when asked", () => {
+    const { container } = render(
+      <>
+        <Avatar size={32} play="joy" />
+        <Avatar size={32} />
+      </>,
+    );
+    const [playing, still] = container.querySelectorAll(":scope > span");
+    expect(playing!.getAttribute("data-play")).toBe("joy");
+    expect(still!.hasAttribute("data-play")).toBe(false);
+  });
+
   it("gives every avatar on the page its own clip, so that each ball is shaded within its own outline", () => {
     const { container } = render(
       <>

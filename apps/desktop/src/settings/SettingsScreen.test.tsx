@@ -180,7 +180,7 @@ describe("SettingsScreen's pet section", () => {
     expect(within(list).getByText(en.settings.pet.problem["no-manifest"])).toBeTruthy();
 
     await user.click(within(list).getByRole("radio", { name: /Mochi/ }));
-    expect(onPet).toHaveBeenLastCalledWith({ mode: "light", light: "mochi", live2d: null });
+    expect(onPet).toHaveBeenLastCalledWith({ ...DEFAULT_PET, light: "mochi" });
     expect(screen.getByText(/dev\.nailongmeow\.nl\\avatars$/)).toBeTruthy();
   });
 
@@ -189,16 +189,16 @@ describe("SettingsScreen's pet section", () => {
     const onPet = vi.fn();
     render(<Settings onPet={onPet} avatars={{ folder, avatars: [lightOnly, both], live2d: "no-runtime" }} />);
     await user.click(within(screen.getByRole("radiogroup", { name: en.settings.pet.mode })).getByRole("radio", { name: "Live2D" }));
-    expect(onPet).toHaveBeenLastCalledWith({ mode: "live2d", light: null, live2d: null });
+    expect(onPet).toHaveBeenLastCalledWith({ ...DEFAULT_PET, mode: "live2d" });
     expect(screen.getByText(en.settings.pet.live2dStatus["no-runtime"])).toBeTruthy();
     const list = screen.getByRole("radiogroup", { name: en.settings.pet.avatar });
     expect(within(list).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual([expect.stringContaining("Whale")]);
     await user.click(within(list).getByRole("radio", { name: /Whale/ }));
-    expect(onPet).toHaveBeenLastCalledWith({ mode: "live2d", light: null, live2d: "whale" });
+    expect(onPet).toHaveBeenLastCalledWith({ ...DEFAULT_PET, mode: "live2d", live2d: "whale" });
   });
 
   it("says nothing about the runtime when Live2D can show", () => {
-    render(<Settings avatars={{ folder, avatars: [both], live2d: "ready" }} initialPet={{ mode: "live2d", light: null, live2d: "whale" }} />);
+    render(<Settings avatars={{ folder, avatars: [both], live2d: "ready" }} initialPet={{ ...DEFAULT_PET, mode: "live2d", live2d: "whale" }} />);
     for (const text of Object.values(en.settings.pet.live2dStatus).filter(Boolean)) expect(screen.queryByText(text)).toBeNull();
     expect(within(screen.getByRole("radiogroup", { name: en.settings.pet.avatar })).getByRole("radio", { name: /Whale/ })).toHaveProperty("checked", true);
   });
@@ -208,6 +208,16 @@ describe("SettingsScreen's pet section", () => {
     expect(screen.getByText(en.settings.pet.empty)).toBeTruthy();
     expect(screen.getByText(SKILL_COMMAND)).toBeTruthy();
     expect(SKILL_COMMAND).toBe("npx skills add NaiLongMeow/NL --skill nl-avatar");
+  });
+
+  it("hides and shows the pet", async () => {
+    const user = userEvent.setup();
+    const onPet = vi.fn();
+    render(<Settings onPet={onPet} avatars={{ folder, avatars: [], live2d: "no-runtime" }} />);
+    const show = screen.getByRole("switch", { name: en.settings.pet.show });
+    expect(show.getAttribute("aria-checked")).toBe("true");
+    await user.click(show);
+    expect(onPet).toHaveBeenLastCalledWith({ ...DEFAULT_PET, shown: false });
   });
 
   it("says avatars need the desktop app outside it", () => {

@@ -15,8 +15,12 @@ import type { CheckedAvatar, Live2DStatus } from "../avatars/avatars";
 
 export type PetMode = "light" | "live2d";
 
-/** The pet settings: the mode, and the avatar chosen for each mode (null: the ball, in light mode). */
+/**
+ * The pet settings: whether the pet is shown, its mode, and the avatar
+ * chosen for each mode (null: the ball, in light mode).
+ */
 export interface PetPrefs {
+  shown: boolean;
   mode: PetMode;
   light: string | null;
   live2d: string | null;
@@ -25,7 +29,7 @@ export interface PetPrefs {
 /** Where the pet settings are kept. */
 export const PET_KEY = "nl.pet";
 
-export const DEFAULT_PET: PetPrefs = { mode: "light", light: null, live2d: null };
+export const DEFAULT_PET: PetPrefs = { shown: true, mode: "light", light: null, live2d: null };
 
 /** The pet settings from their stored form; anything unknown takes the default. */
 export function parsePetPrefs(raw: string | null | undefined): PetPrefs {
@@ -33,6 +37,7 @@ export function parsePetPrefs(raw: string | null | undefined): PetPrefs {
     const value = JSON.parse(raw ?? "null") as Partial<Record<keyof PetPrefs, unknown>> | null;
     const text = (field: unknown) => (typeof field === "string" && field.length > 0 ? field : null);
     return {
+      shown: value?.shown !== false,
       mode: value?.mode === "live2d" ? "live2d" : "light",
       light: text(value?.light),
       live2d: text(value?.live2d),

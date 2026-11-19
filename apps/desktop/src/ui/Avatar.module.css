@@ -374,6 +374,39 @@
   animation: none;
 }
 
+/*
+ * ---- Playing: a jump for joy, when the pet is double-clicked ----
+ *
+ * After the pointer's squish, so that it wins while the pointer is still on
+ * the ball. It lasts as long as the pet window waits (PLAY_MS in PetWindow).
+ */
+
+.avatar[data-play="joy"] .motion {
+  animation: joy 1.2s;
+}
+
+.avatar[data-play="joy"] .breath,
+.avatar[data-play="joy"] .gaze,
+.avatar[data-play="joy"] .squint {
+  animation: none;
+}
+
+.avatar[data-play="joy"] .open {
+  animation: joy-open 1.2s linear;
+}
+
+.avatar[data-play="joy"] .happy {
+  animation: joy-happy 1.2s linear;
+}
+
+.avatar[data-play="joy"] .cheek {
+  animation: joy-blush 1.2s ease-out;
+}
+
+.avatar[data-play="joy"] .sparkle {
+  animation: joy-sparkle 1.2s ease-out;
+}
+
 /* ---- Keyframes ---- */
 
 @keyframes breathe {
@@ -866,6 +899,112 @@
   6%,
   70% {
     opacity: 1;
+  }
+}
+
+/*
+ * A jump for joy: a crouch, a stretched push off, a wiggle at the top, a
+ * squashed landing, and a small rebound.
+ */
+@keyframes joy {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1, 1);
+    animation-timing-function: ease-out;
+  }
+  10% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.16, 0.84);
+    animation-timing-function: ease-out;
+  }
+  22% {
+    transform: translateY(-7.5%) rotate(0deg) skewX(0deg) scale(0.88, 1.14);
+    animation-timing-function: ease-out;
+  }
+  40% {
+    transform: translateY(-27.5%) rotate(-10deg) skewX(0deg) scale(1, 1);
+    animation-timing-function: ease-in-out;
+  }
+  52% {
+    transform: translateY(-25%) rotate(10deg) skewX(0deg) scale(1, 1);
+    animation-timing-function: ease-in;
+  }
+  66% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.14, 0.86);
+    animation-timing-function: ease-out;
+  }
+  76% {
+    transform: translateY(-6%) rotate(0deg) skewX(0deg) scale(0.95, 1.05);
+    animation-timing-function: ease-in;
+  }
+  86% {
+    transform: translateY(0) rotate(0deg) skewX(0deg) scale(1.05, 0.95);
+    animation-timing-function: ease-out;
+  }
+}
+
+/* The open eyes give way to ^ ^ for the whole jump. */
+@keyframes joy-open {
+  0%,
+  8%,
+  90%,
+  100% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+  12%,
+  86% {
+    opacity: 0;
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes joy-happy {
+  0%,
+  8%,
+  90%,
+  100% {
+    opacity: 0;
+    transform: scale(1, 0.4);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1, 1.2);
+  }
+  20%,
+  86% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes joy-blush {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  14%,
+  84% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+/* Two twinkles while it is in the air. */
+@keyframes joy-sparkle {
+  0%,
+  28%,
+  46%,
+  50%,
+  68%,
+  100% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0);
+  }
+  37%,
+  59% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1.2);
   }
 }
 

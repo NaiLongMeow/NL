@@ -19,7 +19,7 @@ import { Header } from "../conversation/Header";
 import { characterState, type SessionKind, type ToolCall, type View } from "../conversation/model";
 import { DetailPanel } from "../detail/DetailPanel";
 import { I18nProvider, useI18n } from "../i18n/I18n";
-import { answerPet, publishCue, publishPrefs } from "../pet/channel";
+import { answerPet, followPet, publishCue, publishPrefs, setPetShown } from "../pet/channel";
 import { loadPetPrefs, savePetPrefs, type PetPrefs } from "../pet/look";
 import { IDLE_LIMITS, SettingsScreen } from "../settings/SettingsScreen";
 import { Sidebar, type Screen } from "../sidebar/Sidebar";
@@ -104,6 +104,18 @@ function MainWindow() {
 
   // The pet shows the character in the state of the session open here.
   useEffect(() => answerPet(), []);
+  // The pet is shown unless the user hid it. Its own menu can hide it too,
+  // and can ask for Settings (src-tauri/src/pet.rs).
+  useEffect(() => setPetShown(pet.shown), []);
+  useEffect(
+    () =>
+      followPet(
+        (shown) => setPet((current) => (current.shown === shown ? current : { ...current, shown })),
+        () => setScreen("settings"),
+      ),
+    [],
+  );
+  useEffect(() => savePetPrefs(pet), [pet]);
   const petCue = conversation ? characterState(conversation) : "idle";
   useEffect(() => publishCue(petCue), [petCue]);
 
@@ -119,9 +131,9 @@ function MainWindow() {
     return () => window.removeEventListener("focus", reloadAvatars);
   }, [screen]);
   const changePet = (next: PetPrefs) => {
-    savePetPrefs(next);
     setPet(next);
     publishPrefs(next);
+    if (next.shown !== pet.shown) setPetShown(next.shown);
   };
 
   const openSession = (id: string) => {

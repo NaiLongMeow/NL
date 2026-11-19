@@ -6,9 +6,9 @@
 //! - `pet`: the desktop pet, a transparent, frameless, always-on-top window
 //!   that only shows the character (frontend: pet.html).
 //!
-//! Closing the main window leaves the pet on the desktop; the app exits once
-//! both are closed. The NL node will run inside this process later (see
-//! docs/architecture.md, "桌面端").
+//! The pet's right-click menu, and what closing either window does, are in
+//! pet.rs: NL keeps running while one of its windows can be seen. The NL node
+//! will run inside this process later (see docs/architecture.md, "桌面端").
 //!
 //! On Windows the main window draws its own title bar while the system keeps
 //! drawing the caption buttons (titlebar.rs, and caption.rs where Windows
@@ -22,6 +22,7 @@ mod avatars;
 #[cfg(windows)]
 mod caption;
 mod folders;
+mod pet;
 mod placement;
 mod themes;
 // titlebar.rs is the verified module of the tauri-custom-titlebar recipe,
@@ -54,6 +55,8 @@ pub fn run() {
     };
     tauri::Builder::default()
         .plugin(webview::navigation_guard(dev_url))
+        .on_menu_event(|app, event| pet::on_menu_event(app, event.id().as_ref()))
+        .on_window_event(pet::on_window_event)
         // Avatar files are read on a worker thread, so that a large texture
         // never holds up the window that asked for it.
         .register_asynchronous_uri_scheme_protocol(
@@ -79,7 +82,8 @@ pub fn run() {
             }
             if let Some(pet) = app.get_webview_window("pet") {
                 // The pet window starts hidden so it never flashes at the
-                // default position before being moved to the corner. Its size
+                // default position before being moved to the corner; the main
+                // window shows it unless the user hid it (pet.rs). Its size
                 // comes from tauri.conf.json because a hidden window cannot
                 // report it reliably on every platform (see placement.rs).
                 let configured = app
@@ -98,7 +102,6 @@ pub fn run() {
                     );
                     pet.set_position(PhysicalPosition::new(x, y))?;
                 }
-                pet.show()?;
             }
             Ok(())
         })
@@ -115,6 +118,8 @@ pub fn run() {
             themes::open_custom_themes_folder,
             avatars::avatars,
             avatars::open_avatars_folder,
+            pet::pet_menu,
+            pet::set_pet_shown,
         ])
         .run(context)
         .expect("the Tauri application failed to start");

@@ -20,6 +20,7 @@ import { LOCALE_NAMES, type Locale } from "../i18n/messages";
 import { canShowLive2D, type PetMode, type PetPrefs } from "../pet/look";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
+import { Switch } from "../ui/Switch";
 import styles from "./SettingsScreen.module.css";
 
 /** The idle times offered before a session archives itself, in minutes. */
@@ -268,6 +269,7 @@ function PetSection({
 
   return (
     <Section title={texts.title}>
+      <Switch label={texts.show} checked={pet.shown} onChange={(shown) => onPet({ ...pet, shown })} />
       <h3 className={styles.label}>{texts.mode}</h3>
       <Choice label={texts.mode} value={mode} options={modeOptions} onChange={(next) => onPet({ ...pet, mode: next })} />
       <p className={styles.hint}>{mode === "light" ? texts.lightHint : texts.live2dHint}</p>

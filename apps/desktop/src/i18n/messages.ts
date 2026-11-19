@@ -233,6 +233,7 @@ export const en = {
     hours: (hours: number) => (hours === 1 ? "1 hour" : `${hours} hours`),
     pet: {
       title: "Desktop pet",
+      show: "Show the desktop pet",
       mode: "Mode",
       modes: { light: "Light", live2d: "Live2D" },
       lightHint: "The ball, or an avatar made of images. It uses very little.",
@@ -271,7 +272,8 @@ export const en = {
     },
   },
   pet: {
-    hint: "Drag to move · double-click to close",
+    hint: "Drag to move · right-click for the menu · double-click to play",
+    menu: { open: "Open NL", settings: "Settings", hide: "Close the pet", quit: "Quit NL" },
   },
   placeholder: {
     body: "This screen is not built yet.",
@@ -505,6 +507,7 @@ export const zhCN: Messages = {
     hours: (hours: number) => `${hours} 小时`,
     pet: {
       title: "桌宠",
+      show: "显示桌宠",
       mode: "模式",
       modes: { light: "轻量", live2d: "Live2D" },
       lightHint: "小球，或由图片做成的形象，几乎不占资源。",
@@ -542,7 +545,8 @@ export const zhCN: Messages = {
     },
   },
   pet: {
-    hint: "拖动移动 · 双击关闭",
+    hint: "拖动移动 · 右键打开菜单 · 双击逗它玩",
+    menu: { open: "打开 NL", settings: "设置", hide: "关闭桌宠", quit: "退出 NL" },
   },
   placeholder: {
     body: "这个页面还没有做。",

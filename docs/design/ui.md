@@ -207,7 +207,8 @@ Every action is reachable from the keyboard, with shortcuts for new session, sea
 - An approval shows as a small card with Allow once, Deny, and Details, which opens the main window. Always allow is offered only in the main window.
 - The reserved hue shows beside the pet whenever the microphone is open (product rule 8).
 - Drag to move; the position is remembered per screen. Transparent pixels pass clicks through.
-- The right-click menu and the tray menu offer: open the main window, mute the microphone, quiet for an hour, hide the pet, settings, quit.
+- The right-click menu and the tray menu offer: open the main window, mute the microphone, quiet for an hour, hide the pet, settings, quit. *(user, 2026-11-19: right click opens the menu, which closes the pet; a double click is too easy to do by accident to close anything, so it is a shortcut to something fun that never does harm)* A double click plays: the ball jumps for joy, and an avatar pack bounces with a happy face.
+- NL keeps running while one of its windows is shown. Closing the main window hides it while the pet is shown, so that the pet's menu can open it again, and quits NL otherwise; closing the pet hides it, and brings back the main window if that was hidden too. Whether the pet is shown is a setting (section 5, Settings), on by default.
 - Pointing at the pet, pressing it, and dragging it are cues as well (hover, press, drag), and a Live2D avatar's gaze follows the pointer.
 - Cue states: section 10.
 

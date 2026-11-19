@@ -21,9 +21,11 @@
  * - "listening": wide eyes, small nods, and a steady ring in the reserved
  *   "microphone on" hue (product rule 8).
  *
- * Pointing at it squishes it, eyes shut tight, and it springs back. With
- * reduced motion it keeps still: the eyes, cheeks, and bubbles still show
- * the state, and a still ring in the theme's accent shows that it works.
+ * Pointing at it squishes it, eyes shut tight, and it springs back. Asked to
+ * play (`play="joy"`, when the pet is double-clicked), it jumps for joy with
+ * ^ ^ eyes, rosy cheeks, and sparkles. With reduced motion it keeps still:
+ * the eyes, cheeks, and bubbles still show the state, and a still ring in the
+ * theme's accent shows that it works.
  *
  * Every part that moves is its own HTML layer covering the whole avatar,
  * with its shapes drawn in an SVG inside it, because the webviews run CSS
@@ -37,6 +39,9 @@ import { useId, type CSSProperties, type ReactNode } from "react";
 import styles from "./Avatar.module.css";
 
 export type AvatarCue = "idle" | "working" | "approval" | "question" | "device" | "listening";
+
+/** Something the ball plays once, on top of its state: "joy", a jump for joy. */
+export type AvatarPlay = "joy";
 
 /**
  * How far apart, in seconds, avatars on one page start their loops (a
@@ -59,7 +64,7 @@ function Art({ children }: { children: ReactNode }) {
   );
 }
 
-export function Avatar({ size, cue = "idle", label }: { size: number; cue?: AvatarCue; label?: string }) {
+export function Avatar({ size, cue = "idle", play, label }: { size: number; cue?: AvatarCue; play?: AvatarPlay; label?: string }) {
   const id = useId();
   // Each avatar on the page needs its own clip id; React's ids hold
   // characters that a `url(#…)` reference does not take everywhere.
@@ -70,6 +75,7 @@ export function Avatar({ size, cue = "idle", label }: { size: number; cue?: Avat
     <span
       className={styles.avatar}
       data-cue={cue}
+      data-play={play}
       style={style}
       role={label ? "img" : undefined}
       aria-label={label}
