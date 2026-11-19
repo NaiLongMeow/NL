@@ -51,8 +51,8 @@ export function watchTitlebar(): () => void {
 /**
  * How the strip behind the caption buttons follows the page (caption.rs):
  *
- * - "colored": DWM paints it in the title bar's color (Windows 11, and
- *   Windows 10 22H2 as measured);
+ * - "colored": DWM paints it in the title bar's color (Windows 11,
+ *   measured on build 26300);
  * - "system": DWM refuses a caption color, so the title bar takes the
  *   system's caption color instead (TitleBar.module.css), and the caption
  *   turns dark with the page's mode;

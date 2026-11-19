@@ -5,10 +5,11 @@
 //! and close buttons over a strip of its own caption. DWM paints that strip
 //! in the color it is given (`DWMWA_CAPTION_COLOR`, set by titlebar.rs's
 //! `set_caption_color`), so the page gives it its title bar's color. The
-//! attribute is documented for Windows 11; Windows 10 22H2 (build 19045)
-//! honors it too, measured 2026-11-19. Where DWM refuses it, as older Windows
-//! 10 builds may (not yet seen), the strip keeps the system's default
-//! caption: white, or black when `DWMWA_USE_IMMERSIVE_DARK_MODE` is on. There
+//! attribute is documented for Windows 11 and works there (build 26300,
+//! measured 2026-11-19). Where DWM refuses it, as Windows 10 is expected to
+//! (not tried yet), the strip keeps the system's default caption: white, or
+//! black when `DWMWA_USE_IMMERSIVE_DARK_MODE` is on, as measured on Windows
+//! 11 with the caption color reset. There
 //! the page paints its title bar in the system's caption color instead, and
 //! these commands tell it which case it is in and switch the system caption
 //! between light and dark with the page's mode.

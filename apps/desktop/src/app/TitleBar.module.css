@@ -110,9 +110,10 @@
  *
  * Where DWM refuses to color the caption (data-caption="system"), the strip
  * behind the buttons keeps the system's default caption, so the bar takes
- * that color instead. The values below were measured on Windows 10 22H2
- * with the caption color reset to the default: white in light mode, active
- * or not; in dark mode black, and #2b2b2b while the window is inactive.
+ * that color instead. The values below were measured on Windows 11 (build
+ * 26300) with the caption color reset to the default: white in light mode,
+ * active or not; in dark mode black, and #2b2b2b while the window is
+ * inactive. Windows 10, where this case is expected, has not been measured.
  */
 .main {
   display: flex;
